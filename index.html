@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HariMani School - LMS & Assessment Portal</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+<header class="no-print">
+  <div class="logo-area">
+    <h2>🏫 HariMani School Portal</h2>
+  </div>
+  <div class="header-right">
+    <span id="userBadge" class="user-pill hidden"></span>
+    <button id="btnOpenLogin" class="btn btn-outline" onclick="openModal('loginModal')">🔑 Sign In</button>
+    <button id="btnOpenSignup" class="btn btn-secondary" onclick="openModal('signupModal')">📝 Student / Aspirant Sign Up</button>
+    <button id="btnLogout" class="btn btn-outline hidden" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- NAVIGATION TABS -->
+  <div class="tabs no-print">
+    <button class="tab-btn active" onclick="switchTab('play', this)">📝 Attend Test</button>
+    <button class="tab-btn hidden" id="tabMyScores" onclick="switchTab('reports', this)">📊 My Scores & Badges</button>
+    <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('create', this)">✍️ Create Questions</button>
+    <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('manage', this)">🗂️ Question Bank & Print Paper</button>
+    <button class="tab-btn teacher-only hidden" onclick="switchTab('teacherScores', this)">📈 Student Scores (Assigned)</button>
+    <button class="tab-btn principal-only hidden" onclick="switchTab('principal', this)">👑 Principal Master Board</button>
+  </div>
+
+  <!-- TAB 1: ATTEND TEST -->
+  <div id="playTab">
+    <div id="guestBanner" class="card no-print" style="background:#fff8e1; border-color:#ffe082; padding:12px 18px;">
+      <strong>👋 Welcome, Guest Student!</strong> You can attempt assessments across all 4 categories (MCQ, True/False, Fill in Blanks, Match). Sign In or Register to unlock 100% score rewards, streak badges, and question review.
+    </div>
+
+    <div id="quizSetupCard" class="card no-print">
+      <h3>🎯 Assessment Arena</h3>
+      <p class="notice" id="playScopeNotice">Select Category, Class, Subject, and Chapter to begin.</p>
+      
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Question Category:</label>
+          <select id="playTypeSelect">
+            <option value="all">Mixed (All 4 Categories)</option>
+            <option value="mcq">Multiple Choice Questions (MCQ)</option>
+            <option value="tf">True or False</option>
+            <option value="fib">Fill in the Blanks</option>
+            <option value="match">Match the Following</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Class / Standard:</label>
+          <select id="playStdSelect" onchange="syncPlaySubjects()"></select>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Subject:</label>
+          <select id="playSubSelect" onchange="syncPlayChapters()"></select>
+        </div>
+        <div class="form-group">
+          <label>Unit / Chapter:</label>
+          <select id="playChapterSelect" onchange="syncPlayTopics()"></select>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Topic:</label>
+          <select id="playTopicSelect"></select>
+        </div>
+        <div class="form-group">
+          <label>Timer per Question:</label>
+          <select id="playTimerSelect">
+            <option value="0">No Timer</option>
+            <option value="15">15 Seconds</option>
+            <option value="20" selected>20 Seconds</option>
+            <option value="30">30 Seconds</option>
+            <option value="60">60 Seconds</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Question Count:</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="number" id="playCountInput" min="1" max="10" value="5" style="flex:1;">
+          <label style="font-size:0.85rem; white-space:nowrap; cursor:pointer;">
+            <input type="checkbox" id="playAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width:auto;" disabled> All Available
+          </label>
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-100 margin-top" onclick="startQuiz()">🚀 Start Assessment</button>
+    </div>
+
+    <!-- ACTIVE TEST CARD -->
+    <div id="quizActiveCard" class="card hidden no-print">
+      <div class="quiz-top-bar">
+        <span id="quizProgressBadge" class="badge-pill">Question 1 / 5</span>
+        <div id="timerContainer" class="timer-badge">⏱️ Time Left: <span id="timerText">20s</span></div>
+      </div>
+      <div id="timerBarTrack" class="timer-bar-track">
+        <div id="timerBarFill" class="timer-bar-fill"></div>
+      </div>
+      <div id="singleQuestionArea" style="margin-top:15px;"></div>
+      <div class="quiz-footer-actions">
+        <button id="btnNextQuestion" class="btn btn-primary" onclick="nextQuestion(false)">Next Question ⏩</button>
+      </div>
+    </div>
+
+    <!-- RESULT SCORECARD -->
+    <div id="quizResultCard" class="card text-center hidden no-print">
+      <h2>🎉 Assessment Finished!</h2>
+      <div id="resultScoreDisplay" style="font-size: 2.2rem; font-weight: bold; margin: 15px 0; color: var(--primary);"></div>
+      <p id="resultFeedback" style="font-size: 1.1rem;"></p>
+
+      <!-- 100% REWARD & TEACHER FEEDBACK UNLOCK -->
+      <div id="bonusRewardAlert" class="bonus-alert hidden">
+        <h4>🌟 100% PERFECT SCORE BONUS UNLOCKED!</h4>
+        <p>வாழ்த்துகள்! நீங்கள் முழு மதிப்பெண் பெற்றுள்ளதால் <strong>+4 கூடுதல் தேர்வுகள் (Bonus Retakes)</strong> மற்றும் ஆசிரியரிடம் நேரடி பின்னூட்டம் பெறும் சலுகை திறக்கப்பட்டுள்ளது.</p>
+        <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+          <input type="text" id="teacherFeedbackMessage" placeholder="ஆசிரியரிடம் உங்கள் சந்தேகம் அல்லது கருத்தைக் கேட்கவும்..." style="max-width:420px;">
+          <button class="btn btn-success" onclick="submitTeacherFeedback()">📩 ஆசிரியருக்கு அனுப்புக</button>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:center; gap:12px; margin-top:20px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="resetQuizView()">Retake / New Test</button>
+        <button class="btn btn-secondary" onclick="toggleExamReview()">📖 Review All Questions & Explanations</button>
+      </div>
+
+      <!-- QUESTION BY QUESTION REVIEW SECTION -->
+      <div id="quizReviewArea" class="hidden" style="margin-top:25px; text-align:left;">
+        <h3 style="border-bottom:2px solid var(--border); padding-bottom:8px;">🔍 முழு வினாக்கள் மறுபார்வை (Question Review)</h3>
+        <div id="reviewQuestionsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: CREATE / AUTHOR QUESTIONS -->
+  <div id="createTab" class="hidden no-print">
+    <div style="display:flex; gap:10px; margin-bottom:15px;">
+      <button id="btnMethodManual" class="btn btn-primary flex-1" onclick="switchCreateMethod('manual')">✍️ Manual Creation</button>
+      <button id="btnMethodAi" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('ai')">📷 AI Book Parser (PDF / Image)</button>
+      <button id="btnMethodCsv" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('csv')">📁 CSV Bulk Import</button>
+    </div>
+
+    <div class="card" id="targetHierarchyCard" style="background:#fcfcfc;">
+      <h4>1. Target Hierarchy</h4>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Standard / Class:</label>
+          <select id="authorStdSelect" onchange="syncAuthorSubjects(); updateAiPromptPreview();"></select>
+        </div>
+        <div class="form-group">
+          <label>Subject:</label>
+          <select id="authorSubSelect" onchange="syncAuthorChapters(); updateAiPromptPreview();"></select>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Unit / Chapter:</label>
+          <input type="text" id="authorChapterInput" placeholder="e.g. Unit 1: Living World" list="chapterSuggestions">
+          <datalist id="chapterSuggestions"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Topic / Section:</label>
+          <input type="text" id="authorTopicInput" placeholder="e.g. Plants & Photosynthesis">
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2A: MANUAL CREATE -->
+    <div id="sectionManualCreate" class="card">
+      <h4>2. Question Details</h4>
+      
+      <div class="form-group">
+        <label>Question Type / Category:</label>
+        <select id="manualQType" onchange="toggleManualTypeInputs(this.value)">
+          <option value="mcq">Multiple Choice Question (MCQ)</option>
+          <option value="tf">True or False</option>
+          <option value="fib">Fill in the Blanks</option>
+          <option value="match">Match the Following</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Question Statement / Prompt:</label>
+        <textarea id="manualQuestionText" rows="2" placeholder="Enter question statement (Use '_____' for blank in FIB)..."></textarea>
+      </div>
+
+      <!-- MCQ Dynamic Fields -->
+      <div id="wrapperMcqFields">
+        <div class="grid-2">
+          <div class="form-group"><label>Option A:</label><input type="text" id="manualOptA" placeholder="Option A"></div>
+          <div class="form-group"><label>Option B:</label><input type="text" id="manualOptB" placeholder="Option B"></div>
+          <div class="form-group"><label>Option C:</label><input type="text" id="manualOptC" placeholder="Option C"></div>
+          <div class="form-group"><label>Option D:</label><input type="text" id="manualOptD" placeholder="Option D"></div>
+        </div>
+        <div class="form-group">
+          <label>Correct Answer:</label>
+          <select id="manualCorrectOptMcq">
+            <option value="1">Option A</option>
+            <option value="2">Option B</option>
+            <option value="3">Option C</option>
+            <option value="4">Option D</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- True or False Dynamic Fields -->
+      <div id="wrapperTfFields" class="hidden">
+        <div class="form-group">
+          <label>Correct Answer:</label>
+          <select id="manualCorrectOptTf">
+            <option value="True">True</option>
+            <option value="False">False</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Fill in the Blanks Dynamic Fields -->
+      <div id="wrapperFibFields" class="hidden">
+        <div class="form-group">
+          <label>Correct Blank Answer:</label>
+          <input type="text" id="manualCorrectOptFib" placeholder="e.g. Chlorophyll">
+        </div>
+      </div>
+
+      <!-- Match the Following Dynamic Fields -->
+      <div id="wrapperMatchFields" class="hidden">
+        <p class="notice">Enter matching pairs as <code>LeftItem:RightItem</code></p>
+        <div class="grid-2">
+          <div class="form-group"><input type="text" id="matchPair1" placeholder="Roots:Absorb water"></div>
+          <div class="form-group"><input type="text" id="matchPair2" placeholder="Leaves:Photosynthesis"></div>
+          <div class="form-group"><input type="text" id="matchPair3" placeholder="Stem:Supports structure"></div>
+          <div class="form-group"><input type="text" id="matchPair4" placeholder="Flower:Reproduction"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Explanation / Text Reference:</label>
+        <textarea id="manualExplanation" rows="2" placeholder="Explain the rationale behind the correct answer..."></textarea>
+      </div>
+
+      <button class="btn btn-primary w-100 margin-top" onclick="publishManualQuestion()">💾 Publish Question</button>
+    </div>
+
+    <!-- SECTION 2B: AI DOCUMENT / PDF PARSER -->
+    <div id="sectionAiCreate" class="card hidden">
+      <h4>2. AI Document / PDF Parser</h4>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Upload Textbook File (PDF or Image):</label>
+          <input type="file" id="aiFileInput" accept="image/*,application/pdf">
+        </div>
+        <div class="form-group">
+          <label>Questions to Extract (1 to 20):</label>
+          <input type="number" id="aiQuestionCount" min="1" max="20" value="10" placeholder="e.g. 10">
+        </div>
+      </div>
+      <button class="btn btn-secondary w-100" id="btnExtractAi" onclick="generateViaAI()">⚡ Parse & Generate Multi-Category Quiz</button>
+      
+      <div id="aiBatchProgressArea" class="hidden margin-top" style="background:#f8f9fa; padding:15px; border-radius:6px; border:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; font-weight:600; font-size:0.9rem; margin-bottom:6px;">
+          <span id="aiBatchStatusText">Processing...</span>
+          <span id="aiBatchProgressPct">0%</span>
+        </div>
+        <div style="width:100%; height:10px; background:#dee2e6; border-radius:5px; overflow:hidden;">
+          <div id="aiBatchProgressBar" style="width:0%; height:100%; background:var(--secondary); transition:width 0.4s ease;"></div>
+        </div>
+      </div>
+
+      <div id="aiPreviewArea" class="hidden margin-top">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 style="margin:0;">Generated Questions Preview (<span id="aiTotalCountBadge">0</span> Questions Ready)</h4>
+        </div>
+        <div id="aiPreviewList" class="preview-box"></div>
+        <button class="btn btn-success w-100 margin-top" onclick="publishAiBatch()">💾 Publish All to Question Bank</button>
+      </div>
+    </div>
+
+    <!-- SECTION 2C: CSV BULK IMPORTER -->
+    <div id="sectionCsvCreate" class="card hidden">
+      <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:8px; margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h4 style="margin:0; color:#15803d;">🤖 Step 1: AI Prompt (All 4 Categories)</h4>
+          <a href="https://aistudio.google.com/prompts/new_chat" target="_blank" class="btn btn-outline" style="font-size:0.8rem; padding:4px 10px; text-decoration:none; background:#166534; border:none;">🚀 Open AI Studio</a>
+        </div>
+        <p class="notice" style="margin-bottom:10px; color:#166534;">
+          This prompt generates pure CSV covering MCQ, True/False, Fill in the Blanks, and Match the Following across 12 standardized columns.
+        </p>
+        
+        <div style="position:relative;">
+          <textarea id="aiStudioPromptTextarea" rows="9" readonly style="width:100%; font-family:monospace; font-size:0.8rem; background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; color:#1e293b; resize:vertical;"></textarea>
+          <button id="btnCopyPrompt" onclick="copyAiStudioPrompt()" class="btn btn-primary" style="position:absolute; top:8px; right:8px; font-size:0.75rem; padding:5px 10px;">📋 Copy Prompt</button>
+        </div>
+      </div>
+
+      <h4>📥 Step 2: Upload or Paste CSV</h4>
+      <div class="form-group">
+        <label>Select CSV File (.csv):</label>
+        <input type="file" id="standaloneCsvInput" accept=".csv,text/csv" onchange="handleStandaloneCsv(event)">
+      </div>
+
+      <div class="form-group" style="margin-top: 15px;">
+        <label><strong>Or Paste Raw CSV Text:</strong></label>
+        <textarea id="rawCsvTextInput" rows="5" placeholder="Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation..." style="width:100%; font-family:monospace; font-size:0.8rem; padding:8px; border:1px solid #cbd5e1; border-radius:6px;"></textarea>
+        <button class="btn btn-primary" onclick="handleDirectCsvPaste()" style="width:100%; margin-top:8px;">🔍 Parse & Check Duplicates</button>
+      </div>
+
+      <div id="standaloneCsvPreviewArea" class="hidden margin-top">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 style="margin:0;">Detected Questions (<span id="standaloneCsvCount" style="color:var(--primary); font-weight:bold;">0</span> Records)</h4>
+          <span id="csvDuplicateCountBadge" class="badge" style="background:#fee2e2; color:#991b1b;">0 Potential Duplicates</span>
+        </div>
+        <div id="standaloneCsvList" class="preview-box" style="max-height: 250px; overflow-y: auto; background:#fff; padding:10px; border:1px solid var(--border); border-radius:6px;"></div>
+        <button class="btn btn-primary w-100 margin-top" id="btnUploadStandaloneCsv" onclick="submitStandaloneCsvToSheet()">
+          🚀 Upload All to Google Sheet (Auto Serial IDs)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: QUESTION BANK & PRINT PAPER -->
+  <div id="manageTab" class="hidden no-print">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <h3 style="margin:0;">🗂️ Question Bank</h3>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span style="font-weight:600; font-size:0.85rem;">🖨️ Printable Paper:</span>
+          <button class="btn btn-outline-dark" onclick="generatePrintablePaper(25)">📄 25 Questions PDF</button>
+          <button class="btn btn-outline-dark" onclick="generatePrintablePaper(50)">📄 50 Questions PDF</button>
+        </div>
+      </div>
+
+      <div class="grid-3 margin-top">
+        <div class="form-group"><label>Search Keyword:</label><input type="text" id="manageSearchInput" oninput="renderManageTable()"></div>
+        <div class="form-group"><label>Filter Standard:</label><select id="manageStdFilter" onchange="renderManageTable()"></select></div>
+        <div class="form-group"><label>Filter Subject:</label><select id="manageSubFilter" onchange="renderManageTable()"></select></div>
+      </div>
+
+      <table class="report-table margin-top">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Type</th>
+            <th>Subject</th>
+            <th>Chapter / Topic</th>
+            <th>Question, Options & Answer</th>
+            <th>Author</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="manageTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 4: MY SCORES & BADGES -->
+  <div id="reportsTab" class="hidden no-print">
+    <div class="card">
+      <h3>🎖️ Student Achievements & Streaks</h3>
+      <div id="badgesContainer" class="badges-deck"></div>
+
+      <h3 class="margin-top">📊 Assessment History</h3>
+      <div class="grid-2">
+        <div class="form-group"><label>From Date:</label><input type="date" id="repFromDate" onchange="filterUserReports()"></div>
+        <div class="form-group"><label>To Date:</label><input type="date" id="repToDate" onchange="filterUserReports()"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Standard:</label><select id="repStdFilter" onchange="filterUserReports()"></select></div>
+        <div class="form-group"><label>Subject:</label><select id="repSubFilter" onchange="filterUserReports()"></select></div>
+      </div>
+
+      <div style="display:flex; gap:12px; margin:15px 0;">
+        <div style="flex:1; background:#e8f4fd; border:1px solid #b6d4fe; padding:10px; border-radius:6px; text-align:center;">
+          <div style="font-size:0.8rem; font-weight:bold; color:#084298;">TESTS ATTEMPTED</div>
+          <div id="repStatTotal" style="font-size:1.4rem; font-weight:bold; color:var(--primary);">0</div>
+        </div>
+        <div style="flex:1; background:#e2f0d9; border:1px solid #c3e6cb; padding:10px; border-radius:6px; text-align:center;">
+          <div style="font-size:0.8rem; font-weight:bold; color:#155724;">AVERAGE ACCURACY</div>
+          <div id="repStatAvg" style="font-size:1.4rem; font-weight:bold; color:var(--accent);">0%</div>
+        </div>
+        <div style="flex:1; background:#fff3cd; border:1px solid #ffeeba; padding:10px; border-radius:6px; text-align:center;">
+          <div style="font-size:0.8rem; font-weight:bold; color:#856404;">CURRENT STREAK</div>
+          <div id="repStatStreak" style="font-size:1.4rem; font-weight:bold; color:#d97706;">0 Days</div>
+        </div>
+      </div>
+
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Class</th>
+            <th>Subject</th>
+            <th>Chapter / Topic</th>
+            <th>Score</th>
+            <th>Percentage</th>
+          </tr>
+        </thead>
+        <tbody id="userScoresTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 5: TEACHER SCORES -->
+  <div id="teacherScoresTab" class="hidden no-print">
+    <div class="card">
+      <h3>📈 Student Scores (Assigned Classes)</h3>
+      <div class="grid-3">
+        <div class="form-group"><label>Search Student:</label><input type="text" id="tchRepSearchStudent" oninput="filterTeacherStudentScores()"></div>
+        <div class="form-group"><label>Filter Standard:</label><select id="tchRepStdFilter" onchange="filterTeacherStudentScores()"></select></div>
+        <div class="form-group"><label>Filter Subject:</label><select id="tchRepSubFilter" onchange="filterTeacherStudentScores()"></select></div>
+      </div>
+
+      <table class="report-table margin-top">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Student Name</th>
+            <th>Class</th>
+            <th>Subject</th>
+            <th>Chapter / Topic</th>
+            <th>Score</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="teacherStudentScoresTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 6: PRINCIPAL MASTER BOARD -->
+  <div id="principalTab" class="hidden no-print">
+    <div class="card">
+      <h3>👑 Teacher Management (Principal Control)</h3>
+      <div class="grid-3" style="background:#f8f9fa; padding:12px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group"><label>Teacher User ID:</label><input type="text" id="newTeacherId" placeholder="e.g. TCH_SCI01"></div>
+        <div class="form-group"><label>Teacher Full Name:</label><input type="text" id="newTeacherName" placeholder="e.g. Mr. R. Sharma"></div>
+        <div class="form-group"><label>Assigned Password:</label><input type="password" id="newTeacherPass" placeholder="e.g. TeacherPass#123"></div>
+      </div>
+      <button class="btn btn-primary margin-top" onclick="principalCreateTeacher()">➕ Create Teacher Account</button>
+
+      <h4 style="margin-top:25px;">Teacher Authorization & Class Assignment Matrix</h4>
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Teacher Name</th>
+            <th>Assigned Classes</th>
+            <th>Assigned Subjects</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="principalTeacherTbody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>🎓 Student Authorization & Class Matrix</h3>
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Allowed Classes</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="principalStudentTbody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>📊 Master Student Assessment Record</h3>
+      <div class="grid-3">
+        <div class="form-group"><label>Search Student:</label><input type="text" id="prFilterStudent" oninput="filterPrincipalScores()"></div>
+        <div class="form-group"><label>Filter Standard:</label><select id="prFilterStd" onchange="filterPrincipalScores()"></select></div>
+        <div class="form-group"><label>Filter Subject:</label><select id="prFilterSub" onchange="filterPrincipalScores()"></select></div>
+      </div>
+
+      <table class="report-table margin-top">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Subject</th>
+            <th>Chapter & Topic</th>
+            <th>Score</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="principalScoresTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- PRINTABLE QUESTION PAPER & ANSWER KEY CONTAINER -->
+<div id="printContainer" class="print-only"></div>
+
+<!-- SIGN IN MODAL -->
+<div id="loginModal" class="modal-overlay hidden no-print">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+    <h3>Sign In to HariMani School</h3>
+    <p class="notice">Access for Principal, Teachers, Students, and Aspirants.</p>
+    <div class="form-group">
+      <label>User ID / Roll Number:</label>
+      <input type="text" id="loginUserId" placeholder="e.g. PRINCIPAL, TCH_SCI01, or STU101">
+    </div>
+    <div class="form-group">
+      <label>Password:</label>
+      <input type="password" id="loginPassword" placeholder="Enter password">
+    </div>
+    <button class="btn btn-primary w-100 margin-top" onclick="handleSignIn()">Sign In</button>
+  </div>
+</div>
+
+<!-- SIGN UP MODAL -->
+<div id="signupModal" class="modal-overlay hidden no-print">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('signupModal')">&times;</button>
+    <h3>Student / Aspirant Registration</h3>
+    <div class="form-group">
+      <label>Category:</label>
+      <select id="signupUserType" onchange="toggleSignupCategory(this.value)">
+        <option value="student">School Student (Enrolled in Assigned Class)</option>
+        <option value="aspirant">Competitive Aspirant (All Classes 5 to 12)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>User ID / Roll Number:</label>
+      <input type="text" id="signupUserId" placeholder="e.g. STU501">
+    </div>
+    <div class="form-group">
+      <label>Full Name:</label>
+      <input type="text" id="signupName" placeholder="e.g. Anand Kumar">
+    </div>
+    <div class="form-group" id="signupStdGroup">
+      <label>Assigned Class:</label>
+      <select id="signupStd"></select>
+    </div>
+    <div class="form-group">
+      <label>Create Password:</label>
+      <input type="password" id="signupPassword" placeholder="Enter password">
+    </div>
+    <button class="btn btn-secondary w-100 margin-top" onclick="handleSignUp()">Create Account</button>
+  </div>
+</div>
+
+<script>
+function updateAiPromptPreview() {
+  const stdSelect = document.getElementById("authorStdSelect");
+  const subSelect = document.getElementById("authorSubSelect");
+  const promptBox = document.getElementById("aiStudioPromptTextarea");
+  if (!promptBox) return;
+
+  const std = stdSelect && stdSelect.value ? stdSelect.value : "5";
+  const sub = subSelect && subSelect.value ? subSelect.value : "Science";
+
+  promptBox.value = `You are an examination question author for HariMani School.
+Generate exactly 100 balanced assessment questions (50 Multiple Choice Questions, 10 True/False, 15 Fill in the Blanks, and 15 Match the Following) strictly based on the textbook content provided below.
+
+OUTPUT FORMAT REQUIREMENTS:
+1. Output MUST be pure raw CSV text with exactly 12 columns per row.
+2. Every question must be on its OWN SEPARATE LINE. Never combine rows.
+3. Wrap all text columns in double quotes ("...").
+4. Column 1 (Type) MUST be one of: "mcq", "tf", "fib", "match".
+5. Column 11 (CorrectOpt):
+   - For "mcq": strictly 1, 2, 3, or 4.
+   - For "tf": strictly "True" or "False".
+   - For "fib": strictly the exact word or phrase completing the blank.
+   - For "match": set to "MATCH". OptA through OptD must be formatted as "LeftItem:RightItem".
+
+HEADER ROW:
+Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation
+
+DATA ROW TEMPLATES:
+"mcq",${std},"${sub}","[Chapter]","[Topic]","[Question statement]","[Opt A]","[Opt B]","[Opt C]","[Opt D]",1,"[Explanation]"
+"tf",${std},"${sub}","[Chapter]","[Topic]","[Factual Statement]","","","","",True,"[Explanation]"
+"fib",${std},"${sub}","[Chapter]","[Topic]","[Statement with _____ blank]","","","","","[Word]","[Explanation]"
+"match",${std},"${sub}","[Chapter]","[Topic]","Match the pairs:","[Item1:Match1]","[Item2:Match2]","[Item3:Match3]","[Item4:Match4]","MATCH","[Explanation]"
+
+TEXTBOOK CONTENT:
+"""
+[PASTE TEXTBOOK CONTENT HERE]
+"""`;
+}
+
+function copyAiStudioPrompt() {
+  const promptBox = document.getElementById("aiStudioPromptTextarea");
+  if (!promptBox) return;
+  navigator.clipboard.writeText(promptBox.value).then(() => {
+    const btn = document.getElementById("btnCopyPrompt");
+    if (btn) {
+      btn.innerText = "✅ Copied!";
+      setTimeout(() => { btn.innerText = "📋 Copy Prompt"; }, 2000);
+    }
+  });
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(updateAiPromptPreview, 500);
+});
+</script>
+
+<script src="script.js"></script>
+</body>
+</html>

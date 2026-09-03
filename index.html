@@ -30,21 +30,53 @@
     <button class="tab-btn active" onclick="switchTab('play', this)">📝 Attend Test</button>
     <button class="tab-btn hidden" id="tabMyScores" onclick="switchTab('reports', this)">📊 My Scores & Badges</button>
     <button class="tab-btn" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</button>
+    <button class="tab-btn hidden" id="tabMyReplies" onclick="switchTab('myReplies', this)">📬 ஆசிரியர் பதில்கள் (Replies)</button>
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('create', this)">✍️ Create Questions</button>
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('manage', this)">🗂️ Question Bank & Print Paper</button>
     <button class="tab-btn teacher-only hidden" onclick="switchTab('teacherScores', this)">📈 Student Scores (Assigned)</button>
+    <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('feedback', this)">💬 மாணவர் பின்னூட்டம் (Feedback)</button>
     <button class="tab-btn principal-only hidden" onclick="switchTab('principal', this)">👑 Principal Master Board</button>
+  </div>
+
+  <!-- TAB: STUDENT VIEW TEACHER REPLIES -->
+  <div id="myRepliesTab" class="hidden no-print">
+    <div class="card">
+      <h3>📬 ஆசிரியரின் பதில்கள் (Teacher Responses)</h3>
+      <p class="notice">நீங்கள் தேர்வுக்குப் பிறகு ஆசிரியரிடம் கேட்ட சந்தேகங்கள் மற்றும் அதற்கான ஆசிரியரின் பதில்கள்.</p>
+      <div id="studentRepliesContainer"></div>
+    </div>
+  </div>
+
+  <!-- TAB: TEACHER & PRINCIPAL FEEDBACK VIEW -->
+  <div id="feedbackTab" class="hidden no-print">
+    <div class="card">
+      <h3>💬 மாணவர் சந்தேகங்கள் & பின்னூட்டம் (Student Queries & Feedback)</h3>
+      <p class="notice">தேர்வில் 100% மதிப்பெண் பெற்ற மாணவர்கள் ஆசிரியரிடம் கேட்ட கேள்விகள் மற்றும் சந்தேகங்கள்.</p>
+      <table class="report-table margin-top">
+        <thead>
+          <tr>
+            <th>மாணவர் ID / பெயர்</th>
+            <th>வகுப்பு & பாடம்</th>
+            <th>மதிப்பெண்</th>
+            <th>சந்தேகம் / கருத்து</th>
+            <th>ஆசிரியரின் பதில் (Reply)</th>
+            <th>செயல் (Action)</th>
+          </tr>
+        </thead>
+        <tbody id="feedbackTableBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- TAB 1: ATTEND TEST -->
   <div id="playTab">
     <div id="guestBanner" class="card no-print" style="background:#fff8e1; border-color:#ffe082; padding:12px 18px;">
-      <strong>👋 Welcome, Guest Student!</strong> You can attempt assessments across all 4 categories (MCQ, True/False, Fill in Blanks, Match). Sign In or Register to unlock 100% score rewards, certificates, streak badges, and question review[cite: 13].
+      <strong>👋 Welcome, Guest Student!</strong> You can attempt assessments across all 4 categories (MCQ, True/False, Fill in Blanks, Match). Sign In or Register to unlock 100% score rewards, certificates, streak badges, and question review  .
     </div>
 
     <div id="quizSetupCard" class="card no-print">
       <h3>🎯 Assessment Arena</h3>
-      <p class="notice" id="playScopeNotice">Select Category, Class, Subject, and Chapter to begin[cite: 13].</p>
+      <p class="notice" id="playScopeNotice">Select Category, Class, Subject, and Chapter to begin  .</p>
       
       <div class="grid-2">
         <div class="form-group">
@@ -125,9 +157,10 @@
       <div id="resultScoreDisplay" style="font-size: 2.2rem; font-weight: bold; margin: 15px 0; color: var(--primary);"></div>
       <p id="resultFeedback" style="font-size: 1.1rem;"></p>
 
+      <!-- 100% REWARD & TEACHER FEEDBACK UNLOCK -->
       <div id="bonusRewardAlert" class="bonus-alert hidden">
         <h4>🌟 100% PERFECT SCORE BONUS UNLOCKED!</h4>
-        <p>வாழ்த்துகள்! நீங்கள் முழு மதிப்பெண் பெற்றுள்ளதால் <strong>+4 கூடுதல் தேர்வுகள் (Bonus Retakes)</strong> மற்றும் ஆசிரியரிடம் நேரடி பின்னூட்டம் பெறும் சலுகை திறக்கப்பட்டுள்ளது[cite: 13].</p>
+        <p>வாழ்த்துகள்! நீங்கள் முழு மதிப்பெண் பெற்றுள்ளதால் <strong>+4 கூடுதல் தேர்வுகள் (Bonus Retakes)</strong> மற்றும் ஆசிரியரிடம் நேரடி பின்னூட்டம் பெறும் சலுகை திறக்கப்பட்டுள்ளது  .</p>
         <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
           <input type="text" id="teacherFeedbackMessage" placeholder="ஆசிரியரிடம் உங்கள் சந்தேகம் அல்லது கருத்தைக் கேட்கவும்..." style="max-width:420px;">
           <button class="btn btn-success" onclick="submitTeacherFeedback()">📩 ஆசிரியருக்கு அனுப்புக</button>
@@ -141,6 +174,7 @@
         <button id="btnDownloadCert" class="btn btn-success hidden" onclick="downloadCertificate()">🎓 பாராட்டுச் சான்றிதழ் (Download Certificate)</button>
       </div>
 
+      <!-- QUESTION BY QUESTION REVIEW SECTION -->
       <div id="quizReviewArea" class="hidden" style="margin-top:25px; text-align:left;">
         <h3 style="border-bottom:2px solid var(--border); padding-bottom:8px;">🔍 முழு வினாக்கள் மறுபார்வை (Question Review)</h3>
         <div id="reviewQuestionsList"></div>
@@ -268,7 +302,7 @@
 
       <!-- Match the Following Dynamic Fields -->
       <div id="wrapperMatchFields" class="hidden">
-        <p class="notice">Enter matching pairs as <code>LeftItem:RightItem</code>[cite: 13]</p>
+        <p class="notice">Enter matching pairs as <code>LeftItem:RightItem</code>  </p>
         <div class="grid-2">
           <div class="form-group"><input type="text" id="matchPair1" placeholder="Roots:Absorb water"></div>
           <div class="form-group"><input type="text" id="matchPair2" placeholder="Leaves:Photosynthesis"></div>
@@ -327,7 +361,7 @@
           <a href="https://aistudio.google.com/prompts/new_chat" target="_blank" class="btn btn-outline" style="font-size:0.8rem; padding:4px 10px; text-decoration:none; background:#166534; border:none;">🚀 Open AI Studio</a>
         </div>
         <p class="notice" style="margin-bottom:10px; color:#166534;">
-          This prompt generates pure CSV covering MCQ, True/False, Fill in the Blanks, and Match the Following across 12 standardized columns[cite: 13].
+          This prompt generates pure CSV covering MCQ, True/False, Fill in the Blanks, and Match the Following across 12 standardized columns  .
         </p>
         
         <div style="position:relative;">
@@ -423,7 +457,7 @@
         </div>
         <div style="flex:1; background:#fff3cd; border:1px solid #ffeeba; padding:10px; border-radius:6px; text-align:center;">
           <div style="font-size:0.8rem; font-weight:bold; color:#856404;">CURRENT STREAK</div>
-          <div id="repStatStreak" style="font-size:1.4rem; font-weight:bold; color:#d97706;">0 Days</div>
+          <div id="repStatStreak" style="font-size:1.4rem; font-weight:bold; color:d97706;">0 Days</div>
         </div>
       </div>
 
@@ -550,7 +584,7 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
     <h3>Sign In to HariMani School</h3>
-    <p class="notice">Access for Principal, Teachers, Students, and Aspirants[cite: 13].</p>
+    <p class="notice">Access for Principal, Teachers, Students, and Aspirants  .</p>
     <div class="form-group">
       <label>User ID / Roll Number:</label>
       <input type="text" id="loginUserId" placeholder="e.g. PRINCIPAL, TCH_SCI01, or STU101">

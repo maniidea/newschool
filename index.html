@@ -6,6 +6,8 @@
   <title>HariMani School - LMS & Assessment Portal</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -27,6 +29,7 @@
   <div class="tabs no-print">
     <button class="tab-btn active" onclick="switchTab('play', this)">📝 Attend Test</button>
     <button class="tab-btn hidden" id="tabMyScores" onclick="switchTab('reports', this)">📊 My Scores & Badges</button>
+    <button class="tab-btn" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</button>
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('create', this)">✍️ Create Questions</button>
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('manage', this)">🗂️ Question Bank & Print Paper</button>
     <button class="tab-btn teacher-only hidden" onclick="switchTab('teacherScores', this)">📈 Student Scores (Assigned)</button>
@@ -36,12 +39,12 @@
   <!-- TAB 1: ATTEND TEST -->
   <div id="playTab">
     <div id="guestBanner" class="card no-print" style="background:#fff8e1; border-color:#ffe082; padding:12px 18px;">
-      <strong>👋 Welcome, Guest Student!</strong> You can attempt assessments across all 4 categories (MCQ, True/False, Fill in Blanks, Match). Sign In or Register to unlock 100% score rewards, streak badges, and question review.
+      <strong>👋 Welcome, Guest Student!</strong> You can attempt assessments across all 4 categories (MCQ, True/False, Fill in Blanks, Match). Sign In or Register to unlock 100% score rewards, certificates, streak badges, and question review[cite: 13].
     </div>
 
     <div id="quizSetupCard" class="card no-print">
       <h3>🎯 Assessment Arena</h3>
-      <p class="notice" id="playScopeNotice">Select Category, Class, Subject, and Chapter to begin.</p>
+      <p class="notice" id="playScopeNotice">Select Category, Class, Subject, and Chapter to begin[cite: 13].</p>
       
       <div class="grid-2">
         <div class="form-group">
@@ -122,10 +125,9 @@
       <div id="resultScoreDisplay" style="font-size: 2.2rem; font-weight: bold; margin: 15px 0; color: var(--primary);"></div>
       <p id="resultFeedback" style="font-size: 1.1rem;"></p>
 
-      <!-- 100% REWARD & TEACHER FEEDBACK UNLOCK -->
       <div id="bonusRewardAlert" class="bonus-alert hidden">
         <h4>🌟 100% PERFECT SCORE BONUS UNLOCKED!</h4>
-        <p>வாழ்த்துகள்! நீங்கள் முழு மதிப்பெண் பெற்றுள்ளதால் <strong>+4 கூடுதல் தேர்வுகள் (Bonus Retakes)</strong> மற்றும் ஆசிரியரிடம் நேரடி பின்னூட்டம் பெறும் சலுகை திறக்கப்பட்டுள்ளது.</p>
+        <p>வாழ்த்துகள்! நீங்கள் முழு மதிப்பெண் பெற்றுள்ளதால் <strong>+4 கூடுதல் தேர்வுகள் (Bonus Retakes)</strong> மற்றும் ஆசிரியரிடம் நேரடி பின்னூட்டம் பெறும் சலுகை திறக்கப்பட்டுள்ளது[cite: 13].</p>
         <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
           <input type="text" id="teacherFeedbackMessage" placeholder="ஆசிரியரிடம் உங்கள் சந்தேகம் அல்லது கருத்தைக் கேட்கவும்..." style="max-width:420px;">
           <button class="btn btn-success" onclick="submitTeacherFeedback()">📩 ஆசிரியருக்கு அனுப்புக</button>
@@ -134,14 +136,43 @@
 
       <div style="display:flex; justify-content:center; gap:12px; margin-top:20px; flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="resetQuizView()">Retake / New Test</button>
-        <button class="btn btn-secondary" onclick="toggleExamReview()">📖 Review All Questions & Explanations</button>
+        <button class="btn btn-secondary" onclick="toggleExamReview()">📖 Review All Questions</button>
+        <button id="btnRetakeWrong" class="btn btn-danger hidden" onclick="retakeWrongOnly()">🔁 தவறான வினாக்களை மட்டும் மீண்டும் எழுது</button>
+        <button id="btnDownloadCert" class="btn btn-success hidden" onclick="downloadCertificate()">🎓 பாராட்டுச் சான்றிதழ் (Download Certificate)</button>
       </div>
 
-      <!-- QUESTION BY QUESTION REVIEW SECTION -->
       <div id="quizReviewArea" class="hidden" style="margin-top:25px; text-align:left;">
         <h3 style="border-bottom:2px solid var(--border); padding-bottom:8px;">🔍 முழு வினாக்கள் மறுபார்வை (Question Review)</h3>
         <div id="reviewQuestionsList"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- TAB: LEADERBOARD -->
+  <div id="leaderboardTab" class="hidden no-print">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <h3 style="margin:0;">🏆 பள்ளித் தரவரிசைப் பட்டியல் (Leaderboard)</h3>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label style="font-weight:600; font-size:0.85rem;">வகுப்பு வாரியாக:</label>
+          <select id="leaderboardStdFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px;"></select>
+        </div>
+      </div>
+      <p class="notice margin-top">அதிக மதிப்பெண்கள் மற்றும் தொடர்ச்சியாகத் தேர்வு எழுதிய முன்னணி மாணவர்கள்.</p>
+
+      <table class="report-table margin-top">
+        <thead>
+          <tr>
+            <th style="width: 10%;">தரவரிசை</th>
+            <th>மாணவர் பெயர்</th>
+            <th>வகுப்பு</th>
+            <th>எழுதிய தேர்வுகள்</th>
+            <th>மொத்த மதிப்பெண்</th>
+            <th>தேர்ச்சி விகிதம்</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardTbody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -237,7 +268,7 @@
 
       <!-- Match the Following Dynamic Fields -->
       <div id="wrapperMatchFields" class="hidden">
-        <p class="notice">Enter matching pairs as <code>LeftItem:RightItem</code></p>
+        <p class="notice">Enter matching pairs as <code>LeftItem:RightItem</code>[cite: 13]</p>
         <div class="grid-2">
           <div class="form-group"><input type="text" id="matchPair1" placeholder="Roots:Absorb water"></div>
           <div class="form-group"><input type="text" id="matchPair2" placeholder="Leaves:Photosynthesis"></div>
@@ -296,7 +327,7 @@
           <a href="https://aistudio.google.com/prompts/new_chat" target="_blank" class="btn btn-outline" style="font-size:0.8rem; padding:4px 10px; text-decoration:none; background:#166534; border:none;">🚀 Open AI Studio</a>
         </div>
         <p class="notice" style="margin-bottom:10px; color:#166534;">
-          This prompt generates pure CSV covering MCQ, True/False, Fill in the Blanks, and Match the Following across 12 standardized columns.
+          This prompt generates pure CSV covering MCQ, True/False, Fill in the Blanks, and Match the Following across 12 standardized columns[cite: 13].
         </p>
         
         <div style="position:relative;">
@@ -511,12 +542,15 @@
 <!-- PRINTABLE QUESTION PAPER & ANSWER KEY CONTAINER -->
 <div id="printContainer" class="print-only"></div>
 
+<!-- PRINTABLE CERTIFICATE TEMPLATE CONTAINER (OFF-SCREEN) -->
+<div id="certificatePrintContainer" style="position:fixed; left:-9999px; top:0; z-index:-1000; width:1000px; background:#ffffff;"></div>
+
 <!-- SIGN IN MODAL -->
 <div id="loginModal" class="modal-overlay hidden no-print">
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
     <h3>Sign In to HariMani School</h3>
-    <p class="notice">Access for Principal, Teachers, Students, and Aspirants.</p>
+    <p class="notice">Access for Principal, Teachers, Students, and Aspirants[cite: 13].</p>
     <div class="form-group">
       <label>User ID / Roll Number:</label>
       <input type="text" id="loginUserId" placeholder="e.g. PRINCIPAL, TCH_SCI01, or STU101">

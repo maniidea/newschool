@@ -876,8 +876,20 @@ function renderCurrentQuestion() {
 
   setupTimer();
 
-  // Read out the question via speech synthesis, then start speech recognition if in voice mode
-  speakText(questionText, () => {
+  // கேள்வியுடன் சேர்த்து ஆப்ஷன்களையும் குரலில் வாசித்தல்
+  let speechText = questionText;
+  if (qType === "mcq") {
+    speechText += `. Option A: ${q.optA}. Option B: ${q.optB}. Option C: ${q.optC}. Option D: ${q.optD}.`;
+  } else if (qType === "tf") {
+    speechText += `. True or False?`;
+  } else if (qType === "fib") {
+    speechText += `. Fill in the blank.`;
+  } else if (qType === "match") {
+    speechText += `. Match the following.`;
+  }
+
+  // கேள்வியையும் ஆப்ஷன்களையும் வாசித்து முடித்ததும் குரல்வழிப் பதிவைத் தொடங்குதல்
+  speakText(speechText, () => {
     if (currentAssessmentMode === "voice" && !isAnswered) {
       startVoiceListeningSession(qType);
     }
@@ -886,57 +898,85 @@ function renderCurrentQuestion() {
 
 function startVoiceListeningSession(qType) {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    console.warn("Speech Recognition API is not supported in this browser.");
-    return;
-  }
+  if (!SpeechRecognition) return;
 
   recognitionInstance = new SpeechRecognition();
   recognitionInstance.lang = 'en-US';
-  recognitionInstance.interimResults = false;
+  recognitionInstance.interimResults = true;
   recognitionInstance.maxAlternatives = 1;
 
   recognitionInstance.onstart = function() {
-    console.log("Listening for voice answer...");
+    const transcriptBox = document.getElementById("voiceTranscriptBox");
+    if (transcriptBox) transcriptBox.innerText = "🎙️ கேட்கிறது (Listening)... பேசவும்...";
   };
 
+  // ⬇️ இந்த இடத்தில் தான் நீங்கள் கொடுத்த onresult பங்கஷனை ஒட்ட வேண்டும் ⬇️
   recognitionInstance.onresult = function(event) {
     if (isAnswered) return;
+    
     const spokenText = event.results[0][0].transcript.trim().toLowerCase();
+    const transcriptBox = document.getElementById("voiceTranscriptBox");
+    if (transcriptBox) {
+      transcriptBox.innerText = `🗣️ நீங்கள் கூறியது: "${spokenText}"`;
+    }
     console.log("Student spoke:", spokenText);
 
+    const q = activeQuizList[currentQIndex];
+    if (!q) return;
+
+    const qType = (q.type || "mcq").toLowerCase();
+
     if (qType === "mcq") {
-      if (spokenText.includes("a") || spokenText.includes("1") || spokenText.includes("first")) {
+      if (spokenText.includes("a") || spokenText.includes("1") || spokenText.includes("முதல்")) {
         checkMcqAnswer('1', document.querySelectorAll(".opt-btn")[0]);
-      } else if (spokenText.includes("b") || spokenText.includes("2") || spokenText.includes("second")) {
+      } else if (spokenText.includes("b") || spokenText.includes("2")) {
         checkMcqAnswer('2', document.querySelectorAll(".opt-btn")[1]);
-      } else if (spokenText.includes("c") || spokenText.includes("3") || spokenText.includes("third")) {
+      } else if (spokenText.includes("c") || spokenText.includes("3")) {
         checkMcqAnswer('3', document.querySelectorAll(".opt-btn")[2]);
-      } else if (spokenText.includes("d") || spokenText.includes("4") || spokenText.includes("fourth")) {
+      } else if (spokenText.includes("d") || spokenText.includes("4")) {
         checkMcqAnswer('4', document.querySelectorAll(".opt-btn")[3]);
       }
-    } else if (qType === "tf") {
-      if (spokenText.includes("true")) {
+    } 
+    else if (qType === "tf") {
+      if (spokenText.includes("true") || spokenText.includes("சரி") || spokenText.includes("a")) {
         checkTfAnswer('True', document.querySelectorAll(".opt-btn")[0]);
-      } else if (spokenText.includes("false")) {
+      } else if (spokenText.includes("false") || spokenText.includes("தவறு") || spokenText.includes("b")) {
         checkTfAnswer('False', document.querySelectorAll(".opt-btn")[1]);
       }
-    } else if (qType === "fib") {
+    }
+    else if (qType === "fib") {
       const input = document.getElementById("fibInput");
       if (input) {
-        input.value = spokenText;
+        let finalAns = spokenText;
+        const correctAns = (q.correctOpt || "").toString().trim().toLowerCase();
+        
+        if (correctAns === "gas" && (finalAns === "guess" || finalAns === "gas")) {
+          finalAns = "gas";
+        }
+
+        input.value = finalAns;
         checkFibAnswer();
       }
     }
   };
 
   recognitionInstance.onerror = function(event) {
-    console.warn("Voice recognition notice:", event.error);
+    const transcriptBox = document.getElementById("voiceTranscriptBox");
+    if (transcriptBox) transcriptBox.innerText = "⚠️ குரல் அடையாளம் காணப்படவில்லை. மீண்டும் முயற்சிக்கவும்.";
   };
 
   recognitionInstance.start();
 }
 
+// ஒருவேளை HTML-ல் பாக்ஸ் இல்லையென்றால் தற்காலிகமாக உருவாக்க
+function createTranscriptBox() {
+  const area = document.getElementById("singleQuestionArea");
+  const div = document.createElement("div");
+  div.id = "voiceTranscriptBox";
+  div.style.cssText = "margin-top:10px; font-style:italic; color:#003366; font-weight:600;";
+  area.appendChild(div);
+  return div;
+}
 function setupTimer() {
   const timerBadge = document.getElementById("timerContainer") ;
   const track = document.getElementById("timerBarTrack") ;

@@ -22,6 +22,11 @@ let examReviewRecord = [] ;
 let wrongQuestionsVault = [] ;
 let bonusRetakesRemaining = 0 ;
 
+// Voice & Audio Configuration
+let currentAssessmentMode = "text";
+let recognitionInstance = null;
+let currentUtterance = null;
+
 // Audio Sound FX
 const soundCorrect = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg") ;
 const soundWrong = new Audio("https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg") ;
@@ -198,7 +203,6 @@ function updateAuthUI() {
   populateAllDropdowns() ;
 }
 
-
 function toggleSignupCategory(val) {
   const stdGroup = document.getElementById("signupStdGroup") ;
   if (stdGroup) {
@@ -209,6 +213,7 @@ function toggleSignupCategory(val) {
     }
   }
 }
+
 function normalizeText(name) {
   if (!name) return "";
   return name.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
@@ -403,7 +408,6 @@ function load30DaysChallenge() {
   const container = document.getElementById("challengeGridContainer");
   if (!container) return;
 
-  // மாணவர் முடித்த நாட்களின் எண்ணிக்கையைக் கணக்கிடுதல் (அல்லது சேமிக்கப்பட்ட முன்னேற்றம்)
   let completedDays = 0;
   if (currentUser) {
     const challengeKey = `hms_challenge_${currentUser.id}`;
@@ -414,7 +418,7 @@ function load30DaysChallenge() {
       completedDays = Math.min(masterUserScores.length, 30);
     }
   } else {
-    completedDays = 0; // விருந்தினர் மாணவர் முதல் நாளை மட்டும் முயற்சிக்கலாம்
+    completedDays = 0; 
   }
 
   let html = "";
@@ -445,11 +449,8 @@ function load30DaysChallenge() {
 }
 
 function startChallengeDay(dayNumber) {
-  // Attend Test தாவலுக்கு மாற்றுதல்
   const playTabBtn = document.querySelector(".tabs button");
   switchTab('play', playTabBtn);
-  
-  // குறிப்பிட்ட நாளுக்கான தேர்வைத் தொடங்குதல்
   alert(`நாள் ${dayNumber} சவால் தேர்வு தொடங்குகிறது!`);
   startQuiz();
 }
@@ -467,9 +468,9 @@ function switchTab(tab, eventTarget) {
     document.getElementById("playTab").classList.remove("hidden") ;
     resetQuizView() ;
   }
-if (tab === "challenge30") {
+  if (tab === "challenge30") {
     document.getElementById("challenge30Tab").classList.remove("hidden") ;
-    load30DaysChallenge(); // 30 நாட்களுக்கான தரவுகளை லோடு செய்ய
+    load30DaysChallenge();
   }
   if (tab === "create") {
     document.getElementById("createTab").classList.remove("hidden") ;
@@ -595,7 +596,6 @@ async function loadStudentReplies() {
   container.innerHTML = "<p style='text-align:center;'>பதில்கள் ஏற்றப்படுகின்றன...</p>";
 
   try {
-    // Send currentUser.id first, or fallback to name if ID was S01
     const searchParam = encodeURIComponent(currentUser.id || currentUser.name);
     const res = await fetch(`${SCRIPT_URL}?action=getUserFeedback&userId=${searchParam}`);
     const data = await res.json();
@@ -645,39 +645,38 @@ function toggleSelectAll(isAll) {
   countInput.style.background = isAll ? "#e9ecef" : "#fff" ;
 }
 
-let currentUtterance = null;
-
-function speakText(text) {
+function speakText(text, onComplete) {
   if ('speechSynthesis' in window) {
-    // Cancel any ongoing speech and clear references
     window.speechSynthesis.cancel();
-
     currentUtterance = new SpeechSynthesisUtterance(text);
     
-    // Determine language based on Tamil characters presence
     const isTamil = /[\u0B80-\u0BFF]/.test(text);
     currentUtterance.lang = isTamil ? 'ta-IN' : 'en-US';
     currentUtterance.rate = 0.9;
 
-    // Optional: Select an explicit voice if available
     const voices = window.speechSynthesis.getVoices();
     const targetVoice = voices.find(v => v.lang.startsWith(isTamil ? 'ta' : 'en'));
     if (targetVoice) {
       currentUtterance.voice = targetVoice;
     }
 
-    // Prevent garbage collection bug in some browsers
     currentUtterance.onend = () => {
       currentUtterance = null;
+      if (typeof onComplete === "function") onComplete();
+    };
+
+    currentUtterance.onerror = () => {
+      currentUtterance = null;
+      if (typeof onComplete === "function") onComplete();
     };
 
     window.speechSynthesis.speak(currentUtterance);
-  } else {
-    alert("Speech Synthesis is not supported in this browser.");
+  } else if (typeof onComplete === "function") {
+    onComplete();
   }
 }
 
-// Preload voices to prevent delay on first click
+// Preload voices
 if ('speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = () => {
     window.speechSynthesis.getVoices();
@@ -685,92 +684,126 @@ if ('speechSynthesis' in window) {
 }
 
 async function startQuiz() {
-  const chosenType = document.getElementById("playTypeSelect").value ;
-  const std = document.getElementById("playStdSelect").value ;
-  const sub = document.getElementById("playSubSelect").value.toLowerCase() ;
-  const chap = document.getElementById("playChapterSelect").value ;
-  const topic = document.getElementById("playTopicSelect").value ;
-  const isAll = currentUser && document.getElementById("playAllCheckbox").checked ;
+  const typeEl = document.getElementById("playTypeSelect");
+  const stdEl = document.getElementById("playStdSelect");
+  const subEl = document.getElementById("playSubSelect");
+  const chapEl = document.getElementById("playChapterSelect");
+  const topicEl = document.getElementById("playTopicSelect");
+  const allCb = document.getElementById("playAllCheckbox");
+  const modeEl = document.getElementById("playAssessmentMode");
+  const countEl = document.getElementById("playCountInput");
+  const timerEl = document.getElementById("playTimerSelect");
+
+  const chosenType = typeEl ? typeEl.value : "all";
+  const std = stdEl ? stdEl.value : "5";
+  const sub = subEl && subEl.value ? normalizeText(subEl.value).toLowerCase() : "science";
+  const chap = chapEl ? chapEl.value : "All";
+  const topic = topicEl ? topicEl.value : "All";
+  const isAll = currentUser && allCb && allCb.checked;
   
-  let count = parseInt(document.getElementById("playCountInput").value, 10) || 5 ;
-  if (currentUser && bonusRetakesRemaining > 0) {
-    count = Math.min(count + bonusRetakesRemaining, 100) ;
-  } else if (!currentUser && count > 10) {
-    count = 10 ;
+  currentAssessmentMode = modeEl ? modeEl.value : "text";
+
+  // If voice mode is selected, request microphone permission once at the very beginning
+  if (currentAssessmentMode === "voice") {
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Release the stream tracks immediately so the mic isn't permanently locked until needed
+        stream.getTracks().forEach(track => track.stop());
+      }
+    } catch (err) {
+      console.warn("Microphone permission denied or unavailable:", err);
+      alert("Microphone access is required for Voice Conversational Mode. Switching back to Text Mode.");
+      currentAssessmentMode = "text";
+      if (modeEl) modeEl.value = "text";
+    }
   }
 
-  perQuestionTime = Number(document.getElementById("playTimerSelect").value) ;
+  let count = countEl ? (parseInt(countEl.value, 10) || 5) : 5;
+  if (currentUser && bonusRetakesRemaining > 0) {
+    count = Math.min(count + bonusRetakesRemaining, 100);
+  } else if (!currentUser && count > 10) {
+    count = 10;
+  }
+
+  perQuestionTime = timerEl ? Number(timerEl.value) : 20;
 
   let matched = masterQuestions.filter(q => {
-    const mType = (chosenType === "all" || (q.type || "mcq").toLowerCase() === chosenType) ;
-    const mStd = q.standard === std ;
-    const mSub = normalizeText(q.subject).toLowerCase() === sub ;
-    const mChap = (chap === "All" || normalizeText(q.chapter).toLowerCase() === chap.toLowerCase()) ;
-    const mTopic = (topic === "All" || normalizeText(q.topic).toLowerCase() === topic.toLowerCase()) ;
-    return mType && mStd && mSub && mChap && mTopic ;
+    const mType = (chosenType === "all" || (q.type || "mcq").toLowerCase() === chosenType);
+    const mStd = q.standard === std;
+    const mSub = normalizeText(q.subject).toLowerCase() === sub;
+    const mChap = (chap === "All" || normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
+    const mTopic = (topic === "All" || normalizeText(q.topic).toLowerCase() === topic.toLowerCase());
+    return mType && mStd && mSub && mChap && mTopic;
   });
 
-
   if (matched.length === 0) {
-    return alert(`No questions found matching your filter in Class ${std} - ${sub.toUpperCase()}.`) ;
+    return alert(`No questions found matching your filter in Class ${std} - ${sub.toUpperCase()}.`);
   }
 
-  matched.sort(() => Math.random() - 0.5) ;
-  if (!isAll) matched = matched.slice(0, Math.min(count, matched.length)) ;
+  matched.sort(() => Math.random() - 0.5);
+  if (!isAll) matched = matched.slice(0, Math.min(count, matched.length));
 
-  activeQuizList = matched ;
-  examReviewRecord = [] ;
-  wrongQuestionsVault = [] ;
-  currentQIndex = 0 ;
-  userScore = 0 ;
+  activeQuizList = matched;
+  examReviewRecord = [];
+  wrongQuestionsVault = [];
+  currentQIndex = 0;
+  userScore = 0;
 
-  document.getElementById("quizSetupCard").classList.add("hidden") ;
-  document.getElementById("quizResultCard").classList.add("hidden") ;
-  document.getElementById("quizActiveCard").classList.remove("hidden") ;
+  document.getElementById("quizSetupCard").classList.add("hidden");
+  document.getElementById("quizResultCard").classList.add("hidden");
+  document.getElementById("quizActiveCard").classList.remove("hidden");
 
-  renderCurrentQuestion() ;
+  renderCurrentQuestion();
 }
 
 function renderCurrentQuestion() {
-  clearInterval(timerInterval) ;
-  clearTimeout(autoNextTimeout) ;
-  isAnswered = false ;
+  clearInterval(timerInterval);
+  clearTimeout(autoNextTimeout);
+  isAnswered = false;
 
-  const total = activeQuizList.length ;
-  const q = activeQuizList[currentQIndex] ;
-  const qType = (q.type || "mcq").toLowerCase() ;
+  if (recognitionInstance) {
+    try { recognitionInstance.stop(); } catch(e) {}
+  }
+
+  if (!activeQuizList || activeQuizList.length === 0 || currentQIndex >= activeQuizList.length) {
+    finishQuiz();
+    return;
+  }
+
+  const q = activeQuizList[currentQIndex];
+  if (!q) {
+    nextQuestion(false);
+    return;
+  }
+
+  const total = activeQuizList.length;
+  const qType = (q.type || "mcq").toLowerCase();
 
   const labels = {
     mcq: "Multiple Choice Question",
     tf: "True or False",
     fib: "Fill in the Blanks",
     match: "Match the Following"
-  } ;
+  };
 
-  document.getElementById("quizProgressBadge").innerText = `Question ${currentQIndex + 1} of ${total} | [${labels[qType] || qType.toUpperCase()}]` ;
-  document.getElementById("btnNextQuestion").innerText = (currentQIndex === total - 1) ? "Submit Test 🏁" : "Next Question ⏩" ;
+  const badgeEl = document.getElementById("quizProgressBadge");
+  if (badgeEl) badgeEl.innerText = `Question ${currentQIndex + 1} of ${total} | [${(labels[qType] || qType).toUpperCase()}]`;
+  
+  const nextBtn = document.getElementById("btnNextQuestion");
+  if (nextBtn) nextBtn.innerText = (currentQIndex === total - 1) ? "Submit Test 🏁" : "Next Question ⏩";
 
-  const area = document.getElementById("singleQuestionArea") ;
-  const audioBtnHtml = `<button class="btn btn-outline-dark voice-btn" onclick="speakText('${q.question.replace(/'/g, "\\'")}')" title="கேள்வியை வாசி (Listen Question)">🔊</button>` ;
+  const area = document.getElementById("singleQuestionArea");
+  if (!area) return;
 
-  if (qType === "mcq") {
+  const questionText = q.question || q.prompt || "Question statement missing";
+  const safeQuestionText = questionText.replace(/'/g, "\\'");
+  const audioBtnHtml = `<button class="btn btn-outline-dark voice-btn" onclick="speakText('${safeQuestionText}')" title="கேள்வியை வாசி">🔊</button>`;
+
+  if (qType === "tf") {
     area.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${q.question}</h3>
-        ${audioBtnHtml}
-      </div>
-      <div class="options-grid">
-        <button class="opt-btn" onclick="checkMcqAnswer('1', this)">A. ${q.optA}</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('2', this)">B. ${q.optB}</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('3', this)">C. ${q.optC}</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('4', this)">D. ${q.optD}</button>
-      </div>
-      <div id="explanationBoxArea"></div>
-    ` ;
-  } else if (qType === "tf") {
-    area.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${q.question}</h3>
+        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
       </div>
       <div class="options-grid" style="grid-template-columns: 1fr 1fr; margin-top:20px;">
@@ -778,11 +811,11 @@ function renderCurrentQuestion() {
         <button class="opt-btn text-center" style="font-size:1.1rem; font-weight:bold;" onclick="checkTfAnswer('False', this)">❌ False</button>
       </div>
       <div id="explanationBoxArea"></div>
-    ` ;
+    `;
   } else if (qType === "fib") {
     area.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${q.question}</h3>
+        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
       </div>
       <div style="margin-top:20px; display:flex; gap:10px;">
@@ -791,19 +824,19 @@ function renderCurrentQuestion() {
       </div>
       <div id="fibFeedback" style="margin-top:10px; font-weight:bold;"></div>
       <div id="explanationBoxArea"></div>
-    ` ;
+    `;
   } else if (qType === "match") {
-    const rawPairs = [q.optA, q.optB, q.optC, q.optD].filter(Boolean) ;
-    const leftItems = [] ;
-    const rightItems = [] ;
+    const rawPairs = [q.optA, q.optB, q.optC, q.optD].filter(Boolean);
+    const leftItems = [];
+    const rightItems = [];
 
     rawPairs.forEach(p => {
-      const parts = p.split(":") ;
-      leftItems.push(parts[0] ? parts[0].trim() : "") ;
-      rightItems.push(parts[1] ? parts[1].trim() : "") ;
+      const parts = p.split(":");
+      leftItems.push(parts[0] ? parts[0].trim() : "");
+      rightItems.push(parts[1] ? parts[1].trim() : "");
     });
 
-    const shuffledRights = [...rightItems].sort(() => Math.random() - 0.5) ;
+    const shuffledRights = [...rightItems].sort(() => Math.random() - 0.5);
 
     let rowsHtml = leftItems.map((left, idx) => `
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid var(--border);">
@@ -814,20 +847,94 @@ function renderCurrentQuestion() {
           ${shuffledRights.map(r => `<option value="${r}">${r}</option>`).join("")}
         </select>
       </div>
-    `).join("") ;
+    `).join("");
 
     area.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${q.question}</h3>
+        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
       </div>
       <div style="margin-top:15px;">${rowsHtml}</div>
       <button class="btn btn-primary margin-top" id="btnSubmitMatch" onclick="checkMatchAnswer()">Check Matches</button>
       <div id="explanationBoxArea"></div>
-    ` ;
+    `;
+  } else {
+    area.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
+        ${audioBtnHtml}
+      </div>
+      <div class="options-grid">
+        <button class="opt-btn" onclick="checkMcqAnswer('1', this)">A. ${q.optA || ''}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('2', this)">B. ${q.optB || ''}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('3', this)">C. ${q.optC || ''}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('4', this)">D. ${q.optD || ''}</button>
+      </div>
+      <div id="explanationBoxArea"></div>
+    `;
   }
 
-  setupTimer() ;
+  setupTimer();
+
+  // Read out the question via speech synthesis, then start speech recognition if in voice mode
+  speakText(questionText, () => {
+    if (currentAssessmentMode === "voice" && !isAnswered) {
+      startVoiceListeningSession(qType);
+    }
+  });
+}
+
+function startVoiceListeningSession(qType) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    console.warn("Speech Recognition API is not supported in this browser.");
+    return;
+  }
+
+  recognitionInstance = new SpeechRecognition();
+  recognitionInstance.lang = 'en-US';
+  recognitionInstance.interimResults = false;
+  recognitionInstance.maxAlternatives = 1;
+
+  recognitionInstance.onstart = function() {
+    console.log("Listening for voice answer...");
+  };
+
+  recognitionInstance.onresult = function(event) {
+    if (isAnswered) return;
+    const spokenText = event.results[0][0].transcript.trim().toLowerCase();
+    console.log("Student spoke:", spokenText);
+
+    if (qType === "mcq") {
+      if (spokenText.includes("a") || spokenText.includes("1") || spokenText.includes("first")) {
+        checkMcqAnswer('1', document.querySelectorAll(".opt-btn")[0]);
+      } else if (spokenText.includes("b") || spokenText.includes("2") || spokenText.includes("second")) {
+        checkMcqAnswer('2', document.querySelectorAll(".opt-btn")[1]);
+      } else if (spokenText.includes("c") || spokenText.includes("3") || spokenText.includes("third")) {
+        checkMcqAnswer('3', document.querySelectorAll(".opt-btn")[2]);
+      } else if (spokenText.includes("d") || spokenText.includes("4") || spokenText.includes("fourth")) {
+        checkMcqAnswer('4', document.querySelectorAll(".opt-btn")[3]);
+      }
+    } else if (qType === "tf") {
+      if (spokenText.includes("true")) {
+        checkTfAnswer('True', document.querySelectorAll(".opt-btn")[0]);
+      } else if (spokenText.includes("false")) {
+        checkTfAnswer('False', document.querySelectorAll(".opt-btn")[1]);
+      }
+    } else if (qType === "fib") {
+      const input = document.getElementById("fibInput");
+      if (input) {
+        input.value = spokenText;
+        checkFibAnswer();
+      }
+    }
+  };
+
+  recognitionInstance.onerror = function(event) {
+    console.warn("Voice recognition notice:", event.error);
+  };
+
+  recognitionInstance.start();
 }
 
 function setupTimer() {
@@ -878,6 +985,10 @@ function checkMcqAnswer(selected, btn) {
   isAnswered = true ;
   clearInterval(timerInterval) ;
 
+  if (recognitionInstance) {
+    try { recognitionInstance.stop(); } catch(e) {}
+  }
+
   const q = activeQuizList[currentQIndex] ;
   const correct = q.correctOpt.toString().trim() ;
   const buttons = btn.parentElement.querySelectorAll(".opt-btn") ;
@@ -913,14 +1024,15 @@ function checkTfAnswer(selected, btn) {
   isAnswered = true;
   clearInterval(timerInterval);
 
+  if (recognitionInstance) {
+    try { recognitionInstance.stop(); } catch(e) {}
+  }
+
   const q = activeQuizList[currentQIndex];
-  
-  // Normalize correctOpt to standard boolean string ("true" or "false")
   let rawCorrect = (q.correctOpt !== undefined && q.correctOpt !== null) 
     ? q.correctOpt.toString().trim().toLowerCase() 
     : "false";
 
-  // Handle both text ("true"/"false") and numeric index ("1"=True, "2"=False)
   let normalizedCorrect = "false";
   if (rawCorrect === "true" || rawCorrect === "1" || rawCorrect === "t") {
     normalizedCorrect = "true";
@@ -929,11 +1041,9 @@ function checkTfAnswer(selected, btn) {
   const selectedNorm = selected.toString().trim().toLowerCase();
   const isCorrect = (selectedNorm === normalizedCorrect);
 
-  // Disable all buttons in the question container
   const buttons = btn.parentElement.querySelectorAll(".opt-btn");
   buttons.forEach(b => b.disabled = true);
 
-  // Find the actual True and False buttons cleanly
   const trueBtn = buttons[0];
   const falseBtn = buttons[1];
   const correctBtn = (normalizedCorrect === "true") ? trueBtn : falseBtn;
@@ -970,6 +1080,11 @@ function checkFibAnswer() {
 
   isAnswered = true ;
   clearInterval(timerInterval) ;
+
+  if (recognitionInstance) {
+    try { recognitionInstance.stop(); } catch(e) {}
+  }
+
   input.disabled = true ;
   const btnSubmit = document.getElementById("btnSubmitFib") ;
   if (btnSubmit) btnSubmit.disabled = true ;
@@ -1061,6 +1176,10 @@ function handleTimeUp() {
   if (isAnswered) return ;
   isAnswered = true ;
 
+  if (recognitionInstance) {
+    try { recognitionInstance.stop(); } catch(e) {}
+  }
+
   const q = activeQuizList[currentQIndex] ;
   const qType = (q.type || "mcq").toLowerCase() ;
 
@@ -1122,6 +1241,10 @@ async function finishQuiz() {
   clearInterval(timerInterval) ;
   clearTimeout(autoNextTimeout) ;
 
+  if (recognitionInstance) {
+    try { recognitionInstance.stop(); } catch(e) {}
+  }
+
   document.getElementById("quizActiveCard").classList.add("hidden") ;
   document.getElementById("quizResultCard").classList.remove("hidden") ;
 
@@ -1164,11 +1287,9 @@ async function finishQuiz() {
     if (bonusBox) bonusBox.classList.add("hidden") ;
   }
 
-// 30 நாள் சவால் முன்னேற்றத்தைப் பதிவு செய்தல்
   if (currentUser) {
     const challengeKey = `hms_challenge_${currentUser.id}`;
     let currentDays = parseInt(localStorage.getItem(challengeKey) || "0", 10);
-    // தேர்வு முடித்தவுடன் அடுத்த நாளுக்கு முன்னேற்றம் (সর্বোচ্চ 30 நாட்கள் வரை)
     if (currentDays < 30) {
       localStorage.setItem(challengeKey, currentDays + 1);
     }
@@ -1833,7 +1954,6 @@ function filterUserReports() {
     return mFrom && mTo && mStd && mSub;
   });
 
-  // Sort dates in descending order (newest first)
   filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const tbody = document.getElementById("userScoresTbody");

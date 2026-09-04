@@ -17,6 +17,7 @@
   </div>
   <div class="header-right">
     <span id="userBadge" class="user-pill hidden"></span>
+
     <button id="btnOpenLogin" class="btn btn-outline" onclick="openModal('loginModal')">🔑 Sign In</button>
     <button id="btnOpenSignup" class="btn btn-secondary" onclick="openModal('signupModal')">📝 Student / Aspirant Sign Up</button>
     <button id="btnLogout" class="btn btn-outline hidden" onclick="logout()">Logout</button>
@@ -82,6 +83,52 @@
       </table>
     </div>
   </div>
+
+
+<!-- PRIVACY POLICY MODAL -->
+<div id="privacyModal" class="modal-overlay hidden no-print">
+  <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+    <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
+    <h3>🔒 தனியுரிமைக் கொள்கை (Privacy Policy)</h3>
+    <p class="notice" style="margin-top: 10px;">ஹரிமணி பள்ளி வலைத்தளம் மாணவர்களின் தரவுப் பாதுகாப்பிற்கு முக்கியத்துவம் அளிக்கிறது. எங்கள் தளத்தில் விளம்பரங்களை வழங்குவதற்காக மூன்றாம் தரப்பு நிறுவனமான கூகுள் (Google) குக்கீகளைப் (Cookies) பயன்படுத்தலாம்.</p>
+  </div>
+</div>
+
+<!-- CONTACT US MODAL -->
+<div id="contactModal" class="modal-overlay hidden no-print">
+  <div class="modal-content" style="max-width: 500px;">
+    <button class="modal-close" onclick="closeModal('contactModal')">&times;</button>
+    <h3>📞 எங்களைத் தொடர்பு கொள்ள (Contact Us)</h3>
+    <p class="notice" style="margin-top: 10px;">ஏதேனும் சந்தேகங்கள் இருந்தால் கீழ்க்கண்ட மின்னஞ்சல் முகவரி மூலம் தொடர்பு கொள்ளலாம்:</p>
+    <p><strong>மின்னஞ்சல்:</strong> suguradhakrishnan@gmail.com</p>
+  </div>
+</div>
+
+
+<!-- ABOUT US MODAL -->
+<div id="aboutModal" class="modal-overlay hidden no-print">
+  <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+    <button class="modal-close" onclick="closeModal('aboutModal')">&times;</button>
+    <h3>🏫 எங்களைப் பற்றி (About Us)</h3>
+    <p class="notice" style="margin-top: 10px; line-height: 1.6;">
+      <strong>ஹரிமணி பள்ளி வலைத்தளம் (HariMani School Portal)</strong> என்பது மாணவர்கள் மற்றும் போட்டித் தேர்வு aspirants-களுக்காக உருவாக்கப்பட்ட ஒரு நவீன கற்றல் மற்றும் மதிப்பீட்டு மேடை ஆகும். 
+      மாணவர்கள் தினமும் எளிதாகத் தேர்வுகளை எழுதித் தங்களின் அறிவை வளர்த்துக்கொள்ளவும், ஆசிரியர்கள் வினாக்களை உருவாக்கி நிர்வகிக்கவும்  உதவுகிறது.
+    </p>
+  </div>
+</div>
+
+<!-- TERMS & CONDITIONS MODAL -->
+<div id="termsModal" class="modal-overlay hidden no-print">
+  <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+    <button class="modal-close" onclick="closeModal('termsModal')">&times;</button>
+    <h3>📜 விதிமுறைகள் மற்றும் நிபந்தனைகள் (Terms & Conditions)</h3>
+    <p class="notice" style="margin-top: 10px; line-height: 1.6;">
+      இந்த வலைத்தளத்தைப் பயன்படுத்துவதன் மூலம் எங்கள் தளத்தின் விதிகளை ஏற்கிறீர்கள். இதில் உள்ள வினாக்கள் மற்றும் பாடங்கள் கல்வி நோக்கத்திற்காக மட்டுமே வழங்கப்படுகின்றன. தளத்தின் உள்ளடக்கங்களை அனுமதியின்றி வணிக ரீதியாகப் பயன்படுத்துவது தடை செய்யப்பட்டுள்ளது.
+    </p>
+  </div>
+</div>
+
+
 
   <!-- TAB 1: ATTEND TEST -->
   <div id="playTab">
@@ -701,5 +748,20 @@ window.addEventListener("DOMContentLoaded", () => {
 </script>
 
 <script src="script.js"></script>
+
 </body>
+<!-- FOOTER LINKS FOR ADSENSE -->
+<footer class="no-print" style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid var(--border); background: #ffffff; color: var(--text-muted); font-size: 0.85rem;">
+  <p style="margin: 0 0 8px 0;">🏫 HariMani School - LMS & Assessment Portal</p>
+  <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+    <a href="#" onclick="openModal('aboutModal'); return false;" style="color: var(--primary); text-decoration: none;">About Us</a>
+    <span>|</span>
+    <a href="#" onclick="openModal('termsModal'); return false;" style="color: var(--primary); text-decoration: none;">Terms & Conditions</a>
+    <span>|</span>
+    <a href="#" onclick="openModal('privacyModal'); return false;" style="color: var(--primary); text-decoration: none;">Privacy Policy</a>
+    <span>|</span>
+    <a href="#" onclick="openModal('contactModal'); return false;" style="color: var(--primary); text-decoration: none;">Contact Us</a>
+  </div>
+</footer>
+
 </html>

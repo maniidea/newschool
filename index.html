@@ -206,7 +206,7 @@
       <button class="btn btn-primary w-100 margin-top" onclick="startQuiz()">🚀 Start Assessment</button>
     </div>
 
-    <!-- ACTIVE TEST CARD -->
+   <!-- ACTIVE TEST CARD -->
     <div id="quizActiveCard" class="card hidden no-print">
       <div class="quiz-top-bar">
         <span id="quizProgressBadge" class="badge-pill">Question 1 / 5</span>
@@ -215,11 +215,17 @@
       <div id="timerBarTrack" class="timer-bar-track">
         <div id="timerBarFill" class="timer-bar-fill"></div>
       </div>
+      
       <div id="singleQuestionArea" style="margin-top:15px;"></div>
+
+      <!-- இந்த வரியை இங்கே ஒட்டவும் -->
+      <div id="voiceTranscriptBox" style="margin-top:10px; font-style:italic; color:#003366; font-weight:600;"></div>
+
       <div class="quiz-footer-actions">
         <button id="btnNextQuestion" class="btn btn-primary" onclick="nextQuestion(false)">Next Question ⏩</button>
       </div>
     </div>
+
 
     <!-- RESULT SCORECARD -->
     <div id="quizResultCard" class="card text-center hidden no-print">

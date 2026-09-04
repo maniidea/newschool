@@ -1817,36 +1817,39 @@ function renderUserBadges(scores) {
 }
 
 function filterUserReports() {
-  const from = document.getElementById("repFromDate").value ;
-  const to = document.getElementById("repToDate").value ;
-  const std = document.getElementById("repStdFilter").value ;
-  const sub = document.getElementById("repSubFilter").value.toLowerCase() ;
+  const from = document.getElementById("repFromDate").value;
+  const to = document.getElementById("repToDate").value;
+  const std = document.getElementById("repStdFilter").value;
+  const sub = document.getElementById("repSubFilter").value.toLowerCase();
 
   const filtered = masterUserScores.filter(s => {
-    let sDate = s.date ;
-    if (s.date && s.date.includes("T")) sDate = s.date.split("T")[0] ;
+    let sDate = s.date;
+    if (s.date && s.date.includes("T")) sDate = s.date.split("T")[0];
 
-    const mFrom = !from || sDate >= from ;
-    const mTo = !to || sDate <= to ;
-    const mStd = !std || s.standard === std ;
-    const mSub = !sub || s.subject.toLowerCase() === sub ;
-    return mFrom && mTo && mStd && mSub ;
+    const mFrom = !from || sDate >= from;
+    const mTo = !to || sDate <= to;
+    const mStd = !std || s.standard === std;
+    const mSub = !sub || s.subject.toLowerCase() === sub;
+    return mFrom && mTo && mStd && mSub;
   });
 
-  const tbody = document.getElementById("userScoresTbody") ;
-  tbody.innerHTML = "" ;
+  // Sort dates in descending order (newest first)
+  filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const tbody = document.getElementById("userScoresTbody");
+  tbody.innerHTML = "";
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No scores found.</td></tr>` ;
-    document.getElementById("repStatTotal").innerText = "0" ;
-    document.getElementById("repStatAvg").innerText = "0%" ;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No scores found.</td></tr>`;
+    document.getElementById("repStatTotal").innerText = "0";
+    document.getElementById("repStatAvg").innerText = "0%";
     return;
   }
 
-  let totalPct = 0 ;
+  let totalPct = 0;
   filtered.forEach(s => {
-    const pct = Math.round((Number(s.score) / Number(s.total)) * 100) ;
-    totalPct += pct ;
+    const pct = Math.round((Number(s.score) / Number(s.total)) * 100);
+    totalPct += pct;
     tbody.innerHTML += `
       <tr>
         <td>${s.date}</td>
@@ -1856,11 +1859,11 @@ function filterUserReports() {
         <td>${s.score} / ${s.total}</td>
         <td><strong>${pct}%</strong></td>
       </tr>
-    ` ;
+    `;
   });
 
-  document.getElementById("repStatTotal").innerText = filtered.length ;
-  document.getElementById("repStatAvg").innerText = `${Math.round(totalPct / filtered.length)}%` ;
+  document.getElementById("repStatTotal").innerText = filtered.length;
+  document.getElementById("repStatAvg").innerText = `${Math.round(totalPct / filtered.length)}%`;
 }
 
 async function loadTeacherStudentScores() {

@@ -209,49 +209,93 @@ function toggleSignupCategory(val) {
     }
   }
 }
+function normalizeText(name) {
+  if (!name) return "";
+  return name.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+}
 
 function syncPlaySubjects() {
-  const playStd = document.getElementById("playStdSelect") ;
-  const subSelect = document.getElementById("playSubSelect") ;
-  if (!playStd || !subSelect) return ;
+  const playStd = document.getElementById("playStdSelect");
+  const subSelect = document.getElementById("playSubSelect");
+  if (!playStd || !subSelect) return;
 
-  const std = playStd.value || "5" ;
-  const available = [...new Set(masterQuestions.filter(q => q.standard === std).map(q => q.subject))] ;
-  const list = available.length > 0 ? available : GLOBAL_SUBJECTS ;
-  subSelect.innerHTML = list.map(s => `<option value="${s}">${s}</option>`).join("") ;
-  syncPlayChapters() ;
+  const std = playStd.value || "5";
+  const subMap = new Map();
+
+  masterQuestions
+    .filter(q => q.standard === std)
+    .forEach(q => {
+      if (q.subject) {
+        const cleanName = normalizeText(q.subject);
+        const lowerKey = cleanName.toLowerCase();
+        if (cleanName && !subMap.has(lowerKey)) {
+          subMap.set(lowerKey, cleanName);
+        }
+      }
+    });
+
+  const available = Array.from(subMap.values());
+  const list = available.length > 0 ? available : GLOBAL_SUBJECTS;
+  subSelect.innerHTML = list.map(s => `<option value="${s}">${s}</option>`).join("");
+  syncPlayChapters();
 }
 
 function syncPlayChapters() {
-  const playStd = document.getElementById("playStdSelect") ;
-  const subSelect = document.getElementById("playSubSelect") ;
-  const chapSelect = document.getElementById("playChapterSelect") ;
-  if (!playStd || !subSelect || !chapSelect) return ;
+  const playStd = document.getElementById("playStdSelect");
+  const subSelect = document.getElementById("playSubSelect");
+  const chapSelect = document.getElementById("playChapterSelect");
+  if (!playStd || !subSelect || !chapSelect) return;
 
-  const std = playStd.value || "5" ;
-  const sub = (subSelect.value || "Science").toLowerCase() ;
+  const std = playStd.value || "5";
+  const sub = normalizeText(subSelect.value || "Science").toLowerCase();
+  const chapterMap = new Map();
 
-  const chapters = [...new Set(masterQuestions.filter(q => q.standard === std && (q.subject || '').toLowerCase() === sub).map(q => q.chapter))] ;
-  chapSelect.innerHTML = '<option value="All">All Units / Chapters</option>' + chapters.map(c => `<option value="${c}">${c}</option>`).join("") ;
-  syncPlayTopics() ;
+  masterQuestions
+    .filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub)
+    .forEach(q => {
+      if (q.chapter) {
+        const cleanName = normalizeText(q.chapter);
+        const lowerKey = cleanName.toLowerCase();
+        if (cleanName && !chapterMap.has(lowerKey)) {
+          chapterMap.set(lowerKey, cleanName);
+        }
+      }
+    });
+
+  const uniqueChapters = Array.from(chapterMap.values());
+  chapSelect.innerHTML = '<option value="All">All Units / Chapters</option>' + uniqueChapters.map(c => `<option value="${c}">${c}</option>`).join("");
+  syncPlayTopics();
 }
 
 function syncPlayTopics() {
-  const playStd = document.getElementById("playStdSelect") ;
-  const subSelect = document.getElementById("playSubSelect") ;
-  const chapSelect = document.getElementById("playChapterSelect") ;
-  const topicSelect = document.getElementById("playTopicSelect") ;
-  if (!playStd || !subSelect || !chapSelect || !topicSelect) return ;
+  const playStd = document.getElementById("playStdSelect");
+  const subSelect = document.getElementById("playSubSelect");
+  const chapSelect = document.getElementById("playChapterSelect");
+  const topicSelect = document.getElementById("playTopicSelect");
+  if (!playStd || !subSelect || !chapSelect || !topicSelect) return;
 
-  const std = playStd.value || "5" ;
-  const sub = (subSelect.value || "Science").toLowerCase() ;
-  const chap = chapSelect.value || "All" ;
+  const std = playStd.value || "5";
+  const sub = normalizeText(subSelect.value || "Science").toLowerCase();
+  const chap = chapSelect.value || "All";
 
-  let filtered = masterQuestions.filter(q => q.standard === std && (q.subject || '').toLowerCase() === sub) ;
-  if (chap !== "All") filtered = filtered.filter(q => q.chapter === chap) ;
+  let filtered = masterQuestions.filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub);
+  if (chap !== "All") {
+    filtered = filtered.filter(q => normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
+  }
 
-  const topics = [...new Set(filtered.map(q => q.topic))] ;
-  topicSelect.innerHTML = '<option value="All">All Topics</option>' + topics.map(t => `<option value="${t}">${t}</option>`).join("") ;
+  const topicMap = new Map();
+  filtered.forEach(q => {
+    if (q.topic) {
+      const cleanName = normalizeText(q.topic);
+      const lowerKey = cleanName.toLowerCase();
+      if (cleanName && !topicMap.has(lowerKey)) {
+        topicMap.set(lowerKey, cleanName);
+      }
+    }
+  });
+
+  const uniqueTopics = Array.from(topicMap.values());
+  topicSelect.innerHTML = '<option value="All">All Topics</option>' + uniqueTopics.map(t => `<option value="${t}">${t}</option>`).join("");
 }
 
 function syncAuthorSubjects() {
@@ -660,11 +704,12 @@ async function startQuiz() {
   let matched = masterQuestions.filter(q => {
     const mType = (chosenType === "all" || (q.type || "mcq").toLowerCase() === chosenType) ;
     const mStd = q.standard === std ;
-    const mSub = (q.subject || '').toLowerCase() === sub ;
-    const mChap = (chap === "All" || q.chapter === chap) ;
-    const mTopic = (topic === "All" || q.topic === topic) ;
+    const mSub = normalizeText(q.subject).toLowerCase() === sub ;
+    const mChap = (chap === "All" || normalizeText(q.chapter).toLowerCase() === chap.toLowerCase()) ;
+    const mTopic = (topic === "All" || normalizeText(q.topic).toLowerCase() === topic.toLowerCase()) ;
     return mType && mStd && mSub && mChap && mTopic ;
   });
+
 
   if (matched.length === 0) {
     return alert(`No questions found matching your filter in Class ${std} - ${sub.toUpperCase()}.`) ;

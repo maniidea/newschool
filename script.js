@@ -198,6 +198,7 @@ function updateAuthUI() {
   populateAllDropdowns() ;
 }
 
+
 function toggleSignupCategory(val) {
   const stdGroup = document.getElementById("signupStdGroup") ;
   if (stdGroup) {
@@ -354,9 +355,64 @@ function logout() {
   location.reload() ;
 }
 
+function load30DaysChallenge() {
+  const container = document.getElementById("challengeGridContainer");
+  if (!container) return;
+
+  // மாணவர் முடித்த நாட்களின் எண்ணிக்கையைக் கணக்கிடுதல் (அல்லது சேமிக்கப்பட்ட முன்னேற்றம்)
+  let completedDays = 0;
+  if (currentUser) {
+    const challengeKey = `hms_challenge_${currentUser.id}`;
+    let savedProgress = localStorage.getItem(challengeKey);
+    if (savedProgress) {
+      completedDays = parseInt(savedProgress, 10) || 0;
+    } else {
+      completedDays = Math.min(masterUserScores.length, 30);
+    }
+  } else {
+    completedDays = 0; // விருந்தினர் மாணவர் முதல் நாளை மட்டும் முயற்சிக்கலாம்
+  }
+
+  let html = "";
+  for (let day = 1; day <= 30; day++) {
+    const isUnlocked = day <= (completedDays + 1);
+    const isCompleted = day <= completedDays;
+
+    let statusStyle = isCompleted ? "background: #d4edda; border-color: #28a745; color: #155724;" : 
+                      isUnlocked ? "background: #fff; border-color: var(--primary); color: var(--primary);" : 
+                      "background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8;";
+    
+    let badgeText = isCompleted ? "✅ முடிந்தது (Completed)" : isUnlocked ? "🔓 திறந்துள்ளது (Unlocked)" : "🔒 பூட்டப்பட்டுள்ளது (Locked)";
+
+    html += `
+      <div class="card" style="margin-bottom:0; padding:15px; text-align:center; ${statusStyle}">
+        <h4 style="margin:0 0 8px 0;">நாள் (Day) ${day}</h4>
+        <p style="font-size:0.85rem; margin:0 0 10px 0;">${badgeText}</p>
+        <button class="btn ${isCompleted ? 'btn-success' : isUnlocked ? 'btn-primary' : 'btn-outline-dark'}" 
+                style="width:100%; font-size:0.85rem; padding:6px;" 
+                ${!isUnlocked ? 'disabled' : ''} 
+                onclick="startChallengeDay(${day})">
+          ${isCompleted ? 'மீண்டும் எழுது (Retake)' : isUnlocked ? 'தேவைத் தொடங்கு (Start Test)' : 'பூட்டப்பட்டுள்ளது'}
+        </button>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+function startChallengeDay(dayNumber) {
+  // Attend Test தாவலுக்கு மாற்றுதல்
+  const playTabBtn = document.querySelector(".tabs button");
+  switchTab('play', playTabBtn);
+  
+  // குறிப்பிட்ட நாளுக்கான தேர்வைத் தொடங்குதல்
+  alert(`நாள் ${dayNumber} சவால் தேர்வு தொடங்குகிறது!`);
+  startQuiz();
+}
+
 function switchTab(tab, eventTarget) {
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active")) ;
-  ["playTab", "createTab", "manageTab", "reportsTab", "teacherScoresTab", "principalTab", "leaderboardTab", "feedbackTab", "myRepliesTab"].forEach(id => {
+  ["playTab", "createTab", "manageTab", "reportsTab", "teacherScoresTab", "principalTab", "leaderboardTab", "feedbackTab", "myRepliesTab", "challenge30Tab"].forEach(id => {
     const el = document.getElementById(id) ;
     if (el) el.classList.add("hidden") ;
   });
@@ -366,6 +422,10 @@ function switchTab(tab, eventTarget) {
   if (tab === "play") {
     document.getElementById("playTab").classList.remove("hidden") ;
     resetQuizView() ;
+  }
+if (tab === "challenge30") {
+    document.getElementById("challenge30Tab").classList.remove("hidden") ;
+    load30DaysChallenge(); // 30 நாட்களுக்கான தரவுகளை லோடு செய்ய
   }
   if (tab === "create") {
     document.getElementById("createTab").classList.remove("hidden") ;
@@ -1029,6 +1089,17 @@ async function finishQuiz() {
   } else {
     if (bonusBox) bonusBox.classList.add("hidden") ;
   }
+
+// 30 நாள் சவால் முன்னேற்றத்தைப் பதிவு செய்தல்
+  if (currentUser) {
+    const challengeKey = `hms_challenge_${currentUser.id}`;
+    let currentDays = parseInt(localStorage.getItem(challengeKey) || "0", 10);
+    // தேர்வு முடித்தவுடன் அடுத்த நாளுக்கு முன்னேற்றம் (সর্বোচ্চ 30 நாட்கள் வரை)
+    if (currentDays < 30) {
+      localStorage.setItem(challengeKey, currentDays + 1);
+    }
+  }
+
   document.getElementById("resultFeedback").innerText = msg ;
 
   const payload = {

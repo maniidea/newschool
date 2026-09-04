@@ -601,14 +601,43 @@ function toggleSelectAll(isAll) {
   countInput.style.background = isAll ? "#e9ecef" : "#fff" ;
 }
 
+let currentUtterance = null;
+
 function speakText(text) {
   if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel() ;
-    const utterance = new SpeechSynthesisUtterance(text) ;
-    utterance.lang = /[\u0B80-\u0BFF]/.test(text) ? 'ta-IN' : 'en-US' ;
-    utterance.rate = 0.9 ;
-    window.speechSynthesis.speak(utterance) ;
+    // Cancel any ongoing speech and clear references
+    window.speechSynthesis.cancel();
+
+    currentUtterance = new SpeechSynthesisUtterance(text);
+    
+    // Determine language based on Tamil characters presence
+    const isTamil = /[\u0B80-\u0BFF]/.test(text);
+    currentUtterance.lang = isTamil ? 'ta-IN' : 'en-US';
+    currentUtterance.rate = 0.9;
+
+    // Optional: Select an explicit voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const targetVoice = voices.find(v => v.lang.startsWith(isTamil ? 'ta' : 'en'));
+    if (targetVoice) {
+      currentUtterance.voice = targetVoice;
+    }
+
+    // Prevent garbage collection bug in some browsers
+    currentUtterance.onend = () => {
+      currentUtterance = null;
+    };
+
+    window.speechSynthesis.speak(currentUtterance);
+  } else {
+    alert("Speech Synthesis is not supported in this browser.");
   }
+}
+
+// Preload voices to prevent delay on first click
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+  };
 }
 
 async function startQuiz() {

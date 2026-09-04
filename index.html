@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#003366">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HariMani School - LMS & Assessment Portal</title>
@@ -30,6 +28,8 @@
   <!-- NAVIGATION TABS -->
   <div class="tabs no-print">
     <button class="tab-btn active" onclick="switchTab('play', this)">📝 Attend Test</button>
+  <button class="tab-btn" onclick="switchTab('challenge30', this)">🔥 30 Days Challenge</button> <!-- புதிய தாவல் -->
+
     <button class="tab-btn hidden" id="tabMyScores" onclick="switchTab('reports', this)">📊 My Scores & Badges</button>
     <button class="tab-btn" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</button>
     <button class="tab-btn hidden" id="tabMyReplies" onclick="switchTab('myReplies', this)">📬 ஆசிரியர் பதில்கள் (Replies)</button>
@@ -48,7 +48,20 @@
       <div id="studentRepliesContainer"></div>
     </div>
   </div>
-
+<!-- TAB: 30 DAYS CHALLENGE -->
+<div id="challenge30Tab" class="hidden no-print">
+  <div class="card">
+    <h3>🔥 Before Atten test choose subject and question count & time </h3>
+<h3>
+🔥 30 நாட்கள் சவால் (30-Day Challenge Arena) </h3>
+    <p class="notice">தினமும் ஒரு தேர்வு வீதம் 30 நாட்களுக்குத் தொடர்ந்து எழுதி சாதனை படைங்கள்!</p>
+    
+    <!-- 30 நாட்களின் கட்டங்கள் (Grid Structure) -->
+    <div id="challengeGridContainer" class="grid-3 margin-top">
+      <!-- இது ஜாவாஸ்கிரிப்ட் மூலம் இயக்கப்படும் -->
+    </div>
+  </div>
+</div>
   <!-- TAB: TEACHER & PRINCIPAL FEEDBACK VIEW -->
   <div id="feedbackTab" class="hidden no-print">
     <div class="card">
@@ -686,6 +699,7 @@ window.addEventListener("DOMContentLoaded", () => {
   setTimeout(updateAiPromptPreview, 500);
 });
 </script>
+
 <script src="script.js"></script>
 </body>
 </html>

@@ -140,71 +140,79 @@
       <strong>👋 Welcome, Guest Student!</strong> You can attempt assessments across all 4 categories (MCQ, True/False, Fill in Blanks, Match). Sign In or Register to unlock 100% score rewards, certificates, streak badges, and question review  .
     </div>
 
-    <div id="quizSetupCard" class="card no-print">
-      <h3>🎯 Assessment Arena</h3>
-      <p class="notice" id="playScopeNotice">Select Category, Class, Subject, and Chapter to begin  .</p>
-      
-      <div class="grid-2">
-        <div class="form-group">
-          <label>Question Category:</label>
-          <select id="playTypeSelect">
-            <option value="all">Mixed (All 4 Categories)</option>
-            <option value="mcq">Multiple Choice Questions (MCQ)</option>
-            <option value="tf">True or False</option>
-            <option value="fib">Fill in the Blanks</option>
-            <option value="match">Match the Following</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Class / Standard:</label>
-          <select id="playStdSelect" onchange="syncPlaySubjects()"></select>
-        </div>
-      </div>
-
-      <div class="grid-2">
-        <div class="form-group">
-          <label>Subject:</label>
-          <select id="playSubSelect" onchange="syncPlayChapters()"></select>
-        </div>
-        <div class="form-group">
-          <label>Unit / Chapter:</label>
-          <select id="playChapterSelect" onchange="syncPlayTopics()"></select>
-        </div>
-      </div>
-
-      <div class="grid-2">
-        <div class="form-group">
-          <label>Assessment Mode:</label>
-          <select id="playAssessmentMode">
-            <option value="text">✍️ Text Mode (Standard)</option>
-            <option value="voice">🎙️ Voice Conversational Mode (Interactive Audio)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Timer per Question:</label>
-          <select id="playTimerSelect">
-            <option value="0">No Timer</option>
-            <option value="15">15 Seconds</option>
-            <option value="20" selected>20 Seconds</option>
-            <option value="30">30 Seconds</option>
-            <option value="60">60 Seconds</option>
-          </select>
-        </div>
-      </div>
-
-
-      <div class="form-group">
-        <label>Question Count:</label>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <input type="number" id="playCountInput" min="1" max="10" value="5" style="flex:1;">
-          <label style="font-size:0.85rem; white-space:nowrap; cursor:pointer;">
-            <input type="checkbox" id="playAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width:auto;" disabled> All Available
-          </label>
-        </div>
-      </div>
-
-      <button class="btn btn-primary w-100 margin-top" onclick="startQuiz()">🚀 Start Assessment</button>
+   <div id="quizSetupCard" class="card no-print">
+  <h3>🎯 Assessment Arena</h3>
+  <p class="notice" id="playScopeNotice">Select Category, Class, Subject, and Chapter to begin.</p>
+  
+  <div class="grid-2">
+    <div class="form-group">
+      <label>Question Category:</label>
+      <select id="playTypeSelect">
+        <option value="all">Mixed (All 4 Categories)</option>
+        <option value="mcq">Multiple Choice Questions (MCQ)</option>
+        <option value="tf">True or False</option>
+        <option value="fib">Fill in the Blanks</option>
+        <option value="match">Match the Following</option>
+      </select>
     </div>
+    <div class="form-group">
+      <label>Class / Standard:</label>
+      <select id="playStdSelect" onchange="syncPlaySubjects()"></select>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="form-group">
+      <label>Subject:</label>
+      <select id="playSubSelect" onchange="syncPlayChapters()"></select>
+    </div>
+    <div class="form-group">
+      <label>Unit / Chapter:</label>
+      <select id="playChapterSelect" onchange="syncPlayTopics()"></select>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="form-group">
+      <label>Topic / Section:</label>
+      <select id="playTopicSelect">
+        <option value="All">All Topics</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Assessment Mode:</label>
+      <select id="playAssessmentMode">
+        <option value="text">✍️ Text Mode (Standard)</option>
+        <option value="voice">🎙️ Voice Conversational Mode (Interactive Audio)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Timer per Question:</label>
+    <select id="playTimerSelect">
+      <option value="0">No Timer</option>
+      <option value="15">15 Seconds</option>
+      <option value="20" selected>20 Seconds</option>
+      <option value="30">30 Seconds</option>
+      <option value="60">60 Seconds</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Question Count:</label>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input type="number" id="playCountInput" min="1" max="10" value="5" style="flex:1;">
+      <label style="font-size:0.85rem; white-space:nowrap; cursor:pointer;">
+        <input type="checkbox" id="playAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width:auto;" disabled> All Available
+      </label>
+    </div>
+  </div>
+
+  <button class="btn btn-primary w-100 margin-top" onclick="startQuiz()">🚀 Start Assessment</button>
+</div>
+
+
 
    <!-- ACTIVE TEST CARD -->
     <div id="quizActiveCard" class="card hidden no-print">

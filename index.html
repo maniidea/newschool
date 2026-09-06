@@ -42,8 +42,54 @@
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('manage', this)">🗂️ Question Bank & Print Paper</button>
     <button class="tab-btn teacher-only hidden" onclick="switchTab('teacherScores', this)">📈 Student Scores (Assigned)</button>
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('feedback', this)">💬 மாணவர் பின்னூட்டம் (Feedback)</button>
+    <button class="tab-btn" onclick="switchTab('ncertBooks', this)">📚 NCERT நூல்கள் (Books)</button>
     <button class="tab-btn principal-only hidden" onclick="switchTab('principal', this)">👑 Principal Master Board</button>
   </div>
+
+<!-- TAB: NCERT BOOKS / DRIVE FOLDERS -->
+<div id="ncertBooksTab" class="hidden no-print">
+  <div class="card">
+    <h3>📚 NCERT பாடப் புத்தகங்கள் & டிரைவ் கோப்புகள் (NCERT Books & Drive Folders)</h3>
+    <p class="notice">வகுப்பு வாரியாக NCERT பாடப்புத்தகங்கள் மற்றும் குறிப்புகள் அடங்கிய கூகுள் டிரைவ் (Google Drive) கோப்புறைகள்.</p>
+    
+    <!-- Principal / Teacher Link Manager (Visible to Principal & Teachers only) -->
+    <div id="ncertManagerSection" class="teacher-principal-only hidden" style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid var(--border); margin-bottom:20px;">
+      <h4 style="margin-top:0; color:var(--primary);">👑 முதல்வர் / ஆசிரியர் கட்டுப்பாட்டுப் பலகம்: டிரைவ் இணைப்பு சேமிக்க</h4>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>வகுப்பு (Standard / Class):</label>
+          <select id="ncertConfigStd"></select>
+        </div>
+        <div class="form-group">
+          <label>பாடம் (Subject):</label>
+          <select id="ncertConfigSub"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>கூகுள் டிரைவ் கோப்புறை இணைப்பு (Google Drive Folder URL):</label>
+        <input type="url" id="ncertDriveUrlInput" placeholder="https://drive.google.com/drive/folders/...">
+      </div>
+      <button class="btn btn-primary w-100" onclick="saveNcertDriveLink()">💾 டிரைவ் இணைப்பைச் சேமி (Save Link)</button>
+    </div>
+
+    <!-- Student & User View: Filter & Book Cards -->
+    <div class="grid-2 margin-top">
+      <div class="form-group">
+        <label>வகுப்பைத் தேர்ந்தெடுக்கவும் (Select Class):</label>
+        <select id="ncertViewStdSelect" onchange="renderNcertBooksViewer()"></select>
+      </div>
+      <div class="form-group">
+        <label>பாடத்தைத் தேட (Search Subject):</label>
+        <input type="text" id="ncertSearchInput" placeholder="பாடம் பெயரை உள்ளிடவும்..." oninput="renderNcertBooksViewer()">
+      </div>
+    </div>
+
+    <div id="ncertBooksGridContainer" class="grid-3 margin-top" style="margin-top:20px;">
+      <!--  பாடப் புத்தகங்கள் காட்டப்படும் -->
+    </div>
+  </div>
+</div>
+
 
   <!-- TAB: STUDENT VIEW TEACHER REPLIES -->
   <div id="myRepliesTab" class="hidden no-print">

@@ -500,6 +500,11 @@ function switchTab(tab, eventTarget) {
     document.getElementById("feedbackTab").classList.remove("hidden") ;
     loadFeedbackTab() ;
   }
+if (tab === "ncertBooks") {
+    document.getElementById("ncertBooksTab").classList.remove("hidden") ;
+    initNcertBooksTab() ;
+  }
+
   if (tab === "myReplies") {
     document.getElementById("myRepliesTab").classList.remove("hidden") ;
     loadStudentReplies() ;
@@ -522,6 +527,108 @@ async function loadFeedbackTab() {
     }
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">பிழை: ${err.message}</td></tr>` ;
+  }
+}
+
+function initNcertBooksTab() {
+  const stdSelect = document.getElementById("ncertConfigStd") ;
+  const subSelect = document.getElementById("ncertConfigSub") ;
+  const viewStdSelect = document.getElementById("ncertViewStdSelect") ;
+
+  if (stdSelect && GLOBAL_STANDARDS) {
+    stdSelect.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("") ;
+  }
+  if (subSelect && GLOBAL_SUBJECTS) {
+    subSelect.innerHTML = GLOBAL_SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join("") ;
+  }
+  if (viewStdSelect && GLOBAL_STANDARDS) {
+    let allowed = GLOBAL_STANDARDS ;
+    if (currentUser && currentUser.role === "student" && currentUser.standards && currentUser.standards.length > 0) {
+      allowed = currentUser.standards ;
+    }
+    viewStdSelect.innerHTML = allowed.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("") ;
+    if (currentUser && currentUser.role === "student" && currentUser.standards && currentUser.standards.length > 0) {
+      viewStdSelect.value = currentUser.standards[0] ;
+    }
+  }
+  renderNcertBooksViewer() ;
+}
+
+function saveNcertDriveLink() {
+  const std = document.getElementById("ncertConfigStd").value ;
+  const sub = document.getElementById("ncertConfigSub").value ;
+  const url = document.getElementById("ncertDriveUrlInput").value.trim() ;
+
+  if (!url) return alert("தயவுசெய்து கூகுள் டிரைவ் இணைப்பை (Drive URL) உள்ளிடவும்.") ;
+
+  let linksMap = {} ;
+  try {
+    linksMap = JSON.parse(localStorage.getItem("hms_ncert_links") || "{}") ;
+  } catch(e) { linksMap = {} ; }
+
+  const key = `${std}_${sub}` ;
+  linksMap[key] = {
+    standard: std, 
+    subject: sub, 
+    url: url, 
+    updatedBy: currentUser ? currentUser.name : "Principal", 
+    date: new Date().toLocaleDateString('ta-IN') 
+  };
+
+  localStorage.setItem("hms_ncert_links", JSON.stringify(linksMap)) ;
+  alert(`✅ வகுப்பு ${std} - ${sub} பாடத்திற்கான டிரைவ் இணைப்பு வெற்றிகரமாக சேமிக்கப்பட்டது!`) ;
+  document.getElementById("ncertDriveUrlInput").value = "" ;
+  renderNcertBooksViewer() ;
+}
+
+function renderNcertBooksViewer() {
+  const stdSelect = document.getElementById("ncertViewStdSelect") ;
+  const searchInput = document.getElementById("ncertSearchInput") ;
+  const container = document.getElementById("ncertBooksGridContainer") ;
+  if (!container || !stdSelect) return ;
+
+  const std = stdSelect.value ;
+  const search = searchInput ? searchInput.value.toLowerCase() : "" ;
+
+  let linksMap = {} ;
+  try {
+    linksMap = JSON.parse(localStorage.getItem("hms_ncert_links") || "{}") ;
+  } catch(e) { linksMap = {} ; }
+
+  let html = "" ;
+  let matchedCount = 0 ;
+
+  GLOBAL_SUBJECTS.forEach(sub => {
+    if (search && !sub.toLowerCase().includes(search)) return ;
+
+    const key = `${std}_${sub}` ;
+    const record = linksMap[key] ;
+    const hasLink = record && record.url ;
+
+    matchedCount++ ;
+    html += `
+      <div class="card" style="margin-bottom:0; padding:15px; text-align:center; background:${hasLink ? '#f0fdf4' : '#fff'}; border-color:${hasLink ? '#bbf7d0' : 'var(--border)'};">
+        <div style="font-size:2rem; margin-bottom:8px;">📖</div>
+        <h4 style="margin:0 0 6px 0; color:var(--primary);">${sub}</h4>
+        <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px 0;">வகுப்பு ${std} NCERT புத்தகம்</p>
+        ${hasLink ? `
+          <a href="${record.url}" target="_blank" class="btn btn-success" style="width:100%; font-size:0.85rem; padding:8px; text-decoration:none;">
+            📂 டிரைவ் கோப்பகத்தைத் திற (Open Drive)
+          </a>
+          <div style="font-size:0.75rem; color:#15803d; margin-top:6px;">புதுப்பிக்கப்பட்டது: ${record.date}</div>
+        ` : `
+          <button class="btn btn-outline-dark" style="width:100%; font-size:0.85rem; padding:8px;" disabled>
+            ⏳ இணைப்பு விரைவில் இணைக்கப்படும்
+          </button>
+        `}
+      </div>
+    ` ;
+  });
+
+  if (matchedCount === 0) {
+    container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; color:#64748b; padding:20px;">பாடங்கள் எதுவும் கிடைக்கவில்லை.</div>` ;
+  } else {
+    container.innerHTML = html ;
   }
 }
 

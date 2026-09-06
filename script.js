@@ -2186,46 +2186,6 @@ function filterTeacherStudentScores() {
   });
 }
 
-async function loadPrincipalDashboard() {
-  const res = await fetch(`${SCRIPT_URL}?action=getPrincipalDashboard&userId=${encodeURIComponent(currentUser.id)}`) ;
-  const data = await res.json() ;
-  if (data && data.success) {
-    principalDashboardData = data ;
-    renderPrincipalTeacherTable() ;
-    renderPrincipalStudentTable() ;
-    filterPrincipalScores() ;
-  }
-}
-
-function renderPrincipalTeacherTable() {
-  const tbody = document.getElementById("principalTeacherTbody") ;
-  tbody.innerHTML = "" ;
-
-  (principalDashboardData.teachers || []).forEach(t => {
-    const stdBoxes = GLOBAL_STANDARDS.map(s => `
-      <label style="font-size:0.8rem; margin-right:6px; cursor:pointer;">
-        <input type="checkbox" value="${s}" ${t.standards.includes(s) ? 'checked' : ''} onchange="toggleTeacherStd('${t.id}', '${s}', this.checked)"> ${s}
-      </label>
-    `).join("") ;
-
-    const subBoxes = GLOBAL_SUBJECTS.map(s => `
-      <label style="font-size:0.8rem; margin-right:6px; cursor:pointer;">
-        <input type="checkbox" value="${s}" ${t.subjects.includes(s) ? 'checked' : ''} onchange="toggleTeacherSub('${t.id}', '${s}', this.checked)"> ${s}
-      </label>
-    `).join("") ;
-
-    tbody.innerHTML += `
-      <tr>
-        <td><strong>${t.id}</strong></td>
-        <td>${t.name}</td>
-        <td>${stdBoxes}</td>
-        <td>${subBoxes}</td>
-        <td><button class="btn btn-outline-dark" style="padding:4px 8px; font-size:0.8rem;" onclick="saveTeacherPermissions('${t.id}')">💾 Save</button></td>
-      </tr>
-    ` ;
-  });
-}
-
 function toggleTeacherStd(tId, std, checked) {
   const teacher = principalDashboardData.teachers.find(t => t.id === tId) ;
   if (!teacher) return;
@@ -2254,34 +2214,48 @@ async function saveTeacherPermissions(teacherId) {
   else alert("Error: " + (data ? data.error : "Could not update permissions")) ;
 }
 
-function renderPrincipalStudentTable() {
-  const tbody = document.getElementById("principalStudentTbody") ;
-  if (!tbody) return;
-  tbody.innerHTML = "" ;
+async function deleteTeacher(teacherId) {
+  if (!confirm(`நிச்சயமாக ஆசிரியர் ${teacherId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return ;
+  
+  const payload = {
+    action: "deleteTeacher", 
+    principalId: currentUser ? currentUser.id : "PRINCIPAL", 
+    targetTeacherId: teacherId 
+  };
 
-  const studentList = principalDashboardData.students || [] ;
-  if (studentList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No registered students yet.</td></tr>` ;
-    return;
+  try {
+    const data = await callAppsScript(payload) ;
+    if (data && data.success) {
+      alert(`✅ ஆசிரியர் ${teacherId} வெற்றிகரமாக நீக்கப்பட்டார்!`) ;
+      loadPrincipalDashboard() ;
+    } else {
+      alert("பிழை: " + (data ? data.error : "ஆசிரியரை நீக்க முடியவில்லை")) ;
+    }
+  } catch (err) {
+    alert("இணைப்புப் பிழை: " + err.message) ;
   }
+}
 
-  studentList.forEach(s => {
-    const stdBoxes = GLOBAL_STANDARDS.map(std => `
-      <label style="font-size:0.8rem; margin-right:6px; cursor:pointer;">
-        <input type="checkbox" value="${std}" ${s.standards.includes(std) ? 'checked' : ''} onchange="toggleStudentStd('${s.id}', '${std}', this.checked)"> ${std}
-      </label>
-    `).join("") ;
+async function deleteStudent(studentId) {
+  if (!confirm(`நிச்சயமாக மாணவர் ${studentId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return ;
+  
+  const payload = {
+    action: "deleteStudent", 
+    principalId: currentUser ? currentUser.id : "PRINCIPAL", 
+    targetStudentId: studentId 
+  };
 
-    tbody.innerHTML += `
-      <tr>
-        <td><strong>${s.id}</strong></td>
-        <td>${s.name}</td>
-        <td><span class="badge" style="background:${s.role === 'aspirant' ? 'var(--secondary)' : 'var(--primary)'}; color:#fff;">${s.role.toUpperCase()}</span></td>
-        <td>${stdBoxes}</td>
-        <td><button class="btn btn-outline-dark" style="padding:4px 8px; font-size:0.8rem;" onclick="saveStudentPermissions('${s.id}')">💾 Save Classes</button></td>
-      </tr>
-    ` ;
-  });
+  try {
+    const data = await callAppsScript(payload) ;
+    if (data && data.success) {
+      alert(`✅ மாணவர் ${studentId} வெற்றிகரமாக நீக்கப்பட்டார்!`) ;
+      loadPrincipalDashboard() ;
+    } else {
+      alert("பிழை: " + (data ? data.error : "மாணவரை நீக்க முடியவில்லை")) ;
+    }
+  } catch (err) {
+    alert("இணைப்புப் பிழை: " + err.message) ;
+  }
 }
 
 function toggleStudentStd(sId, std, checked) {
@@ -2334,39 +2308,275 @@ async function principalCreateTeacher() {
   }
 }
 
-function filterPrincipalScores() {
-  const search = document.getElementById("prFilterStudent").value.toLowerCase() ;
-  const std = document.getElementById("prFilterStd").value ;
-  const sub = document.getElementById("prFilterSub").value.toLowerCase() ;
 
-  const tbody = document.getElementById("principalScoresTbody") ;
-  tbody.innerHTML = "" ;
+function switchPrincipalSubView(viewName, btn) {
+  document.querySelectorAll(".pr-subtab-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+
+  document.getElementById("prViewTeachers").classList.toggle("hidden", viewName !== 'teachers');
+  document.getElementById("prViewStudents").classList.toggle("hidden", viewName !== 'students');
+  document.getElementById("prViewAnalytics").classList.toggle("hidden", viewName !== 'analytics');
+}
+
+async function loadPrincipalDashboard() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=getPrincipalDashboard&userId=${encodeURIComponent(currentUser.id)}`);
+    const data = await res.json();
+    if (data && data.success) {
+      principalDashboardData = data;
+
+      // Update KPI Statistics
+      document.getElementById("prStatTeacherCount").innerText = (data.teachers || []).length;
+      document.getElementById("prStatStudentCount").innerText = (data.students || []).length;
+      document.getElementById("prStatAssessmentCount").innerText = (data.scores || []).length;
+
+      renderPrincipalTeacherTable();
+      renderPrincipalStudentTable();
+      filterPrincipalScores();
+    }
+  } catch (err) {
+    console.warn("Failed to load principal metrics:", err);
+  }
+}
+
+function renderPrincipalTeacherTable() {
+  const tbody = document.getElementById("principalTeacherTbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  const search = (document.getElementById("prTeacherSearchInput")?.value || "").toLowerCase().trim();
+  const teachers = (principalDashboardData.teachers || []).filter(t => {
+    return !search || t.name.toLowerCase().includes(search) || t.id.toLowerCase().includes(search);
+  });
+
+  if (teachers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">No matching teachers found.</td></tr>`;
+    return;
+  }
+
+  teachers.forEach(t => {
+    const stdTags = (t.standards && t.standards.length > 0)
+      ? t.standards.map(s => `<span class="tag-pill">Class ${s}</span>`).join(" ")
+      : `<span style="color:#94a3b8; font-size:0.8rem;">None assigned</span>`;
+
+    const subTags = (t.subjects && t.subjects.length > 0)
+      ? t.subjects.map(s => `<span class="tag-pill" style="background:#e0f2fe; border-color:#bae6fd; color:#0369a1;">${s}</span>`).join(" ")
+      : `<span style="color:#94a3b8; font-size:0.8rem;">None assigned</span>`;
+
+    tbody.innerHTML += `
+      <tr>
+        <td><code>${t.id}</code></td>
+        <td><strong>${t.name}</strong></td>
+        <td>${stdTags}</td>
+        <td>${subTags}</td>
+        <td style="text-align:right;">
+          <button class="btn btn-outline-dark" style="padding:4px 10px; font-size:0.8rem;" onclick="openEditTeacherModal('${t.id}')">⚙️ Configure</button>
+          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem; margin-left:4px;" onclick="deleteTeacher('${t.id}')">🗑️</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function openEditTeacherModal(teacherId) {
+  const teacher = (principalDashboardData.teachers || []).find(t => t.id === teacherId);
+  if (!teacher) return;
+
+  document.getElementById("editTeacherTargetId").value = teacherId;
+  document.getElementById("editTeacherModalTitle").innerText = `Configure Access: ${teacher.name}`;
+  document.getElementById("editTeacherModalSub").innerText = `Staff Code: ${teacher.id}`;
+
+  const stdContainer = document.getElementById("editTeacherStdContainer");
+  stdContainer.innerHTML = GLOBAL_STANDARDS.map(std => {
+    const isChecked = teacher.standards.includes(std);
+    return `
+      <div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${std}">
+        <span>${isChecked ? '✓' : '+'}</span> Class ${std}
+      </div>
+    `;
+  }).join("");
+
+  const subContainer = document.getElementById("editTeacherSubContainer");
+  subContainer.innerHTML = GLOBAL_SUBJECTS.map(sub => {
+    const isChecked = teacher.subjects.includes(sub);
+    return `
+      <div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${sub}">
+        <span>${isChecked ? '✓' : '+'}</span> ${sub}
+      </div>
+    `;
+  }).join("");
+
+  openModal("modalEditTeacherScope");
+}
+
+function toggleChip(el) {
+  el.classList.toggle("active");
+  const sign = el.querySelector("span");
+  if (sign) sign.innerText = el.classList.contains("active") ? "✓" : "+";
+}
+
+async function confirmSaveTeacherPermissions() {
+  const teacherId = document.getElementById("editTeacherTargetId").value;
+  const teacher = (principalDashboardData.teachers || []).find(t => t.id === teacherId);
+  if (!teacher) return;
+
+  const selectedStds = Array.from(document.querySelectorAll("#editTeacherStdContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
+  const selectedSubs = Array.from(document.querySelectorAll("#editTeacherSubContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
+
+  teacher.standards = selectedStds;
+  teacher.subjects = selectedSubs;
+
+  const payload = {
+    action: "updateTeacherPermissions",
+    principalId: currentUser.id,
+    targetTeacherId: teacherId,
+    standards: selectedStds,
+    subjects: selectedSubs
+  };
+
+  const data = await callAppsScript(payload);
+  if (data && data.success) {
+    closeModal("modalEditTeacherScope");
+    renderPrincipalTeacherTable();
+    alert(`✅ Permissions updated for ${teacher.name}!`);
+  } else {
+    alert("Error: " + (data ? data.error : "Failed to update permissions"));
+  }
+}
+
+function renderPrincipalStudentTable() {
+  const tbody = document.getElementById("principalStudentTbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  const search = (document.getElementById("prStudentSearchInput")?.value || "").toLowerCase().trim();
+  const roleFilter = document.getElementById("prStudentRoleFilter")?.value || "all";
+
+  const students = (principalDashboardData.students || []).filter(s => {
+    const mSearch = !search || s.name.toLowerCase().includes(search) || s.id.toLowerCase().includes(search);
+    const mRole = (roleFilter === "all") || (s.role === roleFilter);
+    return mSearch && mRole;
+  });
+
+  if (students.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">No enrolled students found.</td></tr>`;
+    return;
+  }
+
+  students.forEach(s => {
+    const stdTags = (s.standards && s.standards.length > 0)
+      ? s.standards.map(std => `<span class="tag-pill">Class ${std}</span>`).join(" ")
+      : `<span style="color:#94a3b8; font-size:0.8rem;">Unassigned</span>`;
+
+    tbody.innerHTML += `
+      <tr>
+        <td><code>${s.id}</code></td>
+        <td><strong>${s.name}</strong></td>
+        <td>
+          <span class="badge" style="background:${s.role === 'aspirant' ? '#f59e0b' : '#0284c7'}; color:#fff;">
+            ${s.role.toUpperCase()}
+          </span>
+        </td>
+        <td>${stdTags}</td>
+        <td style="text-align:right;">
+          <button class="btn btn-outline-dark" style="padding:4px 10px; font-size:0.8rem;" onclick="openEditStudentModal('${s.id}')">✏️ Edit</button>
+          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem; margin-left:4px;" onclick="deleteStudent('${s.id}')">🗑️</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function openEditStudentModal(studentId) {
+  const student = (principalDashboardData.students || []).find(s => s.id === studentId);
+  if (!student) return;
+
+  document.getElementById("editStudentTargetId").value = studentId;
+  document.getElementById("editStudentModalTitle").innerText = `Enrollment: ${student.name}`;
+  document.getElementById("editStudentModalSub").innerText = `Roll/ID: ${student.id} (${student.role.toUpperCase()})`;
+
+  const stdContainer = document.getElementById("editStudentStdContainer");
+  stdContainer.innerHTML = GLOBAL_STANDARDS.map(std => {
+    const isChecked = student.standards.includes(std);
+    return `
+      <div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${std}">
+        <span>${isChecked ? '✓' : '+'}</span> Class ${std}
+      </div>
+    `;
+  }).join("");
+
+  openModal("modalEditStudentScope");
+}
+
+async function confirmSaveStudentPermissions() {
+  const studentId = document.getElementById("editStudentTargetId").value;
+  const student = (principalDashboardData.students || []).find(s => s.id === studentId);
+  if (!student) return;
+
+  const selectedStds = Array.from(document.querySelectorAll("#editStudentStdContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
+  student.standards = selectedStds;
+
+  const payload = {
+    action: "updateStudentPermissions",
+    principalId: currentUser.id,
+    targetStudentId: studentId,
+    standards: selectedStds
+  };
+
+  const data = await callAppsScript(payload);
+  if (data && data.success) {
+    closeModal("modalEditStudentScope");
+    renderPrincipalStudentTable();
+    alert(`✅ Standard enrollment updated for ${student.name}!`);
+  } else {
+    alert("Error: " + (data ? data.error : "Failed to update enrollment"));
+  }
+}
+
+function filterPrincipalScores() {
+  const search = document.getElementById("prFilterStudent").value.toLowerCase().trim();
+  const std = document.getElementById("prFilterStd").value.toLowerCase().trim();
+  const sub = document.getElementById("prFilterSub").value.toLowerCase().trim();
+
+  const tbody = document.getElementById("principalScoresTbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
 
   const filtered = (principalDashboardData.scores || []).filter(s => {
-    const mStudent = !search || s.userId.toLowerCase().includes(search) || s.userName.toLowerCase().includes(search) ;
-    const mStd = !std || s.standard === std ;
-    const mSub = !sub || s.subject.toLowerCase() === sub ;
-    return mStudent && mStd && mSub ;
+    const mStudent = !search || (s.userId && s.userId.toLowerCase().includes(search)) || (s.userName && s.userName.toLowerCase().includes(search));
+    
+    // வகுப்பு எண்களை மட்டும் துல்லியமாக ஒப்பிடுதல் (எ.கா: '5' அல்லது 'Class 5' எதுவாக இருந்தாலும் பொருந்தும்)
+    const recordStd = (s.standard || "").toString().toLowerCase().replace(/class/gi, "").trim();
+    const filterStd = std.replace(/class/gi, "").trim();
+    const mStd = !filterStd || recordStd === filterStd;
+
+    // பாடப் பெயர்களை ஒப்பிடுதல்
+    const recordSub = (s.subject || "").toString().toLowerCase().trim();
+    const mSub = !sub || recordSub.includes(sub) || sub.includes(recordSub);
+
+    return mStudent && mStd && mSub;
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No matching student scores found.</td></tr>` ;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#64748b;">No matching score records found.</td></tr>`;
     return;
   }
 
   filtered.forEach(s => {
-    const pct = Math.round((Number(s.score) / Number(s.total)) * 100) ;
+    const pct = Math.round((Number(s.score) / Number(s.total)) * 100);
+    const badgeColor = pct >= 80 ? 'badge-success' : pct >= 50 ? 'badge-pill' : 'badge-danger';
+
     tbody.innerHTML += `
       <tr>
-        <td><strong>${s.userId}</strong></td>
-        <td>${s.userName}</td>
+        <td><strong>${s.userName}</strong><br><small style="color:#64748b;">(${s.userId})</small></td>
         <td>Class ${s.standard}</td>
         <td>${s.subject}</td>
-        <td>${s.chapter} - ${s.topic}</td>
-        <td><strong>${s.score} / ${s.total} (${pct}%)</strong></td>
-        <td>${s.date}</td>
+        <td><small><strong>${s.chapter}</strong><br>${s.topic}</small></td>
+        <td><strong>${s.score} / ${s.total}</strong></td>
+        <td><span class="badge ${badgeColor}">${pct}%</span></td>
+        <td><small>${s.date}</small></td>
       </tr>
-    ` ;
+    `;
   });
 }
 

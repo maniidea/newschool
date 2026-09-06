@@ -634,65 +634,143 @@
     </div>
   </div>
 
-  <!-- TAB 6: PRINCIPAL MASTER BOARD -->
-  <div id="principalTab" class="hidden no-print">
-    <div class="card">
-      <h3>👑 Teacher Management (Principal Control)</h3>
-      <div class="grid-3" style="background:#f8f9fa; padding:12px; border-radius:6px; border:1px solid var(--border);">
-        <div class="form-group"><label>Teacher User ID:</label><input type="text" id="newTeacherId" placeholder="e.g. TCH_SCI01"></div>
-        <div class="form-group"><label>Teacher Full Name:</label><input type="text" id="newTeacherName" placeholder="e.g. Mr. R. Sharma"></div>
-        <div class="form-group"><label>Assigned Password:</label><input type="password" id="newTeacherPass" placeholder="e.g. TeacherPass#123"></div>
-      </div>
-      <button class="btn btn-primary margin-top" onclick="principalCreateTeacher()">➕ Create Teacher Account</button>
+  <!-- TAB 6: PRINCIPAL MASTER BOARD (EXECUTIVE REDESIGN) -->
+<div id="principalTab" class="hidden no-print">
 
-      <h4 style="margin-top:25px;">Teacher Authorization & Class Assignment Matrix</h4>
+  <!-- Overview Summary KPI Cards -->
+  <div class="pr-stats-grid margin-top">
+    <div class="pr-stat-card">
+      <div class="pr-stat-icon" style="background:#e0f2fe; color:#0369a1;">🧑‍🏫</div>
+      <div>
+        <div class="pr-stat-label">Active Teachers</div>
+        <div class="pr-stat-val" id="prStatTeacherCount">0</div>
+      </div>
+    </div>
+    <div class="pr-stat-card">
+      <div class="pr-stat-icon" style="background:#fef3c7; color:#b45309;">🎓</div>
+      <div>
+        <div class="pr-stat-label">Enrolled Students</div>
+        <div class="pr-stat-val" id="prStatStudentCount">0</div>
+      </div>
+    </div>
+    <div class="pr-stat-card">
+      <div class="pr-stat-icon" style="background:#dcfce7; color:#15803d;">📝</div>
+      <div>
+        <div class="pr-stat-label">Assessments Logged</div>
+        <div class="pr-stat-val" id="prStatAssessmentCount">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Internal Sub-Navigation Controls -->
+  <div class="pr-subtabs margin-top">
+    <button class="pr-subtab-btn active" onclick="switchPrincipalSubView('teachers', this)">🧑‍🏫 Teacher Management</button>
+    <button class="pr-subtab-btn" onclick="switchPrincipalSubView('students', this)">🎓 Student Directory & Scope</button>
+    <button class="pr-subtab-btn" onclick="switchPrincipalSubView('analytics', this)">📊 Academic Assessment Logs</button>
+  </div>
+
+  <!-- SUBVIEW 1: TEACHER MANAGEMENT -->
+  <div id="prViewTeachers" class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
+      <div>
+        <h3 style="margin:0;">Faculty & Teacher Roster</h3>
+        <p class="notice" style="margin:2px 0 0 0;">Manage teaching credentials, assigned classes, and specialized subjects.</p>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('modalCreateTeacher')">➕ Onboard New Teacher</button>
+    </div>
+
+    <div class="form-group" style="max-width:350px;">
+      <input type="text" id="prTeacherSearchInput" placeholder="🔍 Search by name or teacher ID..." oninput="renderPrincipalTeacherTable()">
+    </div>
+
+    <div style="overflow-x:auto;">
       <table class="report-table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Teacher Name</th>
-            <th>Assigned Classes</th>
-            <th>Assigned Subjects</th>
-            <th>Action</th>
+            <th style="width: 14%;">Teacher ID</th>
+            <th style="width: 20%;">Faculty Name</th>
+            <th style="width: 25%;">Assigned Classes</th>
+            <th style="width: 25%;">Assigned Subjects</th>
+            <th style="text-align:right; width: 16%;">Actions</th>
           </tr>
         </thead>
         <tbody id="principalTeacherTbody"></tbody>
       </table>
     </div>
+  </div>
 
-    <div class="card">
-      <h3>🎓 Student Authorization & Class Matrix</h3>
+  <!-- SUBVIEW 2: STUDENT MANAGEMENT -->
+  <div id="prViewStudents" class="card hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
+      <div>
+        <h3 style="margin:0;">Student Registry & Access Matrix</h3>
+        <p class="notice" style="margin:2px 0 0 0;">Control assigned classes for standard students or competitive aspirants.</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <input type="text" id="prStudentSearchInput" placeholder="🔍 Search student name or ID..." oninput="renderPrincipalStudentTable()">
+      </div>
+      <div class="form-group">
+        <select id="prStudentRoleFilter" onchange="renderPrincipalStudentTable()">
+          <option value="all">All Student Roles</option>
+          <option value="student">School Student Only</option>
+          <option value="aspirant">Competitive Aspirant Only</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto;">
       <table class="report-table">
         <thead>
           <tr>
-            <th>Student ID</th>
-            <th>Name</th>
-            <th>Role</th>
-            <th>Allowed Classes</th>
-            <th>Action</th>
+            <th style="width: 15%;">Student ID</th>
+            <th style="width: 25%;">Full Name</th>
+            <th style="width: 15%;">Role</th>
+            <th style="width: 25%;">Enrolled Classes</th>
+            <th style="text-align:right; width: 20%;">Actions</th>
           </tr>
         </thead>
         <tbody id="principalStudentTbody"></tbody>
       </table>
     </div>
+  </div>
 
-    <div class="card">
-      <h3>📊 Master Student Assessment Record</h3>
-      <div class="grid-3">
-        <div class="form-group"><label>Search Student:</label><input type="text" id="prFilterStudent" oninput="filterPrincipalScores()"></div>
-        <div class="form-group"><label>Filter Standard:</label><select id="prFilterStd" onchange="filterPrincipalScores()"></select></div>
-        <div class="form-group"><label>Filter Subject:</label><select id="prFilterSub" onchange="filterPrincipalScores()"></select></div>
+  <!-- SUBVIEW 3: ASSESSMENT LOGS & PERFORMANCE -->
+  <div id="prViewAnalytics" class="card hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+      <div>
+        <h3 style="margin:0;">School Assessment Master Registry</h3>
+        <p class="notice" style="margin:2px 0 0 0;">Inspect individual test submission scores and curriculum performance.</p>
       </div>
+    </div>
 
-      <table class="report-table margin-top">
+    <div class="grid-3" style="background:#f8f9fa; padding:12px; border-radius:6px; border:1px solid var(--border);">
+      <div class="form-group" style="margin:0;">
+        <label>Filter Student:</label>
+        <input type="text" id="prFilterStudent" placeholder="Search by name/ID..." oninput="filterPrincipalScores()">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Filter Standard:</label>
+        <select id="prFilterStd" onchange="filterPrincipalScores()"></select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Filter Subject:</label>
+        <select id="prFilterSub" onchange="filterPrincipalScores()"></select>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto; margin-top:15px;">
+      <table class="report-table">
         <thead>
           <tr>
-            <th>Student ID</th>
-            <th>Name</th>
+            <th>Student</th>
             <th>Class</th>
             <th>Subject</th>
             <th>Chapter & Topic</th>
             <th>Score</th>
+            <th>Result</th>
             <th>Date</th>
           </tr>
         </thead>
@@ -702,6 +780,71 @@
   </div>
 
 </div>
+
+<!-- MODAL: ONBOARD NEW TEACHER -->
+<div id="modalCreateTeacher" class="modal-overlay hidden no-print">
+  <div class="modal-content" style="max-width:500px;">
+    <button class="modal-close" onclick="closeModal('modalCreateTeacher')">&times;</button>
+    <h3>🧑‍🏫 Onboard Faculty Member</h3>
+    <p class="notice">Create a teacher profile with initial dashboard access.</p>
+    
+    <div class="form-group">
+      <label>Teacher User ID / Staff Code:</label>
+      <input type="text" id="newTeacherId" placeholder="e.g. TCH_MATH01">
+    </div>
+    <div class="form-group">
+      <label>Full Name:</label>
+      <input type="text" id="newTeacherName" placeholder="e.g. Mr. S. Ramanujan">
+    </div>
+    <div class="form-group">
+      <label>Initial Login Password:</label>
+      <input type="password" id="newTeacherPass" placeholder="Enter secure password">
+    </div>
+    
+    <button class="btn btn-primary w-100 margin-top" onclick="principalCreateTeacher()">✅ Save & Create Account</button>
+  </div>
+</div>
+
+<!-- MODAL: EDIT TEACHER SCOPE -->
+<div id="modalEditTeacherScope" class="modal-overlay hidden no-print">
+  <div class="modal-content" style="max-width:600px; max-height:85vh; overflow-y:auto;">
+    <button class="modal-close" onclick="closeModal('modalEditTeacherScope')">&times;</button>
+    <h3 id="editTeacherModalTitle">Configure Faculty Access</h3>
+    <p class="notice" id="editTeacherModalSub"></p>
+    <input type="hidden" id="editTeacherTargetId">
+
+    <label style="font-weight:600; display:block; margin-top:15px; margin-bottom:6px;">Assigned Classes:</label>
+    <div id="editTeacherStdContainer" class="chip-container"></div>
+
+    <label style="font-weight:600; display:block; margin-top:18px; margin-bottom:6px;">Assigned Subjects:</label>
+    <div id="editTeacherSubContainer" class="chip-container"></div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:25px;">
+      <button class="btn btn-outline-dark" onclick="closeModal('modalEditTeacherScope')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSaveTeacherPermissions()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT STUDENT SCOPE -->
+<div id="modalEditStudentScope" class="modal-overlay hidden no-print">
+  <div class="modal-content" style="max-width:550px; max-height:85vh; overflow-y:auto;">
+    <button class="modal-close" onclick="closeModal('modalEditStudentScope')">&times;</button>
+    <h3 id="editStudentModalTitle">Manage Student Enrollment</h3>
+    <p class="notice" id="editStudentModalSub"></p>
+    <input type="hidden" id="editStudentTargetId">
+
+    <label style="font-weight:600; display:block; margin-top:15px; margin-bottom:6px;">Allowed Standards:</label>
+    <div id="editStudentStdContainer" class="chip-container"></div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:25px;">
+      <button class="btn btn-outline-dark" onclick="closeModal('modalEditStudentScope')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSaveStudentPermissions()">💾 Save Enrollment</button>
+    </div>
+  </div>
+</div>
+
+
 
 <!-- PRINTABLE QUESTION PAPER & ANSWER KEY CONTAINER -->
 <div id="printContainer" class="print-only"></div>

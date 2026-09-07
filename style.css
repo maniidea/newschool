@@ -45,9 +45,19 @@ header {
 .container { max-width: 1000px; margin: 1.5rem auto; padding: 0 1rem; }
 .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
 .tab-btn {
-  flex: 1; min-width: 130px; padding: 12px; border: none; background: #dee2e6;
-  font-size: 0.95rem; font-weight: 600; cursor: pointer; border-radius: 6px;
-  transition: all 0.2s ease; color: var(--text); text-align: center;
+  flex: 1; 
+  min-width: 105px; 
+  padding: 10px 6px; 
+  border: none; 
+  background: #dee2e6;
+  font-size: 0.85rem; 
+  font-weight: 600; 
+  cursor: pointer; 
+  border-radius: 6px;
+  transition: all 0.2s ease; 
+  color: var(--text); 
+  text-align: center;
+  white-space: nowrap;
 }
 .tab-btn:hover { background: #ced4da; }
 .tab-btn.active { background: var(--primary); color: white; }

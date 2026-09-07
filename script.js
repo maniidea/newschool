@@ -457,7 +457,9 @@ function startChallengeDay(dayNumber) {
 
 function switchTab(tab, eventTarget) {
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active")) ;
-  ["playTab", "createTab", "manageTab", "reportsTab", "teacherScoresTab", "principalTab", "leaderboardTab", "feedbackTab", "myRepliesTab", "challenge30Tab"].forEach(id => {
+  
+  // Add "ncertBooksTab" to this array so it gets hidden when switching tabs
+  ["playTab", "createTab", "manageTab", "reportsTab", "teacherScoresTab", "principalTab", "leaderboardTab", "feedbackTab", "myRepliesTab", "challenge30Tab", "ncertBooksTab"].forEach(id => {
     const el = document.getElementById(id) ;
     if (el) el.classList.add("hidden") ;
   });
@@ -500,16 +502,16 @@ function switchTab(tab, eventTarget) {
     document.getElementById("feedbackTab").classList.remove("hidden") ;
     loadFeedbackTab() ;
   }
-if (tab === "ncertBooks") {
+  if (tab === "ncertBooks") {
     document.getElementById("ncertBooksTab").classList.remove("hidden") ;
     initNcertBooksTab() ;
   }
-
   if (tab === "myReplies") {
     document.getElementById("myRepliesTab").classList.remove("hidden") ;
     loadStudentReplies() ;
   }
 }
+
 
 async function loadFeedbackTab() {
   if (!currentUser) return ;

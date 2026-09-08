@@ -26,6 +26,7 @@ let bonusRetakesRemaining = 0 ;
 let currentAssessmentMode = "text";
 let recognitionInstance = null;
 let currentUtterance = null;
+let activeTestLanguage = "en"; // Declared once here ('en' for English, 'ta' for Tamil)
 
 // Audio Sound FX
 const soundCorrect = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg") ;
@@ -87,6 +88,15 @@ function populateAllDropdowns() {
     syncAuthorSubjects() ;
   }
 
+  const ncertStd = document.getElementById("ncertConfigStd");
+  if (ncertStd) ncertStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("");
+  
+  const ncertSub = document.getElementById("ncertConfigSub");
+  if (ncertSub) ncertSub.innerHTML = GLOBAL_SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join("");
+
+  const ncertViewStd = document.getElementById("ncertViewStdSelect");
+  if (ncertViewStd) ncertViewStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("");
+
   ["manageStdFilter", "repStdFilter", "tchRepStdFilter", "prFilterStd"].forEach(id => {
     const el = document.getElementById(id) ;
     if (el) el.innerHTML = '<option value="">All Standards</option>' + GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}</option>`).join("") ;
@@ -103,24 +113,28 @@ function populateAllDropdowns() {
   });
 }
 
+let masterBookLinks = [];
+
 async function loadPortalData() {
   try {
-    const url = `${SCRIPT_URL}?action=getInitialData${currentUser ? '&userId=' + encodeURIComponent(currentUser.id) : ''}` ;
-    const res = await fetch(url) ;
-    const data = await res.json() ;
+    const url = `${SCRIPT_URL}?action=getInitialData${currentUser ? '&userId=' + encodeURIComponent(currentUser.id) : ''}`;
+    const res = await fetch(url);
+    const data = await res.json();
 
     if (data && data.success) {
-      if (data.curriculum) masterCurriculum = data.curriculum ;
-      if (data.questions) masterQuestions = data.questions ;
+      if (data.curriculum) masterCurriculum = data.curriculum;
+      if (data.questions) masterQuestions = data.questions;
+      if (data.bookLinks) masterBookLinks = data.bookLinks;
       if (data.user) {
-        currentUser = data.user ;
-        localStorage.setItem("hmsUser", JSON.stringify(currentUser)) ;
+        currentUser = data.user;
+        localStorage.setItem("hmsUser", JSON.stringify(currentUser));
       }
-      populateAllDropdowns() ;
-      if (typeof updateAiPromptPreview === "function") updateAiPromptPreview() ;
+      populateAllDropdowns();
+      renderNcertBooksViewer();
+      if (typeof updateAiPromptPreview === "function") updateAiPromptPreview();
     }
   } catch (err) {
-    console.warn("Offline/Network Notice:", err) ;
+    console.warn("Offline/Network Notice:", err);
   }
 }
 
@@ -143,9 +157,15 @@ function updateAuthUI() {
     if (btnOpenLogin) btnOpenLogin.classList.add("hidden") ;
     if (btnOpenSignup) btnOpenSignup.classList.add("hidden") ;
     if (btnLogout) btnLogout.classList.remove("hidden") ;
+    
+    const streamSelect = document.getElementById("playStreamSelect");
+    if (streamSelect && currentUser.studentStream) {
+      streamSelect.value = currentUser.studentStream;
+    }
+
     if (userBadge) {
       userBadge.classList.remove("hidden") ;
-      let scope = `Class ${currentUser.standards.join(", ")}` ;
+      let scope = `Class ${currentUser.standards.join(", ")} (${(currentUser.studentStream || 'ncert').toUpperCase()})` ;
       if (currentUser.role === "principal") scope = "Master School Control" ;
       else if (currentUser.role === "aspirant") scope = "Aspirant Mode (Classes 5-12)" ;
       else if (currentUser.role === "teacher") scope = `Classes: [${currentUser.standards.join(",")}], Subs: [${currentUser.subjects.join(",")}]` ;
@@ -154,9 +174,9 @@ function updateAuthUI() {
 
     if (playScopeNotice) {
       if (currentUser.role === "student") {
-        playScopeNotice.innerText = `Attending Class ${currentUser.standards.join(", ")} Assessments.` ;
+        playScopeNotice.innerText = `Attending Class ${currentUser.standards.join(", ")} Assessments (${(currentUser.studentStream || 'ncert').toUpperCase()} Stream).` ;
       } else {
-        playScopeNotice.innerText = `Select Category, Standard, Subject, and Topic to begin.` ;
+        playScopeNotice.innerText = `Select Student Stream, Category, Standard, Subject, and Topic to begin.` ;
       }
     }
 
@@ -192,7 +212,7 @@ function updateAuthUI() {
     if (tabReplies) tabReplies.classList.add("hidden") ;
 
     if (playScopeNotice) {
-      playScopeNotice.innerText = `Select Category, Standard, Subject, and Topic to begin.` ;
+      playScopeNotice.innerText = `Select Student Stream, Category, Standard, Subject, and Topic to begin.` ;
     }
 
     document.querySelectorAll(".teacher-principal-only, .teacher-only, .principal-only").forEach(el => el.classList.add("hidden")) ;
@@ -219,16 +239,22 @@ function normalizeText(name) {
   return name.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function syncPlayStreamDropdowns() {
+  syncPlaySubjects();
+}
+
 function syncPlaySubjects() {
   const playStd = document.getElementById("playStdSelect");
   const subSelect = document.getElementById("playSubSelect");
+  const streamSelect = document.getElementById("playStreamSelect");
   if (!playStd || !subSelect) return;
 
   const std = playStd.value || "5";
+  const selectedStream = streamSelect ? streamSelect.value : "ncert";
   const subMap = new Map();
 
   masterQuestions
-    .filter(q => q.standard === std)
+    .filter(q => q.standard === std && (!q.stream || q.stream === selectedStream))
     .forEach(q => {
       if (q.subject) {
         const cleanName = normalizeText(q.subject);
@@ -249,14 +275,16 @@ function syncPlayChapters() {
   const playStd = document.getElementById("playStdSelect");
   const subSelect = document.getElementById("playSubSelect");
   const chapSelect = document.getElementById("playChapterSelect");
+  const streamSelect = document.getElementById("playStreamSelect");
   if (!playStd || !subSelect || !chapSelect) return;
 
   const std = playStd.value || "5";
   const sub = normalizeText(subSelect.value || "Science").toLowerCase();
+  const selectedStream = streamSelect ? streamSelect.value : "ncert";
   const chapterMap = new Map();
 
   masterQuestions
-    .filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub)
+    .filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && (!q.stream || q.stream === selectedStream))
     .forEach(q => {
       if (q.chapter) {
         const cleanName = normalizeText(q.chapter);
@@ -277,13 +305,15 @@ function syncPlayTopics() {
   const subSelect = document.getElementById("playSubSelect");
   const chapSelect = document.getElementById("playChapterSelect");
   const topicSelect = document.getElementById("playTopicSelect");
+  const streamSelect = document.getElementById("playStreamSelect");
   if (!playStd || !subSelect || !chapSelect || !topicSelect) return;
 
   const std = playStd.value || "5";
   const sub = normalizeText(subSelect.value || "Science").toLowerCase();
   const chap = chapSelect.value || "All";
+  const selectedStream = streamSelect ? streamSelect.value : "ncert";
 
-  let filtered = masterQuestions.filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub);
+  let filtered = masterQuestions.filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && (!q.stream || q.stream === selectedStream));
   if (chap !== "All") {
     filtered = filtered.filter(q => normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
   }
@@ -336,32 +366,35 @@ function closeModal(id) {
 }
 
 async function handleSignIn() {
-  const userId = document.getElementById("loginUserId").value.trim() ;
-  const pass = document.getElementById("loginPassword").value.trim() ;
-  if (!userId || !pass) return alert("Please enter User ID and Password.") ;
+  const userId = document.getElementById("loginUserId").value.trim();
+  const pass = document.getElementById("loginPassword").value.trim();
+  if (!userId || !pass) return alert("Please enter User ID and Password.");
 
-  const payload = { action: "loginUser", userId, password: pass } ;
+  const payload = { action: "loginUser", userId, password: pass };
   try {
-    const data = await callAppsScript(payload) ;
+    const data = await callAppsScript(payload);
     if (data && data.success) {
-      currentUser = data.user ;
-      localStorage.setItem("hmsUser", JSON.stringify(currentUser)) ;
-      closeModal("loginModal") ;
-      document.getElementById("loginUserId").value = "" ;
-      document.getElementById("loginPassword").value = "" ;
-      await loadPortalData() ;
-      updateAuthUI() ;
-      alert(`Welcome to HariMani School, ${currentUser.name}!`) ;
+      currentUser = data.user;
+      localStorage.setItem("hmsUser", JSON.stringify(currentUser));
+      closeModal("loginModal");
+      
+      document.getElementById("loginUserId").value = "";
+      document.getElementById("loginPassword").value = "";
+      
+      await loadPortalData();
+      updateAuthUI();
+      alert(`Welcome back, ${currentUser.name}! Login recorded in Google Sheet.`);
     } else {
-      alert("Sign In failed: " + (data ? data.error : "Unknown error")) ;
+      alert("Sign In failed: " + (data ? data.error : "Unknown error"));
     }
   } catch (err) {
-    alert("Connection error: " + err.message) ;
+    alert("Connection error: " + err.message);
   }
 }
 
 async function handleSignUp() {
   const userType = document.getElementById("signupUserType").value ;
+  const studentStream = document.getElementById("signupStudentStream").value ;
   const userId = document.getElementById("signupUserId").value.trim() ;
   const name = document.getElementById("signupName").value.trim() ;
   const pass = document.getElementById("signupPassword").value.trim() ;
@@ -372,6 +405,7 @@ async function handleSignUp() {
   const payload = {
     action: "registerUser", 
     userType: userType, 
+    studentStream: studentStream,
     userId: userId, 
     name: name, 
     password: pass, 
@@ -458,7 +492,6 @@ function startChallengeDay(dayNumber) {
 function switchTab(tab, eventTarget) {
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active")) ;
   
-  // Add "ncertBooksTab" to this array so it gets hidden when switching tabs
   ["playTab", "createTab", "manageTab", "reportsTab", "teacherScoresTab", "principalTab", "leaderboardTab", "feedbackTab", "myRepliesTab", "challenge30Tab", "ncertBooksTab"].forEach(id => {
     const el = document.getElementById(id) ;
     if (el) el.classList.add("hidden") ;
@@ -466,52 +499,18 @@ function switchTab(tab, eventTarget) {
 
   if (eventTarget) eventTarget.classList.add("active") ;
 
-  if (tab === "play") {
-    document.getElementById("playTab").classList.remove("hidden") ;
-    resetQuizView() ;
-  }
-  if (tab === "challenge30") {
-    document.getElementById("challenge30Tab").classList.remove("hidden") ;
-    load30DaysChallenge();
-  }
-  if (tab === "create") {
-    document.getElementById("createTab").classList.remove("hidden") ;
-    if (typeof updateAiPromptPreview === "function") updateAiPromptPreview() ;
-  }
-  if (tab === "manage") {
-    document.getElementById("manageTab").classList.remove("hidden") ;
-    renderManageTable() ;
-  }
-  if (tab === "reports") {
-    document.getElementById("reportsTab").classList.remove("hidden") ;
-    loadUserReports() ;
-  }
-  if (tab === "leaderboard") {
-    document.getElementById("leaderboardTab").classList.remove("hidden") ;
-    loadLeaderboard() ;
-  }
-  if (tab === "teacherScores") {
-    document.getElementById("teacherScoresTab").classList.remove("hidden") ;
-    loadTeacherStudentScores() ;
-  }
-  if (tab === "principal") {
-    document.getElementById("principalTab").classList.remove("hidden") ;
-    loadPrincipalDashboard() ;
-  }
-  if (tab === "feedback") {
-    document.getElementById("feedbackTab").classList.remove("hidden") ;
-    loadFeedbackTab() ;
-  }
-  if (tab === "ncertBooks") {
-    document.getElementById("ncertBooksTab").classList.remove("hidden") ;
-    initNcertBooksTab() ;
-  }
-  if (tab === "myReplies") {
-    document.getElementById("myRepliesTab").classList.remove("hidden") ;
-    loadStudentReplies() ;
-  }
+  if (tab === "play") document.getElementById("playTab").classList.remove("hidden"), resetQuizView() ;
+  if (tab === "challenge30") document.getElementById("challenge30Tab").classList.remove("hidden"), load30DaysChallenge();
+  if (tab === "create") document.getElementById("createTab").classList.remove("hidden"), updateAiPromptPreview();
+  if (tab === "manage") document.getElementById("manageTab").classList.remove("hidden"), renderManageTable() ;
+  if (tab === "reports") document.getElementById("reportsTab").classList.remove("hidden"), loadUserReports() ;
+  if (tab === "leaderboard") document.getElementById("leaderboardTab").classList.remove("hidden"), loadLeaderboard() ;
+  if (tab === "teacherScores") document.getElementById("teacherScoresTab").classList.remove("hidden"), loadTeacherStudentScores() ;
+  if (tab === "principal") document.getElementById("principalTab").classList.remove("hidden"), loadPrincipalDashboard() ;
+  if (tab === "feedback") document.getElementById("feedbackTab").classList.remove("hidden"), loadFeedbackTab() ;
+  if (tab === "ncertBooks") document.getElementById("ncertBooksTab").classList.remove("hidden"), initNcertBooksTab() ;
+  if (tab === "myReplies") document.getElementById("myRepliesTab").classList.remove("hidden"), loadStudentReplies() ;
 }
-
 
 async function loadFeedbackTab() {
   if (!currentUser) return ;
@@ -533,16 +532,7 @@ async function loadFeedbackTab() {
 }
 
 function initNcertBooksTab() {
-  const stdSelect = document.getElementById("ncertConfigStd") ;
-  const subSelect = document.getElementById("ncertConfigSub") ;
   const viewStdSelect = document.getElementById("ncertViewStdSelect") ;
-
-  if (stdSelect && GLOBAL_STANDARDS) {
-    stdSelect.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("") ;
-  }
-  if (subSelect && GLOBAL_SUBJECTS) {
-    subSelect.innerHTML = GLOBAL_SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join("") ;
-  }
   if (viewStdSelect && GLOBAL_STANDARDS) {
     let allowed = GLOBAL_STANDARDS ;
     if (currentUser && currentUser.role === "student" && currentUser.standards && currentUser.standards.length > 0) {
@@ -553,84 +543,113 @@ function initNcertBooksTab() {
       viewStdSelect.value = currentUser.standards[0] ;
     }
   }
+  const viewStream = document.getElementById("ncertViewStreamSelect");
+  if (viewStream && currentUser && currentUser.studentStream) {
+    viewStream.value = currentUser.studentStream;
+  }
   renderNcertBooksViewer() ;
 }
 
-function saveNcertDriveLink() {
-  const std = document.getElementById("ncertConfigStd").value ;
-  const sub = document.getElementById("ncertConfigSub").value ;
-  const url = document.getElementById("ncertDriveUrlInput").value.trim() ;
+async function saveNcertDriveLink() {
+  const stream = document.getElementById("configBookStream").value;
+  const std = (document.getElementById("ncertConfigStd").value || "").replace(/[^0-9a-zA-Z\-]/g, "");
+  const sub = document.getElementById("ncertConfigSub").value;
+  const url = document.getElementById("ncertDriveUrlInput").value.trim();
 
-  if (!url) return alert("தயவுசெய்து கூகுள் டிரைவ் இணைப்பை (Drive URL) உள்ளிடவும்.") ;
+  if (!url) return alert("தயவுசெய்து கூகுள் டிரைவ் இணைப்பை (Drive URL) உள்ளிடவும்.");
 
-  let linksMap = {} ;
-  try {
-    linksMap = JSON.parse(localStorage.getItem("hms_ncert_links") || "{}") ;
-  } catch(e) { linksMap = {} ; }
+  const saveBtn = document.querySelector("#ncertManagerSection button");
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerText = "⏳ கூகுள் ஷீட்டில் சேமிக்கப்படுகிறது...";
+  }
 
-  const key = `${std}_${sub}` ;
-  linksMap[key] = {
-    standard: std, 
-    subject: sub, 
-    url: url, 
-    updatedBy: currentUser ? currentUser.name : "Principal", 
-    date: new Date().toLocaleDateString('ta-IN') 
+  const payload = {
+    action: "saveBookLink",
+    stream: stream,
+    standard: std,
+    subject: sub,
+    url: url,
+    updatedBy: currentUser ? `${currentUser.name} (${currentUser.role.toUpperCase()})` : "Principal"
   };
 
-  localStorage.setItem("hms_ncert_links", JSON.stringify(linksMap)) ;
-  alert(`✅ வகுப்பு ${std} - ${sub} பாடத்திற்கான டிரைவ் இணைப்பு வெற்றிகரமாக சேமிக்கப்பட்டது!`) ;
-  document.getElementById("ncertDriveUrlInput").value = "" ;
-  renderNcertBooksViewer() ;
+  try {
+    const res = await callAppsScript(payload);
+    if (res && res.success) {
+      alert(`✅ [${stream.toUpperCase()}] வகுப்பு ${std} - ${sub} பாடத்திற்கான டிரைவ் இணைப்பு கூகுள் ஷீட்டில் சேமிக்கப்பட்டது!`);
+      document.getElementById("ncertDriveUrlInput").value = "";
+      await loadPortalData();
+    } else {
+      alert("பிழை: கூகுள் ஷீட்டில் சேமிக்க முடியவில்லை.");
+    }
+  } catch (err) {
+    alert("இணைப்புப் பிழை: " + err.message);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerText = "💾 டிரைவ் இணைப்பைச் சேமி (Save Link)";
+    }
+  }
 }
 
 function renderNcertBooksViewer() {
-  const stdSelect = document.getElementById("ncertViewStdSelect") ;
-  const searchInput = document.getElementById("ncertSearchInput") ;
-  const container = document.getElementById("ncertBooksGridContainer") ;
-  if (!container || !stdSelect) return ;
+  const streamSelect = document.getElementById("ncertViewStreamSelect");
+  const stdSelect = document.getElementById("ncertViewStdSelect");
+  const searchInput = document.getElementById("ncertSearchInput");
+  const container = document.getElementById("ncertBooksGridContainer");
+  if (!container || !stdSelect) return;
 
-  const std = stdSelect.value ;
-  const search = searchInput ? searchInput.value.toLowerCase() : "" ;
+  let rawStream = streamSelect ? streamSelect.value : "ncert";
+  let stream = "ncert";
+  if (rawStream.toLowerCase().includes("metric")) stream = "metric";
+  else if (rawStream.toLowerCase().includes("state")) stream = "stateboard";
 
-  let linksMap = {} ;
-  try {
-    linksMap = JSON.parse(localStorage.getItem("hms_ncert_links") || "{}") ;
-  } catch(e) { linksMap = {} ; }
+  const rawStd = stdSelect.value || "5";
+  const std = rawStd.replace(/[^0-9a-zA-Z\-]/g, "").trim();
+  const search = searchInput ? searchInput.value.toLowerCase() : "";
 
-  let html = "" ;
-  let matchedCount = 0 ;
+  let html = "";
+  let matchedCount = 0;
 
   GLOBAL_SUBJECTS.forEach(sub => {
-    if (search && !sub.toLowerCase().includes(search)) return ;
+    if (search && !sub.toLowerCase().includes(search)) return;
 
-    const key = `${std}_${sub}` ;
-    const record = linksMap[key] ;
-    const hasLink = record && record.url ;
+    const record = masterBookLinks.find(item => {
+      const itemStream = (item.stream || "").toString().trim().toLowerCase();
+      const itemStd = (item.standard || "").toString().replace(/[^0-9a-zA-Z\-]/g, "").trim();
+      const itemSub = (item.subject || "").toString().trim().toLowerCase();
+      
+      return itemStream === stream && 
+             itemStd.toLowerCase() === std.toLowerCase() && 
+             itemSub === sub.toLowerCase();
+    });
 
-    matchedCount++ ;
+    const hasLink = record && record.url && record.url.length > 5;
+    matchedCount++;
+
     html += `
       <div class="card" style="margin-bottom:0; padding:15px; text-align:center; background:${hasLink ? '#f0fdf4' : '#fff'}; border-color:${hasLink ? '#bbf7d0' : 'var(--border)'};">
         <div style="font-size:2rem; margin-bottom:8px;">📖</div>
         <h4 style="margin:0 0 6px 0; color:var(--primary);">${sub}</h4>
-        <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px 0;">வகுப்பு ${std} NCERT புத்தகம்</p>
+        <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px 0;">[${stream.toUpperCase()}] வகுப்பு ${std} புத்தகம்</p>
         ${hasLink ? `
           <a href="${record.url}" target="_blank" class="btn btn-success" style="width:100%; font-size:0.85rem; padding:8px; text-decoration:none;">
             📂 டிரைவ் கோப்பகத்தைத் திற (Open Drive)
           </a>
-          <div style="font-size:0.75rem; color:#15803d; margin-top:6px;">புதுப்பிக்கப்பட்டது: ${record.date}</div>
+          <div style="font-size:0.75rem; color:#15803d; margin-top:6px;">புதுப்பிக்கப்பட்டது: ${record.date || 'recently'}</div>
         ` : `
           <button class="btn btn-outline-dark" style="width:100%; font-size:0.85rem; padding:8px;" disabled>
             ⏳ இணைப்பு விரைவில் இணைக்கப்படும்
           </button>
         `}
       </div>
-    ` ;
+    `;
   });
 
   if (matchedCount === 0) {
-    container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; color:#64748b; padding:20px;">பாடங்கள் எதுவும் கிடைக்கவில்லை.</div>` ;
+    container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; color:#64748b; padding:20px;">பாடங்கள் எதுவும் கிடைக்கவில்லை.</div>`;
   } else {
-    container.innerHTML = html ;
+    container.innerHTML = html;
   }
 }
 
@@ -759,25 +778,16 @@ function speakText(text, onComplete) {
     window.speechSynthesis.cancel();
     currentUtterance = new SpeechSynthesisUtterance(text);
     
-    const isTamil = /[\u0B80-\u0BFF]/.test(text);
+    const isTamil = (activeTestLanguage === 'ta') || /[\u0B80-\u0BFF]/.test(text);
     currentUtterance.lang = isTamil ? 'ta-IN' : 'en-US';
     currentUtterance.rate = 0.9;
 
     const voices = window.speechSynthesis.getVoices();
     const targetVoice = voices.find(v => v.lang.startsWith(isTamil ? 'ta' : 'en'));
-    if (targetVoice) {
-      currentUtterance.voice = targetVoice;
-    }
+    if (targetVoice) currentUtterance.voice = targetVoice;
 
-    currentUtterance.onend = () => {
-      currentUtterance = null;
-      if (typeof onComplete === "function") onComplete();
-    };
-
-    currentUtterance.onerror = () => {
-      currentUtterance = null;
-      if (typeof onComplete === "function") onComplete();
-    };
+    currentUtterance.onend = () => { currentUtterance = null; if (typeof onComplete === "function") onComplete(); };
+    currentUtterance.onerror = () => { currentUtterance = null; if (typeof onComplete === "function") onComplete(); };
 
     window.speechSynthesis.speak(currentUtterance);
   } else if (typeof onComplete === "function") {
@@ -785,14 +795,44 @@ function speakText(text, onComplete) {
   }
 }
 
-// Preload voices
-if ('speechSynthesis' in window) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-  };
+// Active language state for the running assessment ('en' or 'ta')
+// Remove 'let' so it just updates the existing variable instead of redeclaring it
+activeTestLanguage = targetLang;
+// Triggered when the user clicks English or Tamil toggle button during test
+async function translateTestContent(targetLang) {
+  activeTestLanguage = targetLang; // Updates the existing variable safely
+  renderCurrentQuestion();
+}
+
+async function translateTextContent(text, targetLang) {
+  if (!text || targetLang === 'en') return text;
+  
+  try {
+    const payload = {
+      action: "translateText",
+      text: text,
+      targetLang: targetLang
+    };
+    
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await res.json();
+    if (data && data.success) {
+      return data.translated;
+    }
+  } catch (e) {
+    console.warn("Apps Script Translation fallback:", e);
+  }
+  
+  return text + " [தமிழ்]";
 }
 
 async function startQuiz() {
+  const streamEl = document.getElementById("playStreamSelect");
   const typeEl = document.getElementById("playTypeSelect");
   const stdEl = document.getElementById("playStdSelect");
   const subEl = document.getElementById("playSubSelect");
@@ -803,6 +843,7 @@ async function startQuiz() {
   const countEl = document.getElementById("playCountInput");
   const timerEl = document.getElementById("playTimerSelect");
 
+  const chosenStream = streamEl ? streamEl.value : "ncert";
   const chosenType = typeEl ? typeEl.value : "all";
   const std = stdEl ? stdEl.value : "5";
   const sub = subEl && subEl.value ? normalizeText(subEl.value).toLowerCase() : "science";
@@ -812,17 +853,14 @@ async function startQuiz() {
   
   currentAssessmentMode = modeEl ? modeEl.value : "text";
 
-  // If voice mode is selected, request microphone permission once at the very beginning
   if (currentAssessmentMode === "voice") {
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Release the stream tracks immediately so the mic isn't permanently locked until needed
         stream.getTracks().forEach(track => track.stop());
       }
     } catch (err) {
-      console.warn("Microphone permission denied or unavailable:", err);
-      alert("Microphone access is required for Voice Conversational Mode. Switching back to Text Mode.");
+      console.warn("Microphone permission denied:", err);
       currentAssessmentMode = "text";
       if (modeEl) modeEl.value = "text";
     }
@@ -838,16 +876,17 @@ async function startQuiz() {
   perQuestionTime = timerEl ? Number(timerEl.value) : 20;
 
   let matched = masterQuestions.filter(q => {
+    const mStream = (!q.stream || q.stream === chosenStream);
     const mType = (chosenType === "all" || (q.type || "mcq").toLowerCase() === chosenType);
     const mStd = q.standard === std;
     const mSub = normalizeText(q.subject).toLowerCase() === sub;
     const mChap = (chap === "All" || normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
     const mTopic = (topic === "All" || normalizeText(q.topic).toLowerCase() === topic.toLowerCase());
-    return mType && mStd && mSub && mChap && mTopic;
+    return mStream && mType && mStd && mSub && mChap && mTopic;
   });
 
   if (matched.length === 0) {
-    return alert(`No questions found matching your filter in Class ${std} - ${sub.toUpperCase()}.`);
+    return alert(`No questions found matching your filter in [${chosenStream.toUpperCase()}] Class ${std} - ${sub.toUpperCase()}.`);
   }
 
   matched.sort(() => Math.random() - 0.5);
@@ -866,7 +905,7 @@ async function startQuiz() {
   renderCurrentQuestion();
 }
 
-function renderCurrentQuestion() {
+async function renderCurrentQuestion() {
   clearInterval(timerInterval);
   clearTimeout(autoNextTimeout);
   isAnswered = false;
@@ -889,35 +928,55 @@ function renderCurrentQuestion() {
   const total = activeQuizList.length;
   const qType = (q.type || "mcq").toLowerCase();
 
-  const labels = {
-    mcq: "Multiple Choice Question",
-    tf: "True or False",
-    fib: "Fill in the Blanks",
-    match: "Match the Following"
-  };
-
   const badgeEl = document.getElementById("quizProgressBadge");
-  if (badgeEl) badgeEl.innerText = `Question ${currentQIndex + 1} of ${total} | [${(labels[qType] || qType).toUpperCase()}]`;
-  
-  const nextBtn = document.getElementById("btnNextQuestion");
-  if (nextBtn) nextBtn.innerText = (currentQIndex === total - 1) ? "Submit Test 🏁" : "Next Question ⏩";
+  if (badgeEl) badgeEl.innerText = `Question ${currentQIndex + 1} of ${total} | [${qType.toUpperCase()}]`;
 
   const area = document.getElementById("singleQuestionArea");
   if (!area) return;
 
-  const questionText = q.question || q.prompt || "Question statement missing";
-  const safeQuestionText = questionText.replace(/'/g, "\\'");
-  const audioBtnHtml = `<button class="btn btn-outline-dark voice-btn" onclick="speakText('${safeQuestionText}')" title="கேள்வியை வாசி">🔊</button>`;
+  let questionText = q.question || q.prompt || "";
+  if (activeTestLanguage === 'ta') {
+    questionText = await translateTextContent(questionText, 'ta');
+  }
 
-  if (qType === "tf") {
+  const safeQuestionText = questionText.replace(/'/g, "\\'");
+  const audioBtnHtml = `<button class="btn btn-outline-dark voice-btn" onclick="speakText('${safeQuestionText}')" title="Read Question">🔊</button>`;
+
+  if (qType === "mcq") {
+    let optA = q.optA || '';
+    let optB = q.optB || '';
+    let optC = q.optC || '';
+    let optD = q.optD || '';
+
+    if (activeTestLanguage === 'ta') {
+      optA = await translateTextContent(optA, 'ta');
+      optB = await translateTextContent(optB, 'ta');
+      optC = await translateTextContent(optC, 'ta');
+      optD = await translateTextContent(optD, 'ta');
+    }
+
+    area.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
+        ${audioBtnHtml}
+      </div>
+      <div class="options-grid">
+        <button class="opt-btn" onclick="checkMcqAnswer('1', this)">A. ${optA}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('2', this)">B. ${optB}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('3', this)">C. ${optC}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('4', this)">D. ${optD}</button>
+      </div>
+      <div id="explanationBoxArea"></div>
+    `;
+  } else if (qType === "tf") {
     area.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
       </div>
       <div class="options-grid" style="grid-template-columns: 1fr 1fr; margin-top:20px;">
-        <button class="opt-btn text-center" style="font-size:1.1rem; font-weight:bold;" onclick="checkTfAnswer('True', this)">✅ True</button>
-        <button class="opt-btn text-center" style="font-size:1.1rem; font-weight:bold;" onclick="checkTfAnswer('False', this)">❌ False</button>
+        <button class="opt-btn text-center" style="font-size:1.1rem; font-weight:bold;" onclick="checkTfAnswer('True', this)">✅ True / சரி</button>
+        <button class="opt-btn text-center" style="font-size:1.1rem; font-weight:bold;" onclick="checkTfAnswer('False', this)">❌ False / தவறு</button>
       </div>
       <div id="explanationBoxArea"></div>
     `;
@@ -973,119 +1032,13 @@ function renderCurrentQuestion() {
         <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
       </div>
-      <div class="options-grid">
-        <button class="opt-btn" onclick="checkMcqAnswer('1', this)">A. ${q.optA || ''}</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('2', this)">B. ${q.optB || ''}</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('3', this)">C. ${q.optC || ''}</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('4', this)">D. ${q.optD || ''}</button>
-      </div>
       <div id="explanationBoxArea"></div>
     `;
   }
 
   setupTimer();
-
-  // கேள்வியுடன் சேர்த்து ஆப்ஷன்களையும் குரலில் வாசித்தல்
-  let speechText = questionText;
-  if (qType === "mcq") {
-    speechText += `. Option A: ${q.optA}. Option B: ${q.optB}. Option C: ${q.optC}. Option D: ${q.optD}.`;
-  } else if (qType === "tf") {
-    speechText += `. True or False?`;
-  } else if (qType === "fib") {
-    speechText += `. Fill in the blank.`;
-  } else if (qType === "match") {
-    speechText += `. Match the following.`;
-  }
-
-  // கேள்வியையும் ஆப்ஷன்களையும் வாசித்து முடித்ததும் குரல்வழிப் பதிவைத் தொடங்குதல்
-  speakText(speechText, () => {
-    if (currentAssessmentMode === "voice" && !isAnswered) {
-      startVoiceListeningSession(qType);
-    }
-  });
 }
 
-function startVoiceListeningSession(qType) {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return;
-
-  recognitionInstance = new SpeechRecognition();
-  recognitionInstance.lang = 'en-US';
-  recognitionInstance.interimResults = true;
-  recognitionInstance.maxAlternatives = 1;
-
-  recognitionInstance.onstart = function() {
-    const transcriptBox = document.getElementById("voiceTranscriptBox");
-    if (transcriptBox) transcriptBox.innerText = "🎙️ கேட்கிறது (Listening)... பேசவும்...";
-  };
-
-  // ⬇️ இந்த இடத்தில் தான் நீங்கள் கொடுத்த onresult பங்கஷனை ஒட்ட வேண்டும் ⬇️
-  recognitionInstance.onresult = function(event) {
-    if (isAnswered) return;
-    
-    const spokenText = event.results[0][0].transcript.trim().toLowerCase();
-    const transcriptBox = document.getElementById("voiceTranscriptBox");
-    if (transcriptBox) {
-      transcriptBox.innerText = `🗣️ நீங்கள் கூறியது: "${spokenText}"`;
-    }
-    console.log("Student spoke:", spokenText);
-
-    const q = activeQuizList[currentQIndex];
-    if (!q) return;
-
-    const qType = (q.type || "mcq").toLowerCase();
-
-    if (qType === "mcq") {
-      if (spokenText.includes("a") || spokenText.includes("1") || spokenText.includes("முதல்")) {
-        checkMcqAnswer('1', document.querySelectorAll(".opt-btn")[0]);
-      } else if (spokenText.includes("b") || spokenText.includes("2")) {
-        checkMcqAnswer('2', document.querySelectorAll(".opt-btn")[1]);
-      } else if (spokenText.includes("c") || spokenText.includes("3")) {
-        checkMcqAnswer('3', document.querySelectorAll(".opt-btn")[2]);
-      } else if (spokenText.includes("d") || spokenText.includes("4")) {
-        checkMcqAnswer('4', document.querySelectorAll(".opt-btn")[3]);
-      }
-    } 
-    else if (qType === "tf") {
-      if (spokenText.includes("true") || spokenText.includes("சரி") || spokenText.includes("a")) {
-        checkTfAnswer('True', document.querySelectorAll(".opt-btn")[0]);
-      } else if (spokenText.includes("false") || spokenText.includes("தவறு") || spokenText.includes("b")) {
-        checkTfAnswer('False', document.querySelectorAll(".opt-btn")[1]);
-      }
-    }
-    else if (qType === "fib") {
-      const input = document.getElementById("fibInput");
-      if (input) {
-        let finalAns = spokenText;
-        const correctAns = (q.correctOpt || "").toString().trim().toLowerCase();
-        
-        if (correctAns === "gas" && (finalAns === "guess" || finalAns === "gas")) {
-          finalAns = "gas";
-        }
-
-        input.value = finalAns;
-        checkFibAnswer();
-      }
-    }
-  };
-
-  recognitionInstance.onerror = function(event) {
-    const transcriptBox = document.getElementById("voiceTranscriptBox");
-    if (transcriptBox) transcriptBox.innerText = "⚠️ குரல் அடையாளம் காணப்படவில்லை. மீண்டும் முயற்சிக்கவும்.";
-  };
-
-  recognitionInstance.start();
-}
-
-// ஒருவேளை HTML-ல் பாக்ஸ் இல்லையென்றால் தற்காலிகமாக உருவாக்க
-function createTranscriptBox() {
-  const area = document.getElementById("singleQuestionArea");
-  const div = document.createElement("div");
-  div.id = "voiceTranscriptBox";
-  div.style.cssText = "margin-top:10px; font-style:italic; color:#003366; font-weight:600;";
-  area.appendChild(div);
-  return div;
-}
 function setupTimer() {
   const timerBadge = document.getElementById("timerContainer") ;
   const track = document.getElementById("timerBarTrack") ;
@@ -1124,7 +1077,7 @@ function showExplanationBox() {
 
   boxArea.innerHTML = `
     <div class="explanation-card" style="margin-top:15px;">
-      <strong>💡 ஆசிரியரின் நேரடி வழிகாட்டல் & விளக்கம்:</strong> ${q.explanation}
+      <strong>💡 ஆசிரியர் விளக்கம் (${(q.stream || 'ncert').toUpperCase()}):</strong> ${q.explanation}
     </div>
   ` ;
 }
@@ -1133,10 +1086,6 @@ function checkMcqAnswer(selected, btn) {
   if (isAnswered) return ;
   isAnswered = true ;
   clearInterval(timerInterval) ;
-
-  if (recognitionInstance) {
-    try { recognitionInstance.stop(); } catch(e) {}
-  }
 
   const q = activeQuizList[currentQIndex] ;
   const correct = q.correctOpt.toString().trim() ;
@@ -1173,19 +1122,9 @@ function checkTfAnswer(selected, btn) {
   isAnswered = true;
   clearInterval(timerInterval);
 
-  if (recognitionInstance) {
-    try { recognitionInstance.stop(); } catch(e) {}
-  }
-
   const q = activeQuizList[currentQIndex];
-  let rawCorrect = (q.correctOpt !== undefined && q.correctOpt !== null) 
-    ? q.correctOpt.toString().trim().toLowerCase() 
-    : "false";
-
-  let normalizedCorrect = "false";
-  if (rawCorrect === "true" || rawCorrect === "1" || rawCorrect === "t") {
-    normalizedCorrect = "true";
-  }
+  let rawCorrect = (q.correctOpt !== undefined && q.correctOpt !== null) ? q.correctOpt.toString().trim().toLowerCase() : "false";
+  let normalizedCorrect = (rawCorrect === "true" || rawCorrect === "1" || rawCorrect === "t") ? "true" : "false";
 
   const selectedNorm = selected.toString().trim().toLowerCase();
   const isCorrect = (selectedNorm === normalizedCorrect);
@@ -1216,9 +1155,7 @@ function checkTfAnswer(selected, btn) {
   });
 
   showExplanationBox();
-  if (perQuestionTime > 0) {
-    autoNextTimeout = setTimeout(() => nextQuestion(true), 4500);
-  }
+  if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 4500);
 }
 
 function checkFibAnswer() {
@@ -1229,11 +1166,6 @@ function checkFibAnswer() {
 
   isAnswered = true ;
   clearInterval(timerInterval) ;
-
-  if (recognitionInstance) {
-    try { recognitionInstance.stop(); } catch(e) {}
-  }
-
   input.disabled = true ;
   const btnSubmit = document.getElementById("btnSubmitFib") ;
   if (btnSubmit) btnSubmit.disabled = true ;
@@ -1325,10 +1257,6 @@ function handleTimeUp() {
   if (isAnswered) return ;
   isAnswered = true ;
 
-  if (recognitionInstance) {
-    try { recognitionInstance.stop(); } catch(e) {}
-  }
-
   const q = activeQuizList[currentQIndex] ;
   const qType = (q.type || "mcq").toLowerCase() ;
 
@@ -1390,10 +1318,6 @@ async function finishQuiz() {
   clearInterval(timerInterval) ;
   clearTimeout(autoNextTimeout) ;
 
-  if (recognitionInstance) {
-    try { recognitionInstance.stop(); } catch(e) {}
-  }
-
   document.getElementById("quizActiveCard").classList.add("hidden") ;
   document.getElementById("quizResultCard").classList.remove("hidden") ;
 
@@ -1405,47 +1329,36 @@ async function finishQuiz() {
   const btnWrong = document.getElementById("btnRetakeWrong") ;
   const btnCert = document.getElementById("btnDownloadCert") ;
 
-  if (btnWrong) {
-    btnWrong.classList.toggle("hidden", wrongQuestionsVault.length === 0) ;
-  }
-  if (btnCert) {
-    btnCert.classList.toggle("hidden", pct < 60) ;
-  }
+  if (btnWrong) btnWrong.classList.toggle("hidden", wrongQuestionsVault.length === 0) ;
+  if (btnCert) btnCert.classList.toggle("hidden", pct < 60) ;
 
   let msg = "Sign up or sign in to save permanent score history!" ;
 
   if (currentUser) {
     if (pct === 100) {
-      if (typeof confetti === "function") {
-        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }) ;
-      }
+      if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }) ;
       msg = "🌟 PERFECT SCORE (100%)! போனஸ் சலுகை: 4 கூடுதல் தேர்வுகள் மற்றும் ஆசிரியர் பின்னூட்டம் திறக்கப்பட்டது!" ;
       bonusRetakesRemaining += 4 ;
       if (bonusBox) bonusBox.classList.remove("hidden") ;
     } else if (pct >= 80) {
-      if (typeof confetti === "function") {
-        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } }) ;
-      }
-      msg = "🎉 சிறப்பான தேர்ச்சி! தொடர்ந்து பயிற்சி செய்து 100% மதிப்பெண் பெற முயலவும்." ;
+      if (typeof confetti === "function") confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } }) ;
+      msg = "🎉 சிறப்பான தேர்ச்சி!" ;
       if (bonusBox) bonusBox.classList.add("hidden") ;
     } else {
       msg = "பாடங்களை மீண்டும் படித்து உங்கள் மதிப்பெண்களை உயர்த்தவும்!" ;
       if (bonusBox) bonusBox.classList.add("hidden") ;
     }
+
+    const challengeKey = `hms_challenge_${currentUser.id}`;
+    let currentDays = parseInt(localStorage.getItem(challengeKey) || "0", 10);
+    if (currentDays < 30) localStorage.setItem(challengeKey, currentDays + 1);
   } else {
     if (bonusBox) bonusBox.classList.add("hidden") ;
   }
 
-  if (currentUser) {
-    const challengeKey = `hms_challenge_${currentUser.id}`;
-    let currentDays = parseInt(localStorage.getItem(challengeKey) || "0", 10);
-    if (currentDays < 30) {
-      localStorage.setItem(challengeKey, currentDays + 1);
-    }
-  }
-
   document.getElementById("resultFeedback").innerText = msg ;
 
+  const streamVal = document.getElementById("playStreamSelect") ? document.getElementById("playStreamSelect").value : "ncert";
   const payload = {
     action: "saveScore", 
     userId: currentUser ? currentUser.id : "GUEST", 
@@ -1455,16 +1368,15 @@ async function finishQuiz() {
     chapter: document.getElementById("playChapterSelect").value, 
     topic: document.getElementById("playTopicSelect").value, 
     score: userScore, 
-    total: total 
+    total: total,
+    stream: streamVal
   };
 
   try { await callAppsScript(payload); } catch (e) { console.warn("Score save:", e); } 
 }
 
 function retakeWrongOnly() {
-  if (!wrongQuestionsVault || wrongQuestionsVault.length === 0) {
-    return alert("தவறான வினாக்கள் எதுவும் இல்லை!") ;
-  }
+  if (!wrongQuestionsVault || wrongQuestionsVault.length === 0) return alert("தவறான வினாக்கள் எதுவும் இல்லை!") ;
   activeQuizList = [...wrongQuestionsVault] ;
   wrongQuestionsVault = [] ;
   examReviewRecord = [] ;
@@ -1485,56 +1397,40 @@ function downloadCertificate() {
   const studentName = (currentUser && currentUser.name) ? currentUser.name : "மதிப்புமிகு மாணவர்" ;
   const std = document.getElementById("playStdSelect") ? document.getElementById("playStdSelect").value : "5" ;
   const sub = document.getElementById("playSubSelect") ? document.getElementById("playSubSelect").value : "பொது மதிப்பீடு" ;
+  const streamVal = document.getElementById("playStreamSelect") ? document.getElementById("playStreamSelect").value.toUpperCase() : "NCERT";
   const dateStr = new Date().toLocaleDateString('ta-IN') ;
 
   container.innerHTML = `
     <div id="certCaptureElement" style="width: 900px; padding: 40px; border: 10px solid #003366; background: #ffffff; text-align: center; font-family: 'Segoe UI', Arial, sans-serif; box-sizing: border-box; color: #000000; margin: 0 auto;">
       <div style="border: 2px solid #e65100; padding: 25px;">
-        <h1 style="color: #003366; font-size: 30px; margin: 0 0 8px 0; font-weight: bold;"> HariMani School </h1>
-        <h3 style="color: #e65100; font-size: 18px; margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 1px;">Certificate of Achievement</h3>
-        
+        <h1 style="color: #003366; font-size: 30px; margin: 0 0 8px 0; font-weight: bold;"> HariMani School (${streamVal} Stream) </h1>
+        <h3 style="color: #e65100; font-size: 18px; margin: 0 0 20px 0; text-transform: uppercase;">Certificate of Achievement</h3>
         <p style="font-size: 16px; color: #475569; margin: 15px 0;">இச்சான்றிதழ் பெருமையுடன் வழங்கப்படுகிறது</p>
-        
         <h2 style="font-size: 28px; color: #0f172a; margin: 10px 0 20px 0; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; display: inline-block;">
           ${studentName}
         </h2>
-        
         <p style="font-size: 16px; color: #334155; line-height: 1.8; margin: 15px 30px;">
-          வகுப்பு <strong>${std}</strong>, பாடம் <strong>${sub}</strong> ஆகியவற்றில் நடைபெற்ற மதிப்பீட்டுத் தேர்வில் பங்குபெற்று 
-          <strong>${userScore} / ${total} (${pct}%)</strong> மதிப்பெண்கள் பெற்று மிகச் சிறப்பாகத் தேர்ச்சி அடைந்துள்ளார் எனச் சான்றளிக்கப்படுகிறது.
+          வகுப்பு <strong>${std}</strong>, பாடம் <strong>${sub}</strong> மதிப்பீட்டுத் தேர்வில் பங்குபெற்று 
+          <strong>${userScore} / ${total} (${pct}%)</strong> மதிப்பெண்கள் பெற்று தேர்ச்சி அடைந்துள்ளார்.
         </p>
-        
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 50px; padding: 0 40px;">
-          <div style="text-align: center;">
-            <div style="font-size: 15px; color: #334155; font-weight: 500;">நாள்: ${dateStr}</div>
-          </div>
-          <div style="text-align: center;">
-            <div style="font-size: 16px; font-weight: bold; color: #003366; border-top: 2px solid #003366; padding-top: 5px; min-width: 180px;">
-              HARIMANI Q&A WEBSITE
-            </div>
-          </div>
+          <div style="font-size: 15px; color: #334155;">நாள்: ${dateStr}</div>
+          <div style="font-size: 16px; font-weight: bold; color: #003366; border-top: 2px solid #003366; padding-top: 5px;">HARIMANI PORTAL</div>
         </div>
       </div>
     </div>
   ` ;
 
   const captureEl = document.getElementById("certCaptureElement") ;
-
   const opt = {
     margin: [10, 10, 10, 10],
-    filename: `${studentName.replace(/\s+/g, '_')}_HariMani_Certificate.pdf`,
+    filename: `${studentName.replace(/\s+/g, '_')}_Certificate.pdf`,
     image: { type: 'jpeg', quality: 1 },
-    html2canvas: { 
-      scale: 2, 
-      useCORS: true,
-      logging: false
-    },
+    html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' }
   } ;
 
-  html2pdf().set(opt).from(captureEl).save().then(() => {
-    container.innerHTML = "";
-  }) ;
+  html2pdf().set(opt).from(captureEl).save().then(() => { container.innerHTML = ""; }) ;
 }
 
 async function loadLeaderboard() {
@@ -1543,8 +1439,9 @@ async function loadLeaderboard() {
   tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">தரவரிசைப் பட்டியல் ஏற்றப்படுகிறது...</td></tr>` ;
 
   const stdFilter = (document.getElementById("leaderboardStdFilter")?.value) || "all" ;
+  const streamFilter = (document.getElementById("leaderboardStreamFilter")?.value) || "all" ;
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getLeaderboard&standard=${encodeURIComponent(stdFilter)}`) ;
+    const res = await fetch(`${SCRIPT_URL}?action=getLeaderboard&standard=${encodeURIComponent(stdFilter)}&stream=${encodeURIComponent(streamFilter)}`) ;
     const data = await res.json() ;
     if (data && data.success) {
       renderLeaderboardTable(data.leaderboard || []) ;
@@ -1573,7 +1470,7 @@ function renderLeaderboardTable(list) {
       <tr>
         <td style="font-weight:bold; text-align:center;">${rankDisplay}</td>
         <td><strong>${item.userName}</strong> <small style="color:#64748b;">(${item.userId})</small></td>
-        <td>வகுப்பு ${item.standard}</td>
+        <td><span class="tag-pill">${(item.stream || 'ncert').toUpperCase()}</span> வகுப்பு ${item.standard}</td>
         <td>${item.testsCount} தேர்வுகள்</td>
         <td><strong>${item.totalScore} / ${item.totalPossible}</strong></td>
         <td><span class="badge badge-success">${item.percentage}%</span></td>
@@ -1601,14 +1498,12 @@ function toggleExamReview() {
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <div style="font-weight:bold; font-size:1rem; margin-bottom:6px; flex:1;">
-          ${idx + 1}. [${(q.type || 'mcq').toUpperCase()}] ${q.question}
+          ${idx + 1}. [${(q.type || 'mcq').toUpperCase()}] (${(q.stream || 'ncert').toUpperCase()}) ${q.question}
         </div>
         <button class="btn btn-outline-dark voice-btn" onclick="speakText('${q.question.replace(/'/g, "\\'")}')" title="கேள்வியை வாசி">🔊</button>
       </div>
       <div style="margin-bottom:8px;">
-        <span class="badge ${rec.isCorrect ? 'badge-success' : 'badge-danger'}">
-          ${rec.isCorrect ? '✅ சரி' : '❌ தவறு'}
-        </span>
+        <span class="badge ${rec.isCorrect ? 'badge-success' : 'badge-danger'}">${rec.isCorrect ? '✅ சரி' : '❌ தவறு'}</span>
       </div>
       <div style="font-size:0.9rem; margin-bottom:4px;">
         <strong>உங்கள் விடை:</strong> <span style="color:${rec.isCorrect ? 'var(--accent)' : 'var(--danger)'};">${rec.userChoice}</span>
@@ -1617,7 +1512,7 @@ function toggleExamReview() {
         <strong>சரியான விடை:</strong> <span style="color:var(--accent); font-weight:600;">${rec.correctChoice}</span>
       </div>
       <div class="explanation-card" style="margin-top:8px;">
-        <strong>📖 பாட விளக்கம்:</strong> ${q.explanation || 'பாடப்புத்தகத்தின் அடிப்படையில் சரிபார்க்கப்பட்டது.'}
+        <strong>📖 விளக்கம்:</strong> ${q.explanation || 'சரிபார்க்கப்பட்டது.'}
       </div>
     ` ;
     list.appendChild(card) ;
@@ -1663,6 +1558,7 @@ function toggleManualTypeInputs(type) {
 async function publishManualQuestion() {
   if (!currentUser) return alert("Please sign in as Teacher or Principal.") ;
 
+  const stream = document.getElementById("authorStreamSelect").value ;
   const type = document.getElementById("manualQType").value ;
   const std = document.getElementById("authorStdSelect").value ;
   const sub = document.getElementById("authorSubSelect").value ;
@@ -1693,13 +1589,13 @@ async function publishManualQuestion() {
     optC = document.getElementById("matchPair3").value.trim() ;
     optD = document.getElementById("matchPair4").value.trim() ;
     correctOpt = "MATCH" ;
-    if (!optA || !optB) return alert("Provide at least 2 matching pairs.") ;
   }
 
   const payload = {
     action: "saveSingleQuestion", 
     userId: currentUser.id, 
     role: currentUser.role, 
+    stream: stream,
     type: type, 
     standard: std, 
     subject: sub, 
@@ -1765,6 +1661,7 @@ async function generateViaAI() {
   extractedAiBatch = [] ;
 
   const context = {
+    stream: document.getElementById("authorStreamSelect").value,
     standard: document.getElementById("authorStdSelect").value ,
     subject: document.getElementById("authorSubSelect").value ,
     chapter: document.getElementById("authorChapterInput").value.trim() || "Unit 1" ,
@@ -1841,10 +1738,12 @@ function renderAiPreview(questions) {
 }
 
 async function publishAiBatch() {
+  const streamVal = document.getElementById("authorStreamSelect").value;
   const payload = {
     action: "saveBatchQuestions", 
     userId: currentUser.id, 
     role: currentUser.role, 
+    stream: streamVal,
     standard: document.getElementById("authorStdSelect").value, 
     subject: document.getElementById("authorSubSelect").value, 
     chapter: document.getElementById("authorChapterInput").value.trim() || "Unit 1", 
@@ -1862,62 +1761,128 @@ async function publishAiBatch() {
 }
 
 function renderManageTable() {
-  const tbody = document.getElementById("manageTableBody") ;
-  tbody.innerHTML = "" ;
+  const tbody = document.getElementById("manageTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
 
-  const search = document.getElementById("manageSearchInput").value.toLowerCase() ;
-  const std = document.getElementById("manageStdFilter").value ;
-  const sub = document.getElementById("manageSubFilter").value.toLowerCase() ;
+  const search = document.getElementById("manageSearchInput") ? document.getElementById("manageSearchInput").value.toLowerCase().trim() : "";
+  const streamFilter = document.getElementById("manageStreamFilter") ? document.getElementById("manageStreamFilter").value : "";
+  const std = document.getElementById("manageStdFilter") ? document.getElementById("manageStdFilter").value : "";
+  const sub = document.getElementById("manageSubFilter") ? document.getElementById("manageSubFilter").value.toLowerCase() : "";
 
-  const isPrincipal = currentUser && (currentUser.role === "principal") ;
-  const myId = currentUser ? currentUser.id.toLowerCase() : "" ;
+  const isPrincipal = currentUser && (currentUser.role === "principal");
+  const myId = currentUser ? currentUser.id.toLowerCase() : "";
 
+  // Filter master questions safely
   const filtered = masterQuestions.filter(q => {
-    const isOwner = (q.creatorId && q.creatorId.toLowerCase() === myId) ;
-    if (!isPrincipal && !isOwner) return false ;
+    const isOwner = (q.creatorId && q.creatorId.toLowerCase() === myId);
+    if (!isPrincipal && !isOwner) return false;
 
-    const mSearch = !search || q.question.toLowerCase().includes(search) ;
-    const mStd = !std || q.standard === std ;
-    const mSub = !sub || q.subject.toLowerCase() === sub ;
-    return mSearch && mStd && mSub ;
+    const mStream = !streamFilter || (q.stream || 'ncert') === streamFilter;
+    const fullTextSearch = `${q.question || ""} ${q.optA || ""} ${q.optB || ""} ${q.optC || ""} ${q.optD || ""} ${q.explanation || ""}`.toLowerCase();
+    const mSearch = !search || fullTextSearch.includes(search);
+    const mStd = !std || q.standard === std;
+    const mSub = !sub || (q.subject || "").toLowerCase() === sub;
+    return mStream && mSearch && mStd && mSub;
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No questions found.</td></tr>` ;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#64748b;">No questions found matching your search.</td></tr>`;
     return;
   }
 
-  filtered.forEach(q => {
-    tbody.innerHTML += `
+  // Performance Cap: Render maximum 100 rows at a time to prevent browser freezing
+  const displayLimit = 100;
+  const paginatedList = filtered.slice(0, displayLimit);
+
+  let htmlContent = "";
+  if (filtered.length > displayLimit) {
+    htmlContent += `<tr><td colspan="7" style="text-align:center; background:#fffbeb; color:#92400e; font-size:0.85rem; padding:8px;">Showing first ${displayLimit} of ${filtered.length} matching questions. Use filters or search to narrow down results.</td></tr>`;
+  }
+
+  paginatedList.forEach(q => {
+    htmlContent += `
       <tr>
-        <td><strong>Class ${q.standard}</strong></td>
+        <td><span class="tag-pill">${(q.stream || 'ncert').toUpperCase()}</span><br><strong>Class ${q.standard || '5'}</strong></td>
         <td><span class="badge" style="background:#003366; color:#fff;">${(q.type || 'mcq').toUpperCase()}</span></td>
-        <td>${q.subject}</td>
-        <td><small><strong>${q.chapter}</strong><br>${q.topic}</small></td>
+        <td>${q.subject || 'General'}</td>
+        <td><small><strong>${q.chapter || 'General'}</strong><br>${q.topic || 'All'}</small></td>
         <td>
-          <div style="font-weight:600;">${q.question}</div>
+          <div style="font-weight:600;">${q.question || ''}</div>
           ${q.optA ? `<small>A) ${q.optA} | B) ${q.optB} | C) ${q.optC} | D) ${q.optD}</small><br>` : ''}
-          <small style="color:var(--accent); font-weight:bold;">Correct: ${q.correctOpt}</small>
-          ${q.explanation ? `<br><small style="color:#084298;"><strong>Explanation:</strong> ${q.explanation}</small>` : ''}
+          <small style="color:var(--accent); font-weight:bold;">Correct: ${q.correctOpt || ''}</small>
         </td>
-        <td><code>${q.creatorId}</code></td>
-        <td><button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteQuestion('${q.id}')">🗑️ Delete</button></td>
+        <td><code>${q.creatorId || 'System'}</code></td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-outline-dark" style="padding:4px 8px; font-size:0.8rem; margin-right:4px;" onclick="openEditQuestionModal('${q.id}')">✏️ Edit</button>
+          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteQuestion('${q.id}')">🗑️ Delete</button>
+        </td>
       </tr>
-    ` ;
+    `;
   });
+
+  tbody.innerHTML = htmlContent;
 }
+
+
+function openEditQuestionModal(qId) {
+  const q = masterQuestions.find(item => item.id === qId);
+  if (!q) return alert("Question not found.");
+
+  document.getElementById("editQId").value = q.id;
+  document.getElementById("editQText").value = q.question || "";
+  document.getElementById("editOptA").value = q.optA || "";
+  document.getElementById("editOptB").value = q.optB || "";
+  document.getElementById("editOptC").value = q.optC || "";
+  document.getElementById("editOptD").value = q.optD || "";
+  document.getElementById("editCorrectOpt").value = q.correctOpt || "";
+  document.getElementById("editExplanation").value = q.explanation || "";
+
+  openModal("modalEditQuestion");
+}
+
+async function saveEditedQuestion() {
+  const qId = document.getElementById("editQId").value;
+  const updatedQ = {
+    action: "saveSingleQuestion", // Overwrites or appends updated record
+    userId: currentUser.id,
+    role: currentUser.role,
+    questionId: qId,
+    question: document.getElementById("editQText").value.trim(),
+    optA: document.getElementById("editOptA").value.trim(),
+    optB: document.getElementById("editOptB").value.trim(),
+    optC: document.getElementById("editOptC").value.trim(),
+    optD: document.getElementById("editOptD").value.trim(),
+    correctOpt: document.getElementById("editCorrectOpt").value.trim(),
+    explanation: document.getElementById("editExplanation").value.trim()
+  };
+
+  // First delete the old question row, then save the updated one
+  await callAppsScript({ action: "deleteQuestion", questionId: qId, userId: currentUser.id });
+  const res = await callAppsScript(updatedQ);
+
+  if (res && res.success) {
+    alert("✅ Question successfully updated!");
+    closeModal("modalEditQuestion");
+    await loadPortalData();
+    renderManageTable();
+  } else {
+    alert("Failed to update question.");
+  }
+}
+
 
 function generatePrintablePaper(count) {
   const std = document.getElementById("manageStdFilter").value || "All Classes" ;
   const sub = document.getElementById("manageSubFilter").value || "General Assessment" ;
+  const streamFilter = document.getElementById("manageStreamFilter").value || "ncert";
 
   let pool = [...masterQuestions] ;
+  pool = pool.filter(q => (q.stream || 'ncert') === streamFilter);
   if (std !== "All Classes") pool = pool.filter(q => q.standard === std) ;
   if (sub !== "General Assessment") pool = pool.filter(q => q.subject.toLowerCase() === sub.toLowerCase()) ;
 
-  if (pool.length === 0) {
-    return alert("No questions available for this filter to generate a test paper.") ;
-  }
+  if (pool.length === 0) return alert("No questions available for this filter to generate a test paper.") ;
 
   pool.sort(() => Math.random() - 0.5) ;
   const selected = pool.slice(0, Math.min(count, pool.length)) ;
@@ -1925,13 +1890,13 @@ function generatePrintablePaper(count) {
   const printArea = document.getElementById("printContainer") ;
   printArea.innerHTML = `
     <div class="print-header">
-      <h2>HARI MANDIR HIGHER SECONDARY SCHOOL</h2>
+      <h2>HARI MANDIR HIGHER SECONDARY SCHOOL (${streamFilter.toUpperCase()} Stream)</h2>
       <h3>Official Examination Assessment Question Paper</h3>
       <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold; font-size:0.95rem;">
+        <span>Stream: ${streamFilter.toUpperCase()}</span>
         <span>Class: ${std}</span>
         <span>Subject: ${sub}</span>
         <span>Max Marks: ${selected.length}</span>
-        <span>Time: ${Math.round(selected.length * 1.5)} Mins</span>
       </div>
       <div style="display:flex; justify-content:space-between; margin-top:10px; border-bottom:2px solid #000; padding-bottom:8px; font-size:0.9rem;">
         <span>Student Name: __________________________</span>
@@ -1971,14 +1936,14 @@ function generatePrintablePaper(count) {
     </div>
 
     <div style="page-break-before:always; margin-top:30px;">
-      <h3 style="text-align:center; border-bottom:1px solid #000; padding-bottom:5px;">CONFIDENTIAL TEACHER ANSWER KEY & EXPLANATIONS</h3>
+      <h3 style="text-align:center; border-bottom:1px solid #000; padding-bottom:5px;">CONFIDENTIAL TEACHER ANSWER KEY</h3>
       <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:0.85rem;" border="1">
         <thead>
           <tr style="background:#eee;">
-            <th style="padding:6px; width:8%;">Q. No</th>
+            <th style="padding:6px; width:8%;">Q.No</th>
             <th style="padding:6px; width:12%;">Type</th>
             <th style="padding:6px; width:25%;">Correct Answer</th>
-            <th style="padding:6px;">Reference / Rationale</th>
+            <th style="padding:6px;">Rationale</th>
           </tr>
         </thead>
         <tbody>
@@ -1987,7 +1952,7 @@ function generatePrintablePaper(count) {
               <td style="padding:5px; text-align:center;">${idx + 1}</td>
               <td style="padding:5px; text-align:center;">${(q.type || 'mcq').toUpperCase()}</td>
               <td style="padding:5px; font-weight:bold;">${q.correctOpt}</td>
-              <td style="padding:5px;">${q.explanation || 'Verified from curriculum textbook.'}</td>
+              <td style="padding:5px;">${q.explanation || 'Verified.'}</td>
             </tr>
           `).join("")}
         </tbody>
@@ -2045,12 +2010,7 @@ function renderUserBadges(scores) {
     for (let d of uniqueDates) {
       const dt = new Date(d) ;
       const diffDays = Math.floor((checkDate - dt) / (1000 * 60 * 60 * 24)) ;
-      if (diffDays <= 1) {
-        currentStreak++ ;
-        checkDate = dt ;
-      } else {
-        break;
-      }
+      if (diffDays <= 1) { currentStreak++; checkDate = dt; } else { break; }
     }
   }
 
@@ -2061,17 +2021,8 @@ function renderUserBadges(scores) {
   if (currentStreak >= 3) badges.push({ icon: "🔥", title: "3-Day Streak", desc: "Practiced 3 days in a row!" }) ;
   if (currentStreak >= 7) badges.push({ icon: "⚡", title: "7-Day Streak", desc: "Super consistent learner!" }) ;
 
-  const scienceCount = scores.filter(s => (s.subject || '').toLowerCase() === "science" && (Number(s.score) / Number(s.total)) >= 0.8).length ;
-  if (scienceCount >= 3) badges.push({ icon: "🔬", title: "Science Master", desc: "3+ High scores in Science!" }) ;
-
-  const tamilCount = scores.filter(s => (s.subject || '').toLowerCase() === "tamil" && (Number(s.score) / Number(s.total)) >= 0.8).length ;
-  if (tamilCount >= 3) badges.push({ icon: "📚", title: "Tamil Scholar", desc: "Excellence in Tamil language!" }) ;
-
-  const mathCount = scores.filter(s => (s.subject || '').toLowerCase() === "maths" && (Number(s.score) / Number(s.total)) >= 0.8).length ;
-  if (mathCount >= 3) badges.push({ icon: "📐", title: "Math Wizard", desc: "High proficiency in Mathematics!" }) ;
-
   if (badges.length === 0) {
-    container.innerHTML = `<span style="font-size:0.85rem; color:#666;">Keep practicing! Badges unlock at 3-Day streak and subject mastery.</span>` ;
+    container.innerHTML = `<span style="font-size:0.85rem; color:#666;">Keep practicing! Badges unlock at 3-Day streak.</span>` ;
   } else {
     badges.forEach(b => {
       const el = document.createElement("div") ;
@@ -2122,9 +2073,9 @@ function filterUserReports() {
     tbody.innerHTML += `
       <tr>
         <td>${s.date}</td>
+        <td><span class="tag-pill">${(s.stream || 'ncert').toUpperCase()}</span></td>
         <td>Class ${s.standard}</td>
         <td>${s.subject}</td>
-        <td>${s.chapter} - ${s.topic}</td>
         <td>${s.score} / ${s.total}</td>
         <td><strong>${pct}%</strong></td>
       </tr>
@@ -2178,9 +2129,9 @@ function filterTeacherStudentScores() {
       <tr>
         <td><strong>${s.userId}</strong></td>
         <td>${s.userName}</td>
+        <td><span class="tag-pill">${(s.stream || 'ncert').toUpperCase()}</span></td>
         <td>Class ${s.standard}</td>
         <td>${s.subject}</td>
-        <td>${s.chapter} - ${s.topic}</td>
         <td><strong>${s.score} / ${s.total} (${pct}%)</strong></td>
         <td>${s.date}</td>
       </tr>
@@ -2188,102 +2139,30 @@ function filterTeacherStudentScores() {
   });
 }
 
-function toggleTeacherStd(tId, std, checked) {
-  const teacher = principalDashboardData.teachers.find(t => t.id === tId) ;
-  if (!teacher) return;
-  if (checked) { if (!teacher.standards.includes(std)) teacher.standards.push(std); }
-  else { teacher.standards = teacher.standards.filter(s => s !== std); } 
-}
-
-function toggleTeacherSub(tId, sub, checked) {
-  const teacher = principalDashboardData.teachers.find(t => t.id === tId) ;
-  if (!teacher) return;
-  if (checked) { if (!teacher.subjects.includes(sub)) teacher.subjects.push(sub); }
-  else { teacher.subjects = teacher.subjects.filter(s => s !== sub); } 
-}
-
-async function saveTeacherPermissions(teacherId) {
-  const teacher = principalDashboardData.teachers.find(t => t.id === teacherId) ;
-  const payload = {
-    action: "updateTeacherPermissions", 
-    principalId: currentUser.id, 
-    targetTeacherId: teacherId, 
-    standards: teacher.standards, 
-    subjects: teacher.subjects 
-  };
-  const data = await callAppsScript(payload) ;
-  if (data && data.success) alert(`✅ Permissions updated for Teacher: ${teacher.name}`) ;
-  else alert("Error: " + (data ? data.error : "Could not update permissions")) ;
-}
-
 async function deleteTeacher(teacherId) {
   if (!confirm(`நிச்சயமாக ஆசிரியர் ${teacherId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return ;
-  
-  const payload = {
-    action: "deleteTeacher", 
-    principalId: currentUser ? currentUser.id : "PRINCIPAL", 
-    targetTeacherId: teacherId 
-  };
-
+  const payload = { action: "deleteTeacher", principalId: currentUser ? currentUser.id : "PRINCIPAL", targetTeacherId: teacherId };
   try {
     const data = await callAppsScript(payload) ;
-    if (data && data.success) {
-      alert(`✅ ஆசிரியர் ${teacherId} வெற்றிகரமாக நீக்கப்பட்டார்!`) ;
-      loadPrincipalDashboard() ;
-    } else {
-      alert("பிழை: " + (data ? data.error : "ஆசிரியரை நீக்க முடியவில்லை")) ;
-    }
-  } catch (err) {
-    alert("இணைப்புப் பிழை: " + err.message) ;
-  }
+    if (data && data.success) { alert(`✅ ஆசிரியர் ${teacherId} வெற்றிகரமாக நீக்கப்பட்டார்!`); loadPrincipalDashboard(); }
+    else { alert("பிழை: " + (data ? data.error : "நீக்க முடியவில்லை")); }
+  } catch (err) { alert("இணைப்புப் பிழை: " + err.message); }
 }
 
 async function deleteStudent(studentId) {
   if (!confirm(`நிச்சயமாக மாணவர் ${studentId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return ;
-  
-  const payload = {
-    action: "deleteStudent", 
-    principalId: currentUser ? currentUser.id : "PRINCIPAL", 
-    targetStudentId: studentId 
-  };
-
+  const payload = { action: "deleteStudent", principalId: currentUser ? currentUser.id : "PRINCIPAL", targetStudentId: studentId };
   try {
     const data = await callAppsScript(payload) ;
-    if (data && data.success) {
-      alert(`✅ மாணவர் ${studentId} வெற்றிகரமாக நீக்கப்பட்டார்!`) ;
-      loadPrincipalDashboard() ;
-    } else {
-      alert("பிழை: " + (data ? data.error : "மாணவரை நீக்க முடியவில்லை")) ;
-    }
-  } catch (err) {
-    alert("இணைப்புப் பிழை: " + err.message) ;
-  }
-}
-
-function toggleStudentStd(sId, std, checked) {
-  const student = (principalDashboardData.students || []).find(s => s.id === sId) ;
-  if (!student) return;
-  if (checked) { if (!student.standards.includes(std)) student.standards.push(std); }
-  else { student.standards = student.standards.filter(s => s !== std); } 
-}
-
-async function saveStudentPermissions(studentId) {
-  const student = (principalDashboardData.students || []).find(s => s.id === studentId) ;
-  if (!student) return;
-  const payload = {
-    action: "updateStudentPermissions", 
-    principalId: currentUser.id, 
-    targetStudentId: studentId, 
-    standards: student.standards 
-  };
-  const data = await callAppsScript(payload) ;
-  if (data && data.success) alert(`✅ Classes updated for Student: ${student.name}`) ;
-  else alert("Error: " + (data ? data.error : "Could not update permissions")) ;
+    if (data && data.success) { alert(`✅ மாணவர் ${studentId} வெற்றிகரமாக நீக்கப்பட்டார்!`); loadPrincipalDashboard(); }
+    else { alert("பிழை: " + (data ? data.error : "நீக்க முடியவில்லை")); }
+  } catch (err) { alert("இணைப்புப் பிழை: " + err.message); }
 }
 
 async function principalCreateTeacher() {
   const id = document.getElementById("newTeacherId").value.trim() ;
   const name = document.getElementById("newTeacherName").value.trim() ;
+  const stream = document.getElementById("newTeacherStream").value;
   const pass = document.getElementById("newTeacherPass").value.trim() ;
 
   if (!id || !name || !pass) return alert("Enter Teacher ID, Name, and Password.") ;
@@ -2294,6 +2173,7 @@ async function principalCreateTeacher() {
     teacherId: id, 
     teacherName: name, 
     password: pass, 
+    studentStream: stream,
     standards: ["5"], 
     subjects: ["Science"] 
   };
@@ -2309,7 +2189,6 @@ async function principalCreateTeacher() {
     alert("Error: " + (data ? data.error : "Could not create teacher")) ;
   }
 }
-
 
 function switchPrincipalSubView(viewName, btn) {
   document.querySelectorAll(".pr-subtab-btn").forEach(b => b.classList.remove("active"));
@@ -2327,7 +2206,6 @@ async function loadPrincipalDashboard() {
     if (data && data.success) {
       principalDashboardData = data;
 
-      // Update KPI Statistics
       document.getElementById("prStatTeacherCount").innerText = (data.teachers || []).length;
       document.getElementById("prStatStudentCount").innerText = (data.students || []).length;
       document.getElementById("prStatAssessmentCount").innerText = (data.scores || []).length;
@@ -2352,7 +2230,7 @@ function renderPrincipalTeacherTable() {
   });
 
   if (teachers.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">No matching teachers found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#64748b;">No matching teachers found.</td></tr>`;
     return;
   }
 
@@ -2362,13 +2240,14 @@ function renderPrincipalTeacherTable() {
       : `<span style="color:#94a3b8; font-size:0.8rem;">None assigned</span>`;
 
     const subTags = (t.subjects && t.subjects.length > 0)
-      ? t.subjects.map(s => `<span class="tag-pill" style="background:#e0f2fe; border-color:#bae6fd; color:#0369a1;">${s}</span>`).join(" ")
+      ? t.subjects.map(s => `<span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">${s}</span>`).join(" ")
       : `<span style="color:#94a3b8; font-size:0.8rem;">None assigned</span>`;
 
     tbody.innerHTML += `
       <tr>
         <td><code>${t.id}</code></td>
         <td><strong>${t.name}</strong></td>
+        <td><span class="tag-pill" style="background:#fef3c7; color:#b45309;">${(t.studentStream || 'ncert').toUpperCase()}</span></td>
         <td>${stdTags}</td>
         <td>${subTags}</td>
         <td style="text-align:right;">
@@ -2387,25 +2266,18 @@ function openEditTeacherModal(teacherId) {
   document.getElementById("editTeacherTargetId").value = teacherId;
   document.getElementById("editTeacherModalTitle").innerText = `Configure Access: ${teacher.name}`;
   document.getElementById("editTeacherModalSub").innerText = `Staff Code: ${teacher.id}`;
+  document.getElementById("editTeacherStream").value = teacher.studentStream || "ncert";
 
   const stdContainer = document.getElementById("editTeacherStdContainer");
   stdContainer.innerHTML = GLOBAL_STANDARDS.map(std => {
     const isChecked = teacher.standards.includes(std);
-    return `
-      <div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${std}">
-        <span>${isChecked ? '✓' : '+'}</span> Class ${std}
-      </div>
-    `;
+    return `<div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${std}"><span>${isChecked ? '✓' : '+'}</span> Class ${std}</div>`;
   }).join("");
 
   const subContainer = document.getElementById("editTeacherSubContainer");
   subContainer.innerHTML = GLOBAL_SUBJECTS.map(sub => {
     const isChecked = teacher.subjects.includes(sub);
-    return `
-      <div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${sub}">
-        <span>${isChecked ? '✓' : '+'}</span> ${sub}
-      </div>
-    `;
+    return `<div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${sub}"><span>${isChecked ? '✓' : '+'}</span> ${sub}</div>`;
   }).join("");
 
   openModal("modalEditTeacherScope");
@@ -2422,9 +2294,11 @@ async function confirmSaveTeacherPermissions() {
   const teacher = (principalDashboardData.teachers || []).find(t => t.id === teacherId);
   if (!teacher) return;
 
+  const streamVal = document.getElementById("editTeacherStream").value;
   const selectedStds = Array.from(document.querySelectorAll("#editTeacherStdContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
   const selectedSubs = Array.from(document.querySelectorAll("#editTeacherSubContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
 
+  teacher.studentStream = streamVal;
   teacher.standards = selectedStds;
   teacher.subjects = selectedSubs;
 
@@ -2432,6 +2306,7 @@ async function confirmSaveTeacherPermissions() {
     action: "updateTeacherPermissions",
     principalId: currentUser.id,
     targetTeacherId: teacherId,
+    studentStream: streamVal,
     standards: selectedStds,
     subjects: selectedSubs
   };
@@ -2442,7 +2317,7 @@ async function confirmSaveTeacherPermissions() {
     renderPrincipalTeacherTable();
     alert(`✅ Permissions updated for ${teacher.name}!`);
   } else {
-    alert("Error: " + (data ? data.error : "Failed to update permissions"));
+    alert("Error: " + (data ? data.error : "Failed"));
   }
 }
 
@@ -2461,7 +2336,7 @@ function renderPrincipalStudentTable() {
   });
 
   if (students.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">No enrolled students found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#64748b;">No enrolled students found.</td></tr>`;
     return;
   }
 
@@ -2474,11 +2349,8 @@ function renderPrincipalStudentTable() {
       <tr>
         <td><code>${s.id}</code></td>
         <td><strong>${s.name}</strong></td>
-        <td>
-          <span class="badge" style="background:${s.role === 'aspirant' ? '#f59e0b' : '#0284c7'}; color:#fff;">
-            ${s.role.toUpperCase()}
-          </span>
-        </td>
+        <td><span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">${(s.studentStream || 'ncert').toUpperCase()}</span></td>
+        <td><span class="badge" style="background:${s.role === 'aspirant' ? '#f59e0b' : '#0284c7'}; color:#fff;">${s.role.toUpperCase()}</span></td>
         <td>${stdTags}</td>
         <td style="text-align:right;">
           <button class="btn btn-outline-dark" style="padding:4px 10px; font-size:0.8rem;" onclick="openEditStudentModal('${s.id}')">✏️ Edit</button>
@@ -2496,15 +2368,12 @@ function openEditStudentModal(studentId) {
   document.getElementById("editStudentTargetId").value = studentId;
   document.getElementById("editStudentModalTitle").innerText = `Enrollment: ${student.name}`;
   document.getElementById("editStudentModalSub").innerText = `Roll/ID: ${student.id} (${student.role.toUpperCase()})`;
+  document.getElementById("editStudentStream").value = student.studentStream || "ncert";
 
   const stdContainer = document.getElementById("editStudentStdContainer");
   stdContainer.innerHTML = GLOBAL_STANDARDS.map(std => {
     const isChecked = student.standards.includes(std);
-    return `
-      <div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${std}">
-        <span>${isChecked ? '✓' : '+'}</span> Class ${std}
-      </div>
-    `;
+    return `<div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${std}"><span>${isChecked ? '✓' : '+'}</span> Class ${std}</div>`;
   }).join("");
 
   openModal("modalEditStudentScope");
@@ -2515,13 +2384,16 @@ async function confirmSaveStudentPermissions() {
   const student = (principalDashboardData.students || []).find(s => s.id === studentId);
   if (!student) return;
 
+  const streamVal = document.getElementById("editStudentStream").value;
   const selectedStds = Array.from(document.querySelectorAll("#editStudentStdContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
+  student.studentStream = streamVal;
   student.standards = selectedStds;
 
   const payload = {
     action: "updateStudentPermissions",
     principalId: currentUser.id,
     targetStudentId: studentId,
+    studentStream: streamVal,
     standards: selectedStds
   };
 
@@ -2529,34 +2401,40 @@ async function confirmSaveStudentPermissions() {
   if (data && data.success) {
     closeModal("modalEditStudentScope");
     renderPrincipalStudentTable();
-    alert(`✅ Standard enrollment updated for ${student.name}!`);
+    alert(`✅ Enrollment updated for ${student.name}!`);
   } else {
-    alert("Error: " + (data ? data.error : "Failed to update enrollment"));
+    alert("Error: " + (data ? data.error : "Failed"));
   }
 }
 
 function filterPrincipalScores() {
-  const search = document.getElementById("prFilterStudent").value.toLowerCase().trim();
-  const std = document.getElementById("prFilterStd").value.toLowerCase().trim();
-  const sub = document.getElementById("prFilterSub").value.toLowerCase().trim();
+  const search = document.getElementById("prFilterStudent") ? document.getElementById("prFilterStudent").value.toLowerCase().trim() : "";
+  const streamFilter = document.getElementById("prFilterStream") ? document.getElementById("prFilterStream").value.toLowerCase().trim() : "";
+  const stdFilter = document.getElementById("prFilterStd") ? document.getElementById("prFilterStd").value.toLowerCase().trim() : "";
+  const subFilter = document.getElementById("prFilterSub") ? document.getElementById("prFilterSub").value.toLowerCase().trim() : "";
 
   const tbody = document.getElementById("principalScoresTbody");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  const filtered = (principalDashboardData.scores || []).filter(s => {
-    const mStudent = !search || (s.userId && s.userId.toLowerCase().includes(search)) || (s.userName && s.userName.toLowerCase().includes(search));
-    
-    // வகுப்பு எண்களை மட்டும் துல்லியமாக ஒப்பிடுதல் (எ.கா: '5' அல்லது 'Class 5' எதுவாக இருந்தாலும் பொருந்தும்)
+  const rawScores = principalDashboardData.scores || [];
+
+  const filtered = rawScores.filter(s => {
+    const userId = (s.userId || "").toString().toLowerCase();
+    const userName = (s.userName || "").toString().toLowerCase();
+    const mStudent = !search || userId.includes(search) || userName.includes(search);
+
+    const recordStream = (s.stream || "ncert").toString().toLowerCase().trim();
+    const mStream = !streamFilter || recordStream === streamFilter;
+
     const recordStd = (s.standard || "").toString().toLowerCase().replace(/class/gi, "").trim();
-    const filterStd = std.replace(/class/gi, "").trim();
+    const filterStd = stdFilter.replace(/class/gi, "").trim();
     const mStd = !filterStd || recordStd === filterStd;
 
-    // பாடப் பெயர்களை ஒப்பிடுதல்
     const recordSub = (s.subject || "").toString().toLowerCase().trim();
-    const mSub = !sub || recordSub.includes(sub) || sub.includes(recordSub);
+    const mSub = !subFilter || recordSub.includes(subFilter) || subFilter.includes(recordSub);
 
-    return mStudent && mStd && mSub;
+    return mStudent && mStream && mStd && mSub;
   });
 
   if (filtered.length === 0) {
@@ -2565,18 +2443,21 @@ function filterPrincipalScores() {
   }
 
   filtered.forEach(s => {
-    const pct = Math.round((Number(s.score) / Number(s.total)) * 100);
+    const scoreVal = Number(s.score) || 0;
+    const totalVal = Number(s.total) || 1;
+    const pct = Math.round((scoreVal / totalVal) * 100);
     const badgeColor = pct >= 80 ? 'badge-success' : pct >= 50 ? 'badge-pill' : 'badge-danger';
+    const streamBadge = (s.stream || 'ncert').toUpperCase();
 
     tbody.innerHTML += `
       <tr>
-        <td><strong>${s.userName}</strong><br><small style="color:#64748b;">(${s.userId})</small></td>
-        <td>Class ${s.standard}</td>
-        <td>${s.subject}</td>
-        <td><small><strong>${s.chapter}</strong><br>${s.topic}</small></td>
-        <td><strong>${s.score} / ${s.total}</strong></td>
+        <td><strong>${s.userName || 'Student'}</strong><br><small style="color:#64748b;">(${s.userId || 'ID'})</small></td>
+        <td><span class="tag-pill">${streamBadge}</span></td>
+        <td>Class ${s.standard || '5'}</td>
+        <td>${s.subject || 'General'}</td>
+        <td><strong>${scoreVal} / ${totalVal}</strong></td>
         <td><span class="badge ${badgeColor}">${pct}%</span></td>
-        <td><small>${s.date}</small></td>
+        <td><small>${s.date || ''}</small></td>
       </tr>
     `;
   });
@@ -2591,26 +2472,49 @@ function switchCreateMethod(method) {
   if (btnAi) btnAi.className = (method === 'ai') ? 'btn btn-secondary flex-1' : 'btn btn-outline-dark flex-1' ;
   if (btnCsv) btnCsv.className = (method === 'csv') ? 'btn btn-primary flex-1' : 'btn btn-outline-dark flex-1' ;
 
-  const secManual = document.getElementById("sectionManualCreate") ;
-  const secAi = document.getElementById("sectionAiCreate") ;
-  const secCsv = document.getElementById("sectionCsvCreate") ;
-
-  if (secManual) secManual.classList.toggle("hidden", method !== 'manual') ;
-  if (secAi) secAi.classList.toggle("hidden", method !== 'ai') ;
-  if (secCsv) secCsv.classList.toggle("hidden", method !== 'csv') ;
+  document.getElementById("sectionManualCreate").classList.toggle("hidden", method !== 'manual') ;
+  document.getElementById("sectionAiCreate").classList.toggle("hidden", method !== 'ai') ;
+  document.getElementById("sectionCsvCreate").classList.toggle("hidden", method !== 'csv') ;
 
   if (method === 'csv' && typeof updateAiPromptPreview === "function") updateAiPromptPreview() ;
 }
 
+function updateAiPromptPreview() {
+  const streamSelect = document.getElementById("authorStreamSelect");
+  const stdSelect = document.getElementById("authorStdSelect");
+  const subSelect = document.getElementById("authorSubSelect");
+  const promptBox = document.getElementById("aiStudioPromptTextarea");
+  if (!promptBox) return;
+
+  const stream = streamSelect ? streamSelect.value : "ncert";
+  const std = stdSelect && stdSelect.value ? stdSelect.value : "5";
+  const sub = subSelect && subSelect.value ? subSelect.value : "Science";
+
+  promptBox.value = `You are an examination question author for HariMani School (${stream.toUpperCase()} Stream).
+Generate exactly 100 balanced assessment questions (50 MCQ, 10 True/False, 15 Fill in the Blanks, 15 Match the Following) based on the textbook.
+
+HEADER ROW:
+Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation,Stream
+
+DATA ROW TEMPLATES:
+"mcq",${std},"${sub}","[Chapter]","[Topic]","[Question]","[A]","[B]","[C]","[D]",1,"[Exp]","${stream}"
+"tf",${std},"${sub}","[Chapter]","[Topic]","[Factual Statement]","","","","",True,"[Exp]","${stream}"
+"fib",${std},"${sub}","[Chapter]","[Topic]","[Statement _____]","","","","","[Word]","[Exp]","${stream}"
+"match",${std},"${sub}","[Chapter]","[Topic]","Match pairs:","[L1:R1]","[L2:R2]","[L3:R3]","[L4:R4]","MATCH","[Exp]","${stream}"`;
+}
+
+function copyAiStudioPrompt() {
+  const promptBox = document.getElementById("aiStudioPromptTextarea");
+  if (!promptBox) return;
+  navigator.clipboard.writeText(promptBox.value).then(() => {
+    const btn = document.getElementById("btnCopyPrompt");
+    if (btn) { btn.innerText = "✅ Copied!"; setTimeout(() => { btn.innerText = "📋 Copy Prompt"; }, 2000); }
+  });
+}
+
 function parseCustomCsv(text) {
   if (!text) return [] ;
-
-  let cleanText = text.trim() 
-    .replace(/\r\n/g, "\n") 
-    .replace(/\r/g, "\n") 
-    .replace(/("\s*)("?(mcq|tf|fib|match)"?,)/gi, '$1\n$2') 
-    .replace(/([0-9])(\s+)("?(mcq|tf|fib|match)"?,)/gi, '$1\n$3') ;
-
+  let cleanText = text.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const lines = [] ;
   let row = [] ;
   let inQuotes = false ;
@@ -2619,145 +2523,70 @@ function parseCustomCsv(text) {
   for (let i = 0; i < cleanText.length; i++) {
     const char = cleanText[i] ;
     const nextChar = cleanText[i + 1] ;
-
     if (char === '"') {
-      if (inQuotes && nextChar === '"') {
-        currentField += '"' ;
-        i++ ;
-      } else {
-        inQuotes = !inQuotes ;
-      }
+      if (inQuotes && nextChar === '"') { currentField += '"'; i++; } else { inQuotes = !inQuotes; }
     } else if (char === ',' && !inQuotes) {
-      row.push(currentField.trim()) ;
-      currentField = '' ;
+      row.push(currentField.trim()); currentField = '';
     } else if (char === '\n' && !inQuotes) {
-      row.push(currentField.trim()) ;
-      if (row.some(f => f.length > 0)) lines.push(row) ;
-      row = [] ;
-      currentField = '' ;
+      row.push(currentField.trim());
+      if (row.some(f => f.length > 0)) lines.push(row);
+      row = []; currentField = '';
     } else {
-      currentField += char ;
+      currentField += char;
     }
   }
   if (currentField || row.length > 0) {
-    row.push(currentField.trim()) ;
-    if (row.some(f => f.length > 0)) lines.push(row) ;
+    row.push(currentField.trim());
+    if (row.some(f => f.length > 0)) lines.push(row);
   }
-  return lines ;
+  return lines;
 }
 
 function processParsedCsvRows(rows) {
-  if (!rows || rows.length === 0) {
-    alert("The uploaded/pasted CSV does not contain valid data rows.") ;
-    return;
-  }
-
+  if (!rows || rows.length === 0) return alert("Empty CSV.");
   const fallbackStd = document.getElementById("authorStdSelect") ? document.getElementById("authorStdSelect").value : "5" ;
   const fallbackSub = document.getElementById("authorSubSelect") ? document.getElementById("authorSubSelect").value : "Science" ;
+  const fallbackStream = document.getElementById("authorStreamSelect") ? document.getElementById("authorStreamSelect").value : "ncert";
 
   const firstRowStr = rows[0].join(" ").toLowerCase() ;
   const isHeaderPresent = firstRowStr.includes("question") || firstRowStr.includes("type") ;
   const startIndex = isHeaderPresent ? 1 : 0 ;
 
   globalStandaloneCsvList = [] ;
-  let duplicateCount = 0 ;
-
-  const normalizeKey = (str) => {
-    if (!str) return "" ;
-    return str.toString() 
-      .toLowerCase() 
-      .replace(/[^\p{L}\p{N}]/gu, '') 
-      .trim() ;
-  };
-
-  const existingSet = new Set(
-    masterQuestions
-      .map(q => normalizeKey(q.question))
-      .filter(k => k.length > 2)
-  ) ;
-
   for (let i = startIndex; i < rows.length; i++) {
     let r = rows[i] ;
     if (!r || r.length < 5) continue; 
 
-    let type = "mcq" ;
-    let std = fallbackStd ;
-    let sub = fallbackSub ;
-    let chap = "General" ;
-    let topic = "All" ;
-    let qText = "" ;
-    let optA = "", optB = "", optC = "", optD = "" ;
-    let correctRaw = "" ;
-    let explanation = "" ;
+    let type = (r[0] || "mcq").toLowerCase().trim() ;
+    let std = r[1] || fallbackStd ;
+    let sub = r[2] || fallbackSub ;
+    let chap = r[3] || "General" ;
+    let topic = r[4] || "All" ;
+    let qText = r[5] ;
+    let optA = r[6] || "" ;
+    let optB = r[7] || "" ;
+    let optC = r[8] || "" ;
+    let optD = r[9] || "" ;
+    let correctRaw = r[10] || "" ;
+    let explanation = r[11] || "" ;
+    let streamVal = r[12] || fallbackStream ;
 
-    if (r.length >= 12) {
-      type = (r[0] || "mcq").toLowerCase().trim() ;
-      std = r[1] || fallbackStd ;
-      sub = r[2] || fallbackSub ;
-      chap = r[3] || "General" ;
-      topic = r[4] || "All" ;
-      qText = r[5] ;
-      optA = r[6] || "" ;
-      optB = r[7] || "" ;
-      optC = r[8] || "" ;
-      optD = r[9] || "" ;
-      correctRaw = r[10] || "" ;
-      explanation = r[11] || "" ;
-    } else if (r.length >= 7) {
-      type = (r[0] || "mcq").toLowerCase().trim() ;
-      qText = r[1] ;
-      optA = r[2] || "" ;
-      optB = r[3] || "" ;
-      optC = r[4] || "" ;
-      optD = r[5] || "" ;
-      correctRaw = r[6] || "" ;
-    }
-
-    if (!qText || qText.trim().length < 2) continue; 
-
-    const normalizedKey = normalizeKey(qText) ;
-    const isDuplicate = normalizedKey.length > 2 && existingSet.has(normalizedKey) ;
-    if (isDuplicate) duplicateCount++ ;
+    if (!qText) continue;
 
     globalStandaloneCsvList.push({
-      type: type, 
-      standard: std.toString().replace(/class/gi, "").trim(), 
-      subject: sub, 
-      chapter: chap, 
-      topic: topic, 
-      question: qText.trim(), 
-      optA: optA.trim(), 
-      optB: optB.trim(), 
-      optC: optC.trim(), 
-      optD: optD.trim(), 
-      correctOpt: correctRaw.toString().trim(), 
-      explanation: explanation.trim(), 
-      isDuplicate: isDuplicate 
+      type, standard: std.toString().replace(/class/gi, "").trim(), subject: sub, 
+      chapter: chap, topic, question: qText.trim(), optA: optA.trim(), optB: optB.trim(), 
+      optC: optC.trim(), optD: optD.trim(), correctOpt: correctRaw.toString().trim(), 
+      explanation: explanation.trim(), stream: streamVal.toLowerCase().trim()
     });
   }
 
-  if (globalStandaloneCsvList.length === 0) {
-    alert("Could not extract questions. Verify CSV columns.") ;
-    return;
-  }
-
   document.getElementById("standaloneCsvCount").innerText = globalStandaloneCsvList.length ;
-  const dupBadge = document.getElementById("csvDuplicateCountBadge") ;
-  if (dupBadge) {
-    dupBadge.innerText = `${duplicateCount} Existing Duplicates Detected` ;
-    dupBadge.style.display = duplicateCount > 0 ? "inline-block" : "none" ;
-  }
-
   const previewBox = document.getElementById("standaloneCsvList") ;
   previewBox.innerHTML = globalStandaloneCsvList.map((q, idx) => `
-    <div style="padding: 8px; margin-bottom:6px; border-radius:4px; border: 1px solid ${q.isDuplicate ? '#fca5a5' : '#e2e8f0'}; background:${q.isDuplicate ? '#fff1f2' : '#fff'}; font-size: 0.85rem;">
-      <div style="display:flex; justify-content:space-between;">
-        <strong style="color:#0f172a;">${idx + 1}. [${q.type.toUpperCase()}] ${q.question}</strong>
-        ${q.isDuplicate ? '<span class="badge" style="background:#ef4444; color:#fff;">⚠️ Already in Database</span>' : ''}
-      </div>
-      ${q.optA ? `<span style="color:#64748b;">A) ${q.optA} | B) ${q.optB} | C) ${q.optC} | D) ${q.optD}</span><br>` : ''}
+    <div style="padding: 8px; margin-bottom:6px; border-radius:4px; border: 1px solid #e2e8f0; background:#fff; font-size: 0.85rem;">
+      <strong>${idx + 1}. [${q.stream.toUpperCase()}] [${q.type.toUpperCase()}] ${q.question}</strong><br>
       <span style="color:#059669; font-weight:600;">Correct: ${q.correctOpt} [Class ${q.standard} • ${q.subject}]</span>
-      ${q.explanation ? `<br><small style="color:#084298;"><strong>💡 Explanation:</strong> ${q.explanation}</small>` : ''}
     </div>
   `).join("") ;
 
@@ -2767,36 +2596,19 @@ function processParsedCsvRows(rows) {
 function handleStandaloneCsv(event) {
   const file = event.target.files[0] ;
   if (!file) return;
-
   const reader = new FileReader() ;
-  reader.onload = function(e) {
-    const rows = parseCustomCsv(e.target.result) ;
-    processParsedCsvRows(rows) ;
-  };
+  reader.onload = function(e) { processParsedCsvRows(parseCustomCsv(e.target.result)) ; };
   reader.readAsText(file) ;
 }
 
 function handleDirectCsvPaste() {
   const text = document.getElementById("rawCsvTextInput").value.trim() ;
-  if (!text) return alert("Please paste the CSV text first.") ;
-  const rows = parseCustomCsv(text) ;
-  processParsedCsvRows(rows) ;
+  if (!text) return alert("Please paste CSV text.") ;
+  processParsedCsvRows(parseCustomCsv(text)) ;
 }
 
 async function submitStandaloneCsvToSheet() {
-  if (!globalStandaloneCsvList || globalStandaloneCsvList.length === 0) {
-    return alert("No CSV questions loaded to upload.") ;
-  }
-
-  const hasDuplicates = globalStandaloneCsvList.some(q => q.isDuplicate) ;
-  if (hasDuplicates) {
-    const proceed = confirm("Warning: Some questions in your CSV appear to be duplicates of questions already in the database. Do you wish to continue and upload all of them anyway?") ;
-    if (!proceed) return;
-  }
-
-  const btn = document.getElementById("btnUploadStandaloneCsv") ;
-  btn.disabled = true ;
-  btn.innerText = `Uploading ${globalStandaloneCsvList.length} questions to Google Sheet...` ;
+  if (!globalStandaloneCsvList || globalStandaloneCsvList.length === 0) return alert("No CSV questions loaded.") ;
 
   const payload = {
     action: "importCsvQuestions", 
@@ -2805,27 +2617,13 @@ async function submitStandaloneCsvToSheet() {
     questions: globalStandaloneCsvList 
   };
 
-  try {
-    const data = await callAppsScript(payload) ;
-    btn.disabled = false ;
-    btn.innerText = "🚀 Upload All to Google Sheet (Auto Serial IDs)" ;
-
-    if (data && data.success) {
-      const uploadedCount = data.count || globalStandaloneCsvList.length ;
-      const sId = data.startId || "HMS_Q_Start" ;
-      const eId = data.endId || "HMS_Q_End" ;
-      alert(`✅ Uploaded ${uploadedCount} questions successfully!\nAssigned Serial IDs: ${sId} to ${eId}`) ;
-      document.getElementById("standaloneCsvInput").value = "" ;
-      document.getElementById("rawCsvTextInput").value = "" ;
-      document.getElementById("standaloneCsvPreviewArea").classList.add("hidden") ;
-      globalStandaloneCsvList = [] ;
-      if (typeof loadPortalData === "function") await loadPortalData() ;
-    } else {
-      alert("Error: " + (data ? data.error : "Failed to upload questions")) ;
-    }
-  } catch (err) {
-    btn.disabled = false ;
-    btn.innerText = "🚀 Upload All to Google Sheet (Auto Serial IDs)" ;
-    alert("Connection error: " + err.message) ;
+  const data = await callAppsScript(payload) ;
+  if (data && data.success) {
+    alert(`✅ Uploaded ${data.count} questions successfully!`) ;
+    document.getElementById("standaloneCsvPreviewArea").classList.add("hidden") ;
+    globalStandaloneCsvList = [] ;
+    await loadPortalData() ;
+  } else {
+    alert("Error uploading CSV.") ;
   }
 }

@@ -33,8 +33,7 @@
   <!-- NAVIGATION TABS -->
   <div class="tabs no-print">
     <button class="tab-btn active" onclick="switchTab('play', this)">📝 Attend Test</button>
-  <button class="tab-btn" onclick="switchTab('challenge30', this)">🔥 30 Days Challenge</button> <!-- புதிய தாவல் -->
-
+    <button class="tab-btn" onclick="switchTab('challenge30', this)">🔥 30 Days Challenge</button>
     <button class="tab-btn hidden" id="tabMyScores" onclick="switchTab('reports', this)">📊 My Scores & Badges</button>
     <button class="tab-btn" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</button>
     <button class="tab-btn hidden" id="tabMyReplies" onclick="switchTab('myReplies', this)">📬 ஆசிரியர் பதில்கள் (Replies)</button>
@@ -42,22 +41,30 @@
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('manage', this)">🗂️ Question Bank & Print Paper</button>
     <button class="tab-btn teacher-only hidden" onclick="switchTab('teacherScores', this)">📈 Student Scores (Assigned)</button>
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('feedback', this)">💬 மாணவர் பின்னூட்டம் (Feedback)</button>
-    <button class="tab-btn" onclick="switchTab('ncertBooks', this)">📚 NCERT நூல்கள் (Books)</button>
+    <button class="tab-btn" onclick="switchTab('ncertBooks', this)">📚 நூல்கள் (NCERT / Metric / State Board)</button>
     <button class="tab-btn principal-only hidden" onclick="switchTab('principal', this)">👑 Principal Master Board</button>
   </div>
 
-<!-- TAB: NCERT BOOKS / DRIVE FOLDERS -->
+<!-- TAB: BOOKS REPOSITORY (NCERT, METRIC, STATE BOARD) -->
 <div id="ncertBooksTab" class="hidden no-print">
   <div class="card">
-    <h3>📚 NCERT பாடப் புத்தகங்கள் & டிரைவ் கோப்புகள் (NCERT Books & Drive Folders)</h3>
-    <p class="notice">வகுப்பு வாரியாக NCERT பாடப்புத்தகங்கள் மற்றும் குறிப்புகள் அடங்கிய கூகுள் டிரைவ் (Google Drive) கோப்புறைகள்.</p>
+    <h3>📚 NCERT, Metric & State Board பாடப் புத்தகங்கள் மற்றும் டிரைவ் கோப்புகள்</h3>
+    <p class="notice">மாணவப் பிரிவு (Student Stream) மற்றும் வகுப்பு வாரியாக பாடப்புத்தகங்கள் மற்றும் குறிப்புகள் அடங்கிய கோப்புறைகள்.</p>
     
-    <!-- Principal / Teacher Link Manager (Visible to Principal & Teachers only) -->
+    <!-- Principal / Teacher Link Manager -->
     <div id="ncertManagerSection" class="teacher-principal-only hidden" style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid var(--border); margin-bottom:20px;">
       <h4 style="margin-top:0; color:var(--primary);">👑 முதல்வர் / ஆசிரியர் கட்டுப்பாட்டுப் பலகம்: டிரைவ் இணைப்பு சேமிக்க</h4>
-      <div class="grid-2">
+      <div class="grid-3">
         <div class="form-group">
-          <label>வகுப்பு (Standard / Class):</label>
+          <label>மாணவப் பிரிவு (Stream):</label>
+          <select id="configBookStream">
+            <option value="ncert">NCERT Book</option>
+            <option value="metric">Metric Book</option>
+            <option value="stateboard">State Board Book</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>வகுப்பு (Standard):</label>
           <select id="ncertConfigStd"></select>
         </div>
         <div class="form-group">
@@ -72,10 +79,18 @@
       <button class="btn btn-primary w-100" onclick="saveNcertDriveLink()">💾 டிரைவ் இணைப்பைச் சேமி (Save Link)</button>
     </div>
 
-    <!-- Student & User View: Filter & Book Cards -->
-    <div class="grid-2 margin-top">
+    <!-- Student & User View Filter & Book Cards -->
+    <div class="grid-3 margin-top">
       <div class="form-group">
-        <label>வகுப்பைத் தேர்ந்தெடுக்கவும் (Select Class):</label>
+        <label>மாணவப் பிரிவு (Stream):</label>
+        <select id="ncertViewStreamSelect" onchange="renderNcertBooksViewer()">
+          <option value="ncert">NCERT Book</option>
+          <option value="metric">Metric Book</option>
+          <option value="stateboard">State Board Book</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>வகுப்பு (Select Class):</label>
         <select id="ncertViewStdSelect" onchange="renderNcertBooksViewer()"></select>
       </div>
       <div class="form-group">
@@ -85,11 +100,10 @@
     </div>
 
     <div id="ncertBooksGridContainer" class="grid-3 margin-top" style="margin-top:20px;">
-      <!--  பாடப் புத்தகங்கள் காட்டப்படும் -->
+      <!-- பாடப் புத்தகங்கள் காட்டப்படும் -->
     </div>
   </div>
 </div>
-
 
   <!-- TAB: STUDENT VIEW TEACHER REPLIES -->
   <div id="myRepliesTab" class="hidden no-print">
@@ -99,30 +113,26 @@
       <div id="studentRepliesContainer"></div>
     </div>
   </div>
-<!-- TAB: 30 DAYS CHALLENGE -->
-<div id="challenge30Tab" class="hidden no-print">
-  <div class="card">
-    <h3>🔥 Before Atten test choose subject and question count & time </h3>
-<h3>
-🔥 30 நாட்கள் சவால் (30-Day Challenge Arena) </h3>
-    <p class="notice">தினமும் ஒரு தேர்வு வீதம் 30 நாட்களுக்குத் தொடர்ந்து எழுதி சாதனை படைங்கள்!</p>
-    
-    <!-- 30 நாட்களின் கட்டங்கள் (Grid Structure) -->
-    <div id="challengeGridContainer" class="grid-3 margin-top">
-      <!-- இது ஜாவாஸ்கிரிப்ட் மூலம் இயக்கப்படும் -->
+
+  <!-- TAB: 30 DAYS CHALLENGE -->
+  <div id="challenge30Tab" class="hidden no-print">
+    <div class="card">
+      <h3>🔥 30 நாட்கள் சவால் (30-Day Challenge Arena)</h3>
+      <p class="notice">தினமும் ஒரு தேர்வு வீதம் 30 நாட்களுக்குத் தொடர்ந்து எழுதி சாதனை படைங்கள்!</p>
+      <div id="challengeGridContainer" class="grid-3 margin-top"></div>
     </div>
   </div>
-</div>
+
   <!-- TAB: TEACHER & PRINCIPAL FEEDBACK VIEW -->
   <div id="feedbackTab" class="hidden no-print">
     <div class="card">
       <h3>💬 மாணவர் சந்தேகங்கள் & பின்னூட்டம் (Student Queries & Feedback)</h3>
-      <p class="notice">தேர்வில் 100% மதிப்பெண் பெற்ற மாணவர்கள் ஆசிரியரிடம் கேட்ட கேள்விகள் மற்றும் சந்தேகங்கள்.</p>
+      <p class="notice">தேர்வில் மாணவர்கள் ஆசிரியரிடம் கேட்ட கேள்விகள் மற்றும் சந்தேகங்கள்.</p>
       <table class="report-table margin-top">
         <thead>
           <tr>
             <th>மாணவர் ID / பெயர்</th>
-            <th>வகுப்பு & பாடம்</th>
+            <th>பிரிவு & வகுப்பு & பாடம்</th>
             <th>மதிப்பெண்</th>
             <th>சந்தேகம் / கருத்து</th>
             <th>ஆசிரியரின் பதில் (Reply)</th>
@@ -134,13 +144,12 @@
     </div>
   </div>
 
-
 <!-- PRIVACY POLICY MODAL -->
 <div id="privacyModal" class="modal-overlay hidden no-print">
   <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
     <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
     <h3>🔒 தனியுரிமைக் கொள்கை (Privacy Policy)</h3>
-    <p class="notice" style="margin-top: 10px;">ஹரிமணி பள்ளி வலைத்தளம் மாணவர்களின் தரவுப் பாதுகாப்பிற்கு முக்கியத்துவம் அளிக்கிறது. எங்கள் தளத்தில் விளம்பரங்களை வழங்குவதற்காக மூன்றாம் தரப்பு நிறுவனமான கூகுள் (Google) குக்கீகளைப் (Cookies) பயன்படுத்தலாம்.</p>
+    <p class="notice" style="margin-top: 10px;">ஹரிமணி பள்ளி வலைத்தளம் மாணவர்களின் தரவுப் பாதுகாப்பிற்கு முக்கியத்துவம் அளிக்கிறது.</p>
   </div>
 </div>
 
@@ -149,11 +158,9 @@
   <div class="modal-content" style="max-width: 500px;">
     <button class="modal-close" onclick="closeModal('contactModal')">&times;</button>
     <h3>📞 எங்களைத் தொடர்பு கொள்ள (Contact Us)</h3>
-    <p class="notice" style="margin-top: 10px;">ஏதேனும் சந்தேகங்கள் இருந்தால் கீழ்க்கண்ட மின்னஞ்சல் முகவரி மூலம் தொடர்பு கொள்ளலாம்:</p>
-    <p><strong>மின்னஞ்சல்:</strong> suguradhakrishnan@gmail.com</p>
+    <p class="notice" style="margin-top: 10px;">மின்னஞ்சல்: suguradhakrishnan@gmail.com</p>
   </div>
 </div>
-
 
 <!-- ABOUT US MODAL -->
 <div id="aboutModal" class="modal-overlay hidden no-print">
@@ -161,8 +168,7 @@
     <button class="modal-close" onclick="closeModal('aboutModal')">&times;</button>
     <h3>🏫 எங்களைப் பற்றி (About Us)</h3>
     <p class="notice" style="margin-top: 10px; line-height: 1.6;">
-      <strong>ஹரிமணி பள்ளி வலைத்தளம் (HariMani School Portal)</strong> என்பது மாணவர்கள் மற்றும் போட்டித் தேர்வு aspirants-களுக்காக உருவாக்கப்பட்ட ஒரு நவீன கற்றல் மற்றும் மதிப்பீட்டு மேடை ஆகும். 
-      மாணவர்கள் தினமும் எளிதாகத் தேர்வுகளை எழுதித் தங்களின் அறிவை வளர்த்துக்கொள்ளவும், ஆசிரியர்கள் வினாக்களை உருவாக்கி நிர்வகிக்கவும்  உதவுகிறது.
+      <strong>ஹரிமணி பள்ளி வலைத்தளம் (HariMani School Portal)</strong> NCERT, Metric மற்றும் State Board மாணவர்களுக்கான நவீன கற்றல் மற்றும் மதிப்பீட்டு மேடை ஆகும்.
     </p>
   </div>
 </div>
@@ -172,30 +178,34 @@
   <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
     <button class="modal-close" onclick="closeModal('termsModal')">&times;</button>
     <h3>📜 விதிமுறைகள் மற்றும் நிபந்தனைகள் (Terms & Conditions)</h3>
-    <p class="notice" style="margin-top: 10px; line-height: 1.6;">
-      இந்த வலைத்தளத்தைப் பயன்படுத்துவதன் மூலம் எங்கள் தளத்தின் விதிகளை ஏற்கிறீர்கள். இதில் உள்ள வினாக்கள் மற்றும் பாடங்கள் கல்வி நோக்கத்திற்காக மட்டுமே வழங்கப்படுகின்றன. தளத்தின் உள்ளடக்கங்களை அனுமதியின்றி வணிக ரீதியாகப் பயன்படுத்துவது தடை செய்யப்பட்டுள்ளது.
-    </p>
+    <p class="notice" style="margin-top: 10px; line-height: 1.6;">கல்வி நோக்கத்திற்காக மட்டுமே வழங்கப்படுகின்றன.</p>
   </div>
 </div>
-
-
 
   <!-- TAB 1: ATTEND TEST -->
   <div id="playTab">
     <div id="guestBanner" class="card no-print" style="background:#fff8e1; border-color:#ffe082; padding:12px 18px;">
-      <strong>👋 Welcome, Guest Student!</strong> You can attempt assessments across all 4 categories (MCQ, True/False, Fill in Blanks, Match). Sign In or Register to unlock 100% score rewards, certificates, streak badges, and question review  .
+      <strong>👋 Welcome, Guest Student!</strong> Sign In or Register to unlock score rewards and stream-specific tests.
     </div>
 
    <div id="quizSetupCard" class="card no-print">
-  <h3>🎯 Assessment Arena</h3>
-  <p class="notice" id="playScopeNotice">Select Category, Class, Subject, and Chapter to begin.</p>
+  <h3>🎯 Assessment Arena (NCERT / Metric / State Board)</h3>
+  <p class="notice" id="playScopeNotice">Select Student Stream, Category, Class, Subject, and Chapter to begin.</p>
   
-  <div class="grid-2">
+  <div class="grid-3">
+    <div class="form-group">
+      <label>Student Stream:</label>
+      <select id="playStreamSelect" onchange="syncPlayStreamDropdowns()">
+        <option value="ncert">NCERT Student</option>
+        <option value="metric">Metric Student</option>
+        <option value="stateboard">State Board Student</option>
+      </select>
+    </div>
     <div class="form-group">
       <label>Question Category:</label>
       <select id="playTypeSelect">
-        <option value="all">Mixed (All 4 Categories)</option>
-        <option value="mcq">Multiple Choice Questions (MCQ)</option>
+        <option value="all">Mixed (All Categories)</option>
+        <option value="mcq">MCQ</option>
         <option value="tf">True or False</option>
         <option value="fib">Fill in the Blanks</option>
         <option value="match">Match the Following</option>
@@ -229,7 +239,7 @@
       <label>Assessment Mode:</label>
       <select id="playAssessmentMode">
         <option value="text">✍️ Text Mode (Standard)</option>
-        <option value="voice">🎙️ Voice Conversational Mode (Interactive Audio)</option>
+        <option value="voice">🎙️ Voice Conversational Mode</option>
       </select>
     </div>
   </div>
@@ -258,21 +268,24 @@
   <button class="btn btn-primary w-100 margin-top" onclick="startQuiz()">🚀 Start Assessment</button>
 </div>
 
-
-
    <!-- ACTIVE TEST CARD -->
     <div id="quizActiveCard" class="card hidden no-print">
       <div class="quiz-top-bar">
         <span id="quizProgressBadge" class="badge-pill">Question 1 / 5</span>
-        <div id="timerContainer" class="timer-badge">⏱️ Time Left: <span id="timerText">20s</span></div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <!-- Bilingual Translation Toggle Buttons -->
+          <div class="bilingual-toggle-bar">
+            <button class="btn btn-outline-dark" style="padding:4px 8px; font-size:0.75rem;" onclick="translateTestContent('en')">🇬🇧 English</button>
+            <button class="btn btn-outline-dark" style="padding:4px 8px; font-size:0.75rem;" onclick="translateTestContent('ta')">🇮🇳 தமிழ்</button>
+          </div>
+          <div id="timerContainer" class="timer-badge">⏱️ Time Left: <span id="timerText">20s</span></div>
+        </div>
       </div>
       <div id="timerBarTrack" class="timer-bar-track">
         <div id="timerBarFill" class="timer-bar-fill"></div>
       </div>
       
       <div id="singleQuestionArea" style="margin-top:15px;"></div>
-
-      <!-- இந்த வரியை இங்கே ஒட்டவும் -->
       <div id="voiceTranscriptBox" style="margin-top:10px; font-style:italic; color:#003366; font-weight:600;"></div>
 
       <div class="quiz-footer-actions">
@@ -280,17 +293,15 @@
       </div>
     </div>
 
-
     <!-- RESULT SCORECARD -->
     <div id="quizResultCard" class="card text-center hidden no-print">
       <h2>🎉 Assessment Finished!</h2>
       <div id="resultScoreDisplay" style="font-size: 2.2rem; font-weight: bold; margin: 15px 0; color: var(--primary);"></div>
       <p id="resultFeedback" style="font-size: 1.1rem;"></p>
 
-      <!-- 100% REWARD & TEACHER FEEDBACK UNLOCK -->
       <div id="bonusRewardAlert" class="bonus-alert hidden">
         <h4>🌟 100% PERFECT SCORE BONUS UNLOCKED!</h4>
-        <p>வாழ்த்துகள்! நீங்கள் முழு மதிப்பெண் பெற்றுள்ளதால் <strong>+4 கூடுதல் தேர்வுகள் (Bonus Retakes)</strong> மற்றும் ஆசிரியரிடம் நேரடி பின்னூட்டம் பெறும் சலுகை திறக்கப்பட்டுள்ளது  .</p>
+        <p>வாழ்த்துகள்! நீங்கள் முழு மதிப்பெண் பெற்றுள்ளதால் <strong>+4 கூடுதல் தேர்வுகள் (Bonus Retakes)</strong> மற்றும் ஆசிரியரிடம் நேரடி பின்னூட்டம் பெறும் சலுகை திறக்கப்பட்டுள்ளது.</p>
         <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
           <input type="text" id="teacherFeedbackMessage" placeholder="ஆசிரியரிடம் உங்கள் சந்தேகம் அல்லது கருத்தைக் கேட்கவும்..." style="max-width:420px;">
           <button class="btn btn-success" onclick="submitTeacherFeedback()">📩 ஆசிரியருக்கு அனுப்புக</button>
@@ -304,7 +315,6 @@
         <button id="btnDownloadCert" class="btn btn-success hidden" onclick="downloadCertificate()">🎓 பாராட்டுச் சான்றிதழ் (Download Certificate)</button>
       </div>
 
-      <!-- QUESTION BY QUESTION REVIEW SECTION -->
       <div id="quizReviewArea" class="hidden" style="margin-top:25px; text-align:left;">
         <h3 style="border-bottom:2px solid var(--border); padding-bottom:8px;">🔍 முழு வினாக்கள் மறுபார்வை (Question Review)</h3>
         <div id="reviewQuestionsList"></div>
@@ -318,7 +328,12 @@
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <h3 style="margin:0;">🏆 பள்ளித் தரவரிசைப் பட்டியல் (Leaderboard)</h3>
         <div style="display:flex; gap:8px; align-items:center;">
-          <label style="font-weight:600; font-size:0.85rem;">வகுப்பு வாரியாக:</label>
+          <select id="leaderboardStreamFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px;">
+            <option value="all">அனைத்து பிரிவுகளும் (All Streams)</option>
+            <option value="ncert">NCERT Student</option>
+            <option value="metric">Metric Student</option>
+            <option value="stateboard">State Board Student</option>
+          </select>
           <select id="leaderboardStdFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px;"></select>
         </div>
       </div>
@@ -329,7 +344,7 @@
           <tr>
             <th style="width: 10%;">தரவரிசை</th>
             <th>மாணவர் பெயர்</th>
-            <th>வகுப்பு</th>
+            <th>பிரிவு & வகுப்பு</th>
             <th>எழுதிய தேர்வுகள்</th>
             <th>மொத்த மதிப்பெண்</th>
             <th>தேர்ச்சி விகிதம்</th>
@@ -344,13 +359,21 @@
   <div id="createTab" class="hidden no-print">
     <div style="display:flex; gap:10px; margin-bottom:15px;">
       <button id="btnMethodManual" class="btn btn-primary flex-1" onclick="switchCreateMethod('manual')">✍️ Manual Creation</button>
-      <button id="btnMethodAi" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('ai')">📷 AI Book Parser (PDF / Image)</button>
+      <button id="btnMethodAi" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('ai')">📷 AI Book Parser</button>
       <button id="btnMethodCsv" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('csv')">📁 CSV Bulk Import</button>
     </div>
 
     <div class="card" id="targetHierarchyCard" style="background:#fcfcfc;">
-      <h4>1. Target Hierarchy</h4>
-      <div class="grid-2">
+      <h4>1. Target Stream & Hierarchy</h4>
+      <div class="grid-3">
+        <div class="form-group">
+          <label>Student Stream:</label>
+          <select id="authorStreamSelect">
+            <option value="ncert">NCERT Student</option>
+            <option value="metric">Metric Student</option>
+            <option value="stateboard">State Board Student</option>
+          </select>
+        </div>
         <div class="form-group">
           <label>Standard / Class:</label>
           <select id="authorStdSelect" onchange="syncAuthorSubjects(); updateAiPromptPreview();"></select>
@@ -389,10 +412,9 @@
 
       <div class="form-group">
         <label>Question Statement / Prompt:</label>
-        <textarea id="manualQuestionText" rows="2" placeholder="Enter question statement (Use '_____' for blank in FIB)..."></textarea>
+        <textarea id="manualQuestionText" rows="2" placeholder="Enter question statement..."></textarea>
       </div>
 
-      <!-- MCQ Dynamic Fields -->
       <div id="wrapperMcqFields">
         <div class="grid-2">
           <div class="form-group"><label>Option A:</label><input type="text" id="manualOptA" placeholder="Option A"></div>
@@ -411,7 +433,6 @@
         </div>
       </div>
 
-      <!-- True or False Dynamic Fields -->
       <div id="wrapperTfFields" class="hidden">
         <div class="form-group">
           <label>Correct Answer:</label>
@@ -422,7 +443,6 @@
         </div>
       </div>
 
-      <!-- Fill in the Blanks Dynamic Fields -->
       <div id="wrapperFibFields" class="hidden">
         <div class="form-group">
           <label>Correct Blank Answer:</label>
@@ -430,9 +450,8 @@
         </div>
       </div>
 
-      <!-- Match the Following Dynamic Fields -->
       <div id="wrapperMatchFields" class="hidden">
-        <p class="notice">Enter matching pairs as <code>LeftItem:RightItem</code>  </p>
+        <p class="notice">Enter matching pairs as <code>LeftItem:RightItem</code></p>
         <div class="grid-2">
           <div class="form-group"><input type="text" id="matchPair1" placeholder="Roots:Absorb water"></div>
           <div class="form-group"><input type="text" id="matchPair2" placeholder="Leaves:Photosynthesis"></div>
@@ -443,7 +462,7 @@
 
       <div class="form-group">
         <label>Explanation / Text Reference:</label>
-        <textarea id="manualExplanation" rows="2" placeholder="Explain the rationale behind the correct answer..."></textarea>
+        <textarea id="manualExplanation" rows="2" placeholder="Explain the rationale..."></textarea>
       </div>
 
       <button class="btn btn-primary w-100 margin-top" onclick="publishManualQuestion()">💾 Publish Question</button>
@@ -459,7 +478,7 @@
         </div>
         <div class="form-group">
           <label>Questions to Extract (1 to 20):</label>
-          <input type="number" id="aiQuestionCount" min="1" max="20" value="10" placeholder="e.g. 10">
+          <input type="number" id="aiQuestionCount" min="1" max="20" value="10">
         </div>
       </div>
       <button class="btn btn-secondary w-100" id="btnExtractAi" onclick="generateViaAI()">⚡ Parse & Generate Multi-Category Quiz</button>
@@ -487,13 +506,9 @@
     <div id="sectionCsvCreate" class="card hidden">
       <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:8px; margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <h4 style="margin:0; color:#15803d;">🤖 Step 1: AI Prompt (All 4 Categories)</h4>
+          <h4 style="margin:0; color:#15803d;">🤖 Step 1: AI Prompt</h4>
           <a href="https://aistudio.google.com/prompts/new_chat" target="_blank" class="btn btn-outline" style="font-size:0.8rem; padding:4px 10px; text-decoration:none; background:#166534; border:none;">🚀 Open AI Studio</a>
         </div>
-        <p class="notice" style="margin-bottom:10px; color:#166534;">
-          This prompt generates pure CSV covering MCQ, True/False, Fill in the Blanks, and Match the Following across 12 standardized columns  .
-        </p>
-        
         <div style="position:relative;">
           <textarea id="aiStudioPromptTextarea" rows="9" readonly style="width:100%; font-family:monospace; font-size:0.8rem; background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; color:#1e293b; resize:vertical;"></textarea>
           <button id="btnCopyPrompt" onclick="copyAiStudioPrompt()" class="btn btn-primary" style="position:absolute; top:8px; right:8px; font-size:0.75rem; padding:5px 10px;">📋 Copy Prompt</button>
@@ -508,7 +523,7 @@
 
       <div class="form-group" style="margin-top: 15px;">
         <label><strong>Or Paste Raw CSV Text:</strong></label>
-        <textarea id="rawCsvTextInput" rows="5" placeholder="Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation..." style="width:100%; font-family:monospace; font-size:0.8rem; padding:8px; border:1px solid #cbd5e1; border-radius:6px;"></textarea>
+        <textarea id="rawCsvTextInput" rows="5" placeholder="Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation,Stream..." style="width:100%; font-family:monospace; font-size:0.8rem; padding:8px; border:1px solid #cbd5e1; border-radius:6px;"></textarea>
         <button class="btn btn-primary" onclick="handleDirectCsvPaste()" style="width:100%; margin-top:8px;">🔍 Parse & Check Duplicates</button>
       </div>
 
@@ -519,26 +534,35 @@
         </div>
         <div id="standaloneCsvList" class="preview-box" style="max-height: 250px; overflow-y: auto; background:#fff; padding:10px; border:1px solid var(--border); border-radius:6px;"></div>
         <button class="btn btn-primary w-100 margin-top" id="btnUploadStandaloneCsv" onclick="submitStandaloneCsvToSheet()">
-          🚀 Upload All to Google Sheet (Auto Serial IDs)
+          🚀 Upload All to Google Sheet
         </button>
       </div>
     </div>
   </div>
 
-  <!-- TAB 3: QUESTION BANK & PRINT PAPER -->
+<!-- TAB 3: QUESTION BANK & PRINT PAPER -->
   <div id="manageTab" class="hidden no-print">
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <h3 style="margin:0;">🗂️ Question Bank</h3>
         <div style="display:flex; gap:8px; align-items:center;">
           <span style="font-weight:600; font-size:0.85rem;">🖨️ Printable Paper:</span>
-          <button class="btn btn-outline-dark" onclick="generatePrintablePaper(25)">📄 25 Questions PDF</button>
-          <button class="btn btn-outline-dark" onclick="generatePrintablePaper(50)">📄 50 Questions PDF</button>
+          <button class="btn btn-outline-dark" onclick="generatePrintablePaper(25)">📄 25 Qs PDF</button>
+          <button class="btn btn-outline-dark" onclick="generatePrintablePaper(50)">📄 50 Qs PDF</button>
         </div>
       </div>
 
-      <div class="grid-3 margin-top">
-        <div class="form-group"><label>Search Keyword:</label><input type="text" id="manageSearchInput" oninput="renderManageTable()"></div>
+<!-- Added keyword search box -->
+      <div class="grid-3 margin-top" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+        <div class="form-group"><label>🔍 Search by Words:</label><input type="text" id="manageSearchInput" placeholder="Type keyword..." oninput="renderManageTable()"></div>
+        <div class="form-group"><label>Filter Stream:</label>
+          <select id="manageStreamFilter" onchange="renderManageTable()">
+            <option value="">All Streams</option>
+            <option value="ncert">NCERT Student</option>
+            <option value="metric">Metric Student</option>
+            <option value="stateboard">State Board Student</option>
+          </select>
+        </div>
         <div class="form-group"><label>Filter Standard:</label><select id="manageStdFilter" onchange="renderManageTable()"></select></div>
         <div class="form-group"><label>Filter Subject:</label><select id="manageSubFilter" onchange="renderManageTable()"></select></div>
       </div>
@@ -546,11 +570,11 @@
       <table class="report-table margin-top">
         <thead>
           <tr>
-            <th>Class</th>
+            <th>Stream & Class</th>
             <th>Type</th>
             <th>Subject</th>
             <th>Chapter / Topic</th>
-            <th>Question, Options & Answer</th>
+            <th>Question & Answer</th>
             <th>Author</th>
             <th>Action</th>
           </tr>
@@ -559,6 +583,39 @@
       </table>
     </div>
   </div>
+
+<!-- MODAL: EDIT QUESTION -->
+<div id="modalEditQuestion" class="modal-overlay hidden no-print">
+  <div class="modal-content" style="max-width:600px; max-height:85vh; overflow-y:auto;">
+    <button class="modal-close" onclick="closeModal('modalEditQuestion')">&times;</button>
+    <h3>✏️ Edit Question Details</h3>
+    <input type="hidden" id="editQId">
+
+    <div class="form-group">
+      <label>Question Statement:</label>
+      <textarea id="editQText" rows="3"></textarea>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Option A:</label><input type="text" id="editOptA"></div>
+      <div class="form-group"><label>Option B:</label><input type="text" id="editOptB"></div>
+      <div class="form-group"><label>Option C:</label><input type="text" id="editOptC"></div>
+      <div class="form-group"><label>Option D:</label><input type="text" id="editOptD"></div>
+    </div>
+    <div class="form-group">
+      <label>Correct Answer (Option number, True/False, or Word):</label>
+      <input type="text" id="editCorrectOpt">
+    </div>
+    <div class="form-group">
+      <label>Explanation:</label>
+      <textarea id="editExplanation" rows="2"></textarea>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+      <button class="btn btn-outline-dark" onclick="closeModal('modalEditQuestion')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditedQuestion()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
 
   <!-- TAB 4: MY SCORES & BADGES -->
   <div id="reportsTab" class="hidden no-print">
@@ -595,9 +652,9 @@
         <thead>
           <tr>
             <th>Date</th>
+            <th>Stream</th>
             <th>Class</th>
             <th>Subject</th>
-            <th>Chapter / Topic</th>
             <th>Score</th>
             <th>Percentage</th>
           </tr>
@@ -622,9 +679,9 @@
           <tr>
             <th>Student ID</th>
             <th>Student Name</th>
+            <th>Stream</th>
             <th>Class</th>
             <th>Subject</th>
-            <th>Chapter / Topic</th>
             <th>Score</th>
             <th>Date</th>
           </tr>
@@ -634,148 +691,153 @@
     </div>
   </div>
 
-  <!-- TAB 6: PRINCIPAL MASTER BOARD (EXECUTIVE REDESIGN) -->
-<div id="principalTab" class="hidden no-print">
-
-  <!-- Overview Summary KPI Cards -->
-  <div class="pr-stats-grid margin-top">
-    <div class="pr-stat-card">
-      <div class="pr-stat-icon" style="background:#e0f2fe; color:#0369a1;">🧑‍🏫</div>
-      <div>
-        <div class="pr-stat-label">Active Teachers</div>
-        <div class="pr-stat-val" id="prStatTeacherCount">0</div>
+  <!-- TAB 6: PRINCIPAL MASTER BOARD -->
+  <div id="principalTab" class="hidden no-print">
+    <div class="pr-stats-grid margin-top">
+      <div class="pr-stat-card">
+        <div class="pr-stat-icon" style="background:#e0f2fe; color:#0369a1;">🧑‍🏫</div>
+        <div>
+          <div class="pr-stat-label">Active Teachers</div>
+          <div class="pr-stat-val" id="prStatTeacherCount">0</div>
+        </div>
       </div>
-    </div>
-    <div class="pr-stat-card">
-      <div class="pr-stat-icon" style="background:#fef3c7; color:#b45309;">🎓</div>
-      <div>
-        <div class="pr-stat-label">Enrolled Students</div>
-        <div class="pr-stat-val" id="prStatStudentCount">0</div>
+      <div class="pr-stat-card">
+        <div class="pr-stat-icon" style="background:#fef3c7; color:#b45309;">🎓</div>
+        <div>
+          <div class="pr-stat-label">Enrolled Students</div>
+          <div class="pr-stat-val" id="prStatStudentCount">0</div>
+        </div>
       </div>
-    </div>
-    <div class="pr-stat-card">
-      <div class="pr-stat-icon" style="background:#dcfce7; color:#15803d;">📝</div>
-      <div>
-        <div class="pr-stat-label">Assessments Logged</div>
-        <div class="pr-stat-val" id="prStatAssessmentCount">0</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Internal Sub-Navigation Controls -->
-  <div class="pr-subtabs margin-top">
-    <button class="pr-subtab-btn active" onclick="switchPrincipalSubView('teachers', this)">🧑‍🏫 Teacher Management</button>
-    <button class="pr-subtab-btn" onclick="switchPrincipalSubView('students', this)">🎓 Student Directory & Scope</button>
-    <button class="pr-subtab-btn" onclick="switchPrincipalSubView('analytics', this)">📊 Academic Assessment Logs</button>
-  </div>
-
-  <!-- SUBVIEW 1: TEACHER MANAGEMENT -->
-  <div id="prViewTeachers" class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
-      <div>
-        <h3 style="margin:0;">Faculty & Teacher Roster</h3>
-        <p class="notice" style="margin:2px 0 0 0;">Manage teaching credentials, assigned classes, and specialized subjects.</p>
-      </div>
-      <button class="btn btn-primary" onclick="openModal('modalCreateTeacher')">➕ Onboard New Teacher</button>
-    </div>
-
-    <div class="form-group" style="max-width:350px;">
-      <input type="text" id="prTeacherSearchInput" placeholder="🔍 Search by name or teacher ID..." oninput="renderPrincipalTeacherTable()">
-    </div>
-
-    <div style="overflow-x:auto;">
-      <table class="report-table">
-        <thead>
-          <tr>
-            <th style="width: 14%;">Teacher ID</th>
-            <th style="width: 20%;">Faculty Name</th>
-            <th style="width: 25%;">Assigned Classes</th>
-            <th style="width: 25%;">Assigned Subjects</th>
-            <th style="text-align:right; width: 16%;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="principalTeacherTbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- SUBVIEW 2: STUDENT MANAGEMENT -->
-  <div id="prViewStudents" class="card hidden">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
-      <div>
-        <h3 style="margin:0;">Student Registry & Access Matrix</h3>
-        <p class="notice" style="margin:2px 0 0 0;">Control assigned classes for standard students or competitive aspirants.</p>
+      <div class="pr-stat-card">
+        <div class="pr-stat-icon" style="background:#dcfce7; color:#15803d;">📝</div>
+        <div>
+          <div class="pr-stat-label">Assessments Logged</div>
+          <div class="pr-stat-val" id="prStatAssessmentCount">0</div>
+        </div>
       </div>
     </div>
 
-    <div class="grid-2">
-      <div class="form-group">
-        <input type="text" id="prStudentSearchInput" placeholder="🔍 Search student name or ID..." oninput="renderPrincipalStudentTable()">
+    <div class="pr-subtabs margin-top">
+      <button class="pr-subtab-btn active" onclick="switchPrincipalSubView('teachers', this)">🧑‍🏫 Teacher Management</button>
+      <button class="pr-subtab-btn" onclick="switchPrincipalSubView('students', this)">🎓 Student Directory & Scope</button>
+      <button class="pr-subtab-btn" onclick="switchPrincipalSubView('analytics', this)">📊 Academic Assessment Logs</button>
+    </div>
+
+    <!-- SUBVIEW 1: TEACHER MANAGEMENT -->
+    <div id="prViewTeachers" class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
+        <div>
+          <h3 style="margin:0;">Faculty & Teacher Roster</h3>
+          <p class="notice" style="margin:2px 0 0 0;">Manage teaching credentials, streams, and assigned classes.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modalCreateTeacher')">➕ Onboard New Teacher</button>
       </div>
-      <div class="form-group">
-        <select id="prStudentRoleFilter" onchange="renderPrincipalStudentTable()">
-          <option value="all">All Student Roles</option>
-          <option value="student">School Student Only</option>
-          <option value="aspirant">Competitive Aspirant Only</option>
-        </select>
+
+      <div class="form-group" style="max-width:350px;">
+        <input type="text" id="prTeacherSearchInput" placeholder="🔍 Search by name or teacher ID..." oninput="renderPrincipalTeacherTable()">
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Teacher ID</th>
+              <th>Faculty Name</th>
+              <th>Stream</th>
+              <th>Assigned Classes</th>
+              <th>Assigned Subjects</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="principalTeacherTbody"></tbody>
+        </table>
       </div>
     </div>
 
-    <div style="overflow-x:auto;">
-      <table class="report-table">
-        <thead>
-          <tr>
-            <th style="width: 15%;">Student ID</th>
-            <th style="width: 25%;">Full Name</th>
-            <th style="width: 15%;">Role</th>
-            <th style="width: 25%;">Enrolled Classes</th>
-            <th style="text-align:right; width: 20%;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="principalStudentTbody"></tbody>
-      </table>
-    </div>
-  </div>
+    <!-- SUBVIEW 2: STUDENT MANAGEMENT -->
+    <div id="prViewStudents" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
+        <div>
+          <h3 style="margin:0;">Student Registry & Access Matrix</h3>
+          <p class="notice" style="margin:2px 0 0 0;">Control assigned streams and classes for students and aspirants.</p>
+        </div>
+      </div>
 
-  <!-- SUBVIEW 3: ASSESSMENT LOGS & PERFORMANCE -->
-  <div id="prViewAnalytics" class="card hidden">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
-      <div>
-        <h3 style="margin:0;">School Assessment Master Registry</h3>
-        <p class="notice" style="margin:2px 0 0 0;">Inspect individual test submission scores and curriculum performance.</p>
+      <div class="grid-2">
+        <div class="form-group">
+          <input type="text" id="prStudentSearchInput" placeholder="🔍 Search student name or ID..." oninput="renderPrincipalStudentTable()">
+        </div>
+        <div class="form-group">
+          <select id="prStudentRoleFilter" onchange="renderPrincipalStudentTable()">
+            <option value="all">All Student Roles</option>
+            <option value="student">School Student Only</option>
+            <option value="aspirant">Competitive Aspirant Only</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Full Name</th>
+              <th>Stream</th>
+              <th>Role</th>
+              <th>Enrolled Classes</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="principalStudentTbody"></tbody>
+        </table>
       </div>
     </div>
 
-    <div class="grid-3" style="background:#f8f9fa; padding:12px; border-radius:6px; border:1px solid var(--border);">
-      <div class="form-group" style="margin:0;">
-        <label>Filter Student:</label>
-        <input type="text" id="prFilterStudent" placeholder="Search by name/ID..." oninput="filterPrincipalScores()">
+    <!-- SUBVIEW 3: ASSESSMENT LOGS -->
+    <div id="prViewAnalytics" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+        <div>
+          <h3 style="margin:0;">School Assessment Master Registry</h3>
+          <p class="notice" style="margin:2px 0 0 0;">Inspect individual test submission scores across all student streams.</p>
+        </div>
       </div>
-      <div class="form-group" style="margin:0;">
-        <label>Filter Standard:</label>
-        <select id="prFilterStd" onchange="filterPrincipalScores()"></select>
-      </div>
-      <div class="form-group" style="margin:0;">
-        <label>Filter Subject:</label>
-        <select id="prFilterSub" onchange="filterPrincipalScores()"></select>
-      </div>
-    </div>
 
-    <div style="overflow-x:auto; margin-top:15px;">
-      <table class="report-table">
-        <thead>
-          <tr>
-            <th>Student</th>
-            <th>Class</th>
-            <th>Subject</th>
-            <th>Chapter & Topic</th>
-            <th>Score</th>
-            <th>Result</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody id="principalScoresTbody"></tbody>
-      </table>
+      <div class="grid-3" style="background:#f8f9fa; padding:12px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group" style="margin:0;">
+          <label>Filter Student:</label>
+          <input type="text" id="prFilterStudent" placeholder="Search by name/ID..." oninput="filterPrincipalScores()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Filter Stream:</label>
+          <select id="prFilterStream" onchange="filterPrincipalScores()">
+            <option value="">All Streams</option>
+            <option value="ncert">NCERT Student</option>
+            <option value="metric">Metric Student</option>
+            <option value="stateboard">State Board Student</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Filter Standard:</label>
+          <select id="prFilterStd" onchange="filterPrincipalScores()"></select>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto; margin-top:15px;">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Stream</th>
+              <th>Class</th>
+              <th>Subject</th>
+              <th>Score</th>
+              <th>Result</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="principalScoresTbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -786,15 +848,23 @@
   <div class="modal-content" style="max-width:500px;">
     <button class="modal-close" onclick="closeModal('modalCreateTeacher')">&times;</button>
     <h3>🧑‍🏫 Onboard Faculty Member</h3>
-    <p class="notice">Create a teacher profile with initial dashboard access.</p>
+    <p class="notice">Create a teacher profile with stream assignment.</p>
     
     <div class="form-group">
       <label>Teacher User ID / Staff Code:</label>
-      <input type="text" id="newTeacherId" placeholder="e.g. TCH_MATH01">
+      <input type="text" id="newTeacherId" placeholder="e.g. TCH_NCERT01">
     </div>
     <div class="form-group">
       <label>Full Name:</label>
-      <input type="text" id="newTeacherName" placeholder="e.g. Mr. S. Ramanujan">
+      <input type="text" id="newTeacherName" placeholder="e.g. Dr. K. Radhakrishnan">
+    </div>
+    <div class="form-group">
+      <label>Student Stream:</label>
+      <select id="newTeacherStream">
+        <option value="ncert">NCERT Student</option>
+        <option value="metric">Metric Student</option>
+        <option value="stateboard">State Board Student</option>
+      </select>
     </div>
     <div class="form-group">
       <label>Initial Login Password:</label>
@@ -812,6 +882,15 @@
     <h3 id="editTeacherModalTitle">Configure Faculty Access</h3>
     <p class="notice" id="editTeacherModalSub"></p>
     <input type="hidden" id="editTeacherTargetId">
+
+    <div class="form-group margin-top">
+      <label>Assigned Stream:</label>
+      <select id="editTeacherStream">
+        <option value="ncert">NCERT Student</option>
+        <option value="metric">Metric Student</option>
+        <option value="stateboard">State Board Student</option>
+      </select>
+    </div>
 
     <label style="font-weight:600; display:block; margin-top:15px; margin-bottom:6px;">Assigned Classes:</label>
     <div id="editTeacherStdContainer" class="chip-container"></div>
@@ -834,6 +913,15 @@
     <p class="notice" id="editStudentModalSub"></p>
     <input type="hidden" id="editStudentTargetId">
 
+    <div class="form-group margin-top">
+      <label>Student Stream:</label>
+      <select id="editStudentStream">
+        <option value="ncert">NCERT Student</option>
+        <option value="metric">Metric Student</option>
+        <option value="stateboard">State Board Student</option>
+      </select>
+    </div>
+
     <label style="font-weight:600; display:block; margin-top:15px; margin-bottom:6px;">Allowed Standards:</label>
     <div id="editStudentStdContainer" class="chip-container"></div>
 
@@ -844,12 +932,10 @@
   </div>
 </div>
 
-
-
-<!-- PRINTABLE QUESTION PAPER & ANSWER KEY CONTAINER -->
+<!-- PRINTABLE QUESTION PAPER CONTAINER -->
 <div id="printContainer" class="print-only"></div>
 
-<!-- PRINTABLE CERTIFICATE TEMPLATE CONTAINER (OFF-SCREEN) -->
+<!-- PRINTABLE CERTIFICATE CONTAINER -->
 <div id="certificatePrintContainer" style="position:fixed; left:-9999px; top:0; z-index:-1000; width:1000px; background:#ffffff;"></div>
 
 <!-- SIGN IN MODAL -->
@@ -857,7 +943,7 @@
   <div class="modal-content">
     <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
     <h3>Sign In to HariMani School</h3>
-    <p class="notice">Access for Principal, Teachers, Students, and Aspirants  .</p>
+    <p class="notice">Access for Principal, Teachers, Students, and Aspirants.</p>
     <div class="form-group">
       <label>User ID / Roll Number:</label>
       <input type="text" id="loginUserId" placeholder="e.g. PRINCIPAL, TCH_SCI01, or STU101">
@@ -876,7 +962,15 @@
     <button class="modal-close" onclick="closeModal('signupModal')">&times;</button>
     <h3>Student / Aspirant Registration</h3>
     <div class="form-group">
-      <label>Category:</label>
+      <label>Student Category / Stream:</label>
+      <select id="signupStudentStream">
+        <option value="ncert">NCERT Student (NCERT Curriculum & Books)</option>
+        <option value="metric">Metric Student (Metric System Curriculum & Books)</option>
+        <option value="stateboard">State Board Student (State Board Curriculum & Books)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Account Type:</label>
       <select id="signupUserType" onchange="toggleSignupCategory(this.value)">
         <option value="student">School Student (Enrolled in Assigned Class)</option>
         <option value="aspirant">Competitive Aspirant (All Classes 5 to 12)</option>
@@ -902,68 +996,11 @@
   </div>
 </div>
 
-<script>
-function updateAiPromptPreview() {
-  const stdSelect = document.getElementById("authorStdSelect");
-  const subSelect = document.getElementById("authorSubSelect");
-  const promptBox = document.getElementById("aiStudioPromptTextarea");
-  if (!promptBox) return;
-
-  const std = stdSelect && stdSelect.value ? stdSelect.value : "5";
-  const sub = subSelect && subSelect.value ? subSelect.value : "Science";
-
-  promptBox.value = `You are an examination question author for HariMani School.
-Generate exactly 100 balanced assessment questions (50 Multiple Choice Questions, 10 True/False, 15 Fill in the Blanks, and 15 Match the Following) strictly based on the textbook content provided below.
-
-OUTPUT FORMAT REQUIREMENTS:
-1. Output MUST be pure raw CSV text with exactly 12 columns per row.
-2. Every question must be on its OWN SEPARATE LINE. Never combine rows.
-3. Wrap all text columns in double quotes ("...").
-4. Column 1 (Type) MUST be one of: "mcq", "tf", "fib", "match".
-5. Column 11 (CorrectOpt):
-   - For "mcq": strictly 1, 2, 3, or 4.
-   - For "tf": strictly "True" or "False".
-   - For "fib": strictly the exact word or phrase completing the blank.
-   - For "match": set to "MATCH". OptA through OptD must be formatted as "LeftItem:RightItem".
-
-HEADER ROW:
-Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation
-
-DATA ROW TEMPLATES:
-"mcq",${std},"${sub}","[Chapter]","[Topic]","[Question statement]","[Opt A]","[Opt B]","[Opt C]","[Opt D]",1,"[Explanation]"
-"tf",${std},"${sub}","[Chapter]","[Topic]","[Factual Statement]","","","","",True,"[Explanation]"
-"fib",${std},"${sub}","[Chapter]","[Topic]","[Statement with _____ blank]","","","","","[Word]","[Explanation]"
-"match",${std},"${sub}","[Chapter]","[Topic]","Match the pairs:","[Item1:Match1]","[Item2:Match2]","[Item3:Match3]","[Item4:Match4]","MATCH","[Explanation]"
-
-TEXTBOOK CONTENT:
-"""
-[PASTE TEXTBOOK CONTENT HERE]
-"""`;
-}
-
-function copyAiStudioPrompt() {
-  const promptBox = document.getElementById("aiStudioPromptTextarea");
-  if (!promptBox) return;
-  navigator.clipboard.writeText(promptBox.value).then(() => {
-    const btn = document.getElementById("btnCopyPrompt");
-    if (btn) {
-      btn.innerText = "✅ Copied!";
-      setTimeout(() => { btn.innerText = "📋 Copy Prompt"; }, 2000);
-    }
-  });
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  setTimeout(updateAiPromptPreview, 500);
-});
-</script>
-
 <script src="script.js"></script>
 
 </body>
-<!-- FOOTER LINKS FOR ADSENSE -->
 <footer class="no-print" style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid var(--border); background: #ffffff; color: var(--text-muted); font-size: 0.85rem;">
-  <p style="margin: 0 0 8px 0;">🏫 HariMani School - LMS & Assessment Portal</p>
+  <p style="margin: 0 0 8px 0;">🏫 HariMani School - LMS & Assessment Portal (NCERT, Metric & State Board)</p>
   <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
     <a href="#" onclick="openModal('aboutModal'); return false;" style="color: var(--primary); text-decoration: none;">About Us</a>
     <span>|</span>
@@ -974,5 +1011,4 @@ window.addEventListener("DOMContentLoaded", () => {
     <a href="#" onclick="openModal('contactModal'); return false;" style="color: var(--primary); text-decoration: none;">Contact Us</a>
   </div>
 </footer>
-
 </html>

@@ -838,6 +838,7 @@ async function startQuiz() {
   const subEl = document.getElementById("playSubSelect");
   const chapEl = document.getElementById("playChapterSelect");
   const topicEl = document.getElementById("playTopicSelect");
+  const keywordEl = document.getElementById("playKeywordInput"); // <-- Keyword input
   const allCb = document.getElementById("playAllCheckbox");
   const modeEl = document.getElementById("playAssessmentMode");
   const countEl = document.getElementById("playCountInput");
@@ -847,46 +848,40 @@ async function startQuiz() {
   const chosenType = typeEl ? typeEl.value : "all";
   const std = stdEl ? stdEl.value : "5";
   const sub = subEl && subEl.value ? normalizeText(subEl.value).toLowerCase() : "science";
-  const chap = chapEl ? chapEl.value : "All";
-  const topic = topicEl ? topicEl.value : "All";
+  const keyword = keywordEl ? keywordEl.value.toLowerCase().trim() : "";
+  const isAspirant = currentUser && currentUser.role === "aspirant";
+  const isPrincipal = currentUser && currentUser.role === "principal";
   const isAll = currentUser && allCb && allCb.checked;
   
   currentAssessmentMode = modeEl ? modeEl.value : "text";
 
-  if (currentAssessmentMode === "voice") {
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => track.stop());
-      }
-    } catch (err) {
-      console.warn("Microphone permission denied:", err);
-      currentAssessmentMode = "text";
-      if (modeEl) modeEl.value = "text";
-    }
-  }
-
   let count = countEl ? (parseInt(countEl.value, 10) || 5) : 5;
-  if (currentUser && bonusRetakesRemaining > 0) {
-    count = Math.min(count + bonusRetakesRemaining, 100);
-  } else if (!currentUser && count > 10) {
-    count = 10;
-  }
-
   perQuestionTime = timerEl ? Number(timerEl.value) : 20;
 
   let matched = masterQuestions.filter(q => {
-    const mStream = (!q.stream || q.stream === chosenStream);
+    const mStream = (!q.stream || q.stream.toLowerCase() === chosenStream.toLowerCase());
     const mType = (chosenType === "all" || (q.type || "mcq").toLowerCase() === chosenType);
-    const mStd = q.standard === std;
+
+    // If Aspirant / Principal uses a keyword, allow cross-class search if keyword is present
+    if (keyword && (isAspirant || isPrincipal)) {
+      const searchableText = `${q.question || ""} ${q.topic || ""} ${q.chapter || ""} ${q.subject || ""} ${q.explanation || ""}`.toLowerCase();
+      return mStream && mType && searchableText.includes(keyword);
+    }
+
+    // Standard student / teacher filtering
+    const mStd = q.standard.toString().trim() === std.toString().trim();
     const mSub = normalizeText(q.subject).toLowerCase() === sub;
+    const chap = chapEl ? chapEl.value : "All";
     const mChap = (chap === "All" || normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
-    const mTopic = (topic === "All" || normalizeText(q.topic).toLowerCase() === topic.toLowerCase());
-    return mStream && mType && mStd && mSub && mChap && mTopic;
+    
+    const searchableText = `${q.question || ""} ${q.topic || ""} ${q.chapter || ""}`.toLowerCase();
+    const mKeyword = !keyword || searchableText.includes(keyword);
+
+    return mStream && mType && mStd && mSub && mChap && mKeyword;
   });
 
   if (matched.length === 0) {
-    return alert(`No questions found matching your filter in [${chosenStream.toUpperCase()}] Class ${std} - ${sub.toUpperCase()}.`);
+    return alert(keyword ? `No questions found matching keyword "${keyword}".` : `No questions found matching your filter.`);
   }
 
   matched.sort(() => Math.random() - 0.5);
@@ -904,6 +899,7 @@ async function startQuiz() {
 
   renderCurrentQuestion();
 }
+
 
 async function renderCurrentQuestion() {
   clearInterval(timerInterval);

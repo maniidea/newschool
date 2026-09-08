@@ -3,25 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HariMani School - LMS & Assessment Portal</title>
+  <title>HariMani School - Enterprise LMS & Assessment Portal</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1893226892962344"
-     crossorigin="anonymous"></script>
-
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1893226892962344" crossorigin="anonymous"></script>
 </head>
 <body>
 
-<header class="no-print">
+<header class="no-print professional-header">
   <div class="logo-area">
-    <h2>🏫 HariMani School Portal</h2>
+    <h2>🏫 HariMani School <span class="portal-badge">Enterprise Portal</span></h2>
   </div>
   <div class="header-right">
     <span id="userBadge" class="user-pill hidden"></span>
-
     <button id="btnOpenLogin" class="btn btn-outline" onclick="openModal('loginModal')">🔑 Sign In</button>
     <button id="btnOpenSignup" class="btn btn-secondary" onclick="openModal('signupModal')">📝 Student / Aspirant Sign Up</button>
     <button id="btnLogout" class="btn btn-outline hidden" onclick="logout()">Logout</button>
@@ -31,7 +28,7 @@
 <div class="container">
 
   <!-- NAVIGATION TABS -->
-  <div class="tabs no-print">
+  <div class="tabs no-print professional-tabs">
     <button class="tab-btn active" onclick="switchTab('play', this)">📝 Attend Test</button>
     <button class="tab-btn" onclick="switchTab('challenge30', this)">🔥 30 Days Challenge</button>
     <button class="tab-btn hidden" id="tabMyScores" onclick="switchTab('reports', this)">📊 My Scores & Badges</button>
@@ -45,69 +42,71 @@
     <button class="tab-btn principal-only hidden" onclick="switchTab('principal', this)">👑 Principal Master Board</button>
   </div>
 
-<!-- TAB: BOOKS REPOSITORY (NCERT, METRIC, STATE BOARD) -->
-<div id="ncertBooksTab" class="hidden no-print">
-  <div class="card">
-    <h3>📚 NCERT, Metric & State Board பாடப் புத்தகங்கள் மற்றும் டிரைவ் கோப்புகள்</h3>
-    <p class="notice">மாணவப் பிரிவு (Student Stream) மற்றும் வகுப்பு வாரியாக பாடப்புத்தகங்கள் மற்றும் குறிப்புகள் அடங்கிய கோப்புறைகள்.</p>
-    
-    <!-- Principal / Teacher Link Manager -->
-    <div id="ncertManagerSection" class="teacher-principal-only hidden" style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid var(--border); margin-bottom:20px;">
-      <h4 style="margin-top:0; color:var(--primary);">👑 முதல்வர் / ஆசிரியர் கட்டுப்பாட்டுப் பலகம்: டிரைவ் இணைப்பு சேமிக்க</h4>
-      <div class="grid-3">
+  <!-- TAB: BOOKS REPOSITORY (NCERT, METRIC, STATE BOARD) -->
+  <div id="ncertBooksTab" class="hidden no-print">
+    <div class="card professional-card">
+      <div class="card-header-flex">
+        <h3>📚 NCERT, Metric & State Board பாடப் புத்தகங்கள் மற்றும் டிரைவ் கோப்புகள்</h3>
+      </div>
+      <p class="notice">மாணவப் பிரிவு (Student Stream) மற்றும் வகுப்பு வாரியாக பாடப்புத்தகங்கள் மற்றும் குறிப்புகள் அடங்கிய கோப்புறைகள்.</p>
+      
+      <!-- Principal / Teacher Link Manager -->
+      <div id="ncertManagerSection" class="teacher-principal-only hidden" style="background:#f8fafc; padding:20px; border-radius:10px; border:1px solid #e2e8f0; margin-bottom:25px;">
+        <h4 style="margin-top:0; color:var(--primary);">👑 முதல்வர் / ஆசிரியர் கட்டுப்பாட்டுப் பலகம்: டிரைவ் இணைப்பு சேமிக்க</h4>
+        <div class="grid-3">
+          <div class="form-group">
+            <label>மாணவப் பிரிவு (Stream):</label>
+            <select id="configBookStream">
+              <option value="ncert">NCERT Book</option>
+              <option value="metric">Metric Book</option>
+              <option value="stateboard">State Board Book</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>வகுப்பு (Standard):</label>
+            <select id="ncertConfigStd"></select>
+          </div>
+          <div class="form-group">
+            <label>பாடம் (Subject):</label>
+            <select id="ncertConfigSub"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>கூகுள் டிரைவ் கோப்புறை இணைப்பு (Google Drive Folder URL):</label>
+          <input type="url" id="ncertDriveUrlInput" placeholder="https://drive.google.com/drive/folders/...">
+        </div>
+        <button class="btn btn-primary w-100" onclick="saveNcertDriveLink()">💾 டிரைவ் இணைப்பைச் சேமி (Save Link)</button>
+      </div>
+
+      <!-- Student & User View Filter & Book Cards -->
+      <div class="grid-3 margin-top">
         <div class="form-group">
           <label>மாணவப் பிரிவு (Stream):</label>
-          <select id="configBookStream">
+          <select id="ncertViewStreamSelect" onchange="renderNcertBooksViewer()">
             <option value="ncert">NCERT Book</option>
             <option value="metric">Metric Book</option>
             <option value="stateboard">State Board Book</option>
           </select>
         </div>
         <div class="form-group">
-          <label>வகுப்பு (Standard):</label>
-          <select id="ncertConfigStd"></select>
+          <label>வகுப்பு (Select Class):</label>
+          <select id="ncertViewStdSelect" onchange="renderNcertBooksViewer()"></select>
         </div>
         <div class="form-group">
-          <label>பாடம் (Subject):</label>
-          <select id="ncertConfigSub"></select>
+          <label>பாடத்தைத் தேட (Search Subject):</label>
+          <input type="text" id="ncertSearchInput" placeholder="பாடம் பெயரை உள்ளிடவும்..." oninput="renderNcertBooksViewer()">
         </div>
       </div>
-      <div class="form-group">
-        <label>கூகுள் டிரைவ் கோப்புறை இணைப்பு (Google Drive Folder URL):</label>
-        <input type="url" id="ncertDriveUrlInput" placeholder="https://drive.google.com/drive/folders/...">
-      </div>
-      <button class="btn btn-primary w-100" onclick="saveNcertDriveLink()">💾 டிரைவ் இணைப்பைச் சேமி (Save Link)</button>
-    </div>
 
-    <!-- Student & User View Filter & Book Cards -->
-    <div class="grid-3 margin-top">
-      <div class="form-group">
-        <label>மாணவப் பிரிவு (Stream):</label>
-        <select id="ncertViewStreamSelect" onchange="renderNcertBooksViewer()">
-          <option value="ncert">NCERT Book</option>
-          <option value="metric">Metric Book</option>
-          <option value="stateboard">State Board Book</option>
-        </select>
+      <div id="ncertBooksGridContainer" class="grid-3 margin-top" style="margin-top:20px;">
+        <!-- பாடப் புத்தகங்கள் காட்டப்படும் -->
       </div>
-      <div class="form-group">
-        <label>வகுப்பு (Select Class):</label>
-        <select id="ncertViewStdSelect" onchange="renderNcertBooksViewer()"></select>
-      </div>
-      <div class="form-group">
-        <label>பாடத்தைத் தேட (Search Subject):</label>
-        <input type="text" id="ncertSearchInput" placeholder="பாடம் பெயரை உள்ளிடவும்..." oninput="renderNcertBooksViewer()">
-      </div>
-    </div>
-
-    <div id="ncertBooksGridContainer" class="grid-3 margin-top" style="margin-top:20px;">
-      <!-- பாடப் புத்தகங்கள் காட்டப்படும் -->
     </div>
   </div>
-</div>
 
   <!-- TAB: STUDENT VIEW TEACHER REPLIES -->
   <div id="myRepliesTab" class="hidden no-print">
-    <div class="card">
+    <div class="card professional-card">
       <h3>📬 ஆசிரியரின் பதில்கள் (Teacher Responses)</h3>
       <p class="notice">நீங்கள் தேர்வுக்குப் பிறகு ஆசிரியரிடம் கேட்ட சந்தேகங்கள் மற்றும் அதற்கான ஆசிரியரின் பதில்கள்.</p>
       <div id="studentRepliesContainer"></div>
@@ -116,7 +115,7 @@
 
   <!-- TAB: 30 DAYS CHALLENGE -->
   <div id="challenge30Tab" class="hidden no-print">
-    <div class="card">
+    <div class="card professional-card">
       <h3>🔥 30 நாட்கள் சவால் (30-Day Challenge Arena)</h3>
       <p class="notice">தினமும் ஒரு தேர்வு வீதம் 30 நாட்களுக்குத் தொடர்ந்து எழுதி சாதனை படைங்கள்!</p>
       <div id="challengeGridContainer" class="grid-3 margin-top"></div>
@@ -125,7 +124,7 @@
 
   <!-- TAB: TEACHER & PRINCIPAL FEEDBACK VIEW -->
   <div id="feedbackTab" class="hidden no-print">
-    <div class="card">
+    <div class="card professional-card">
       <h3>💬 மாணவர் சந்தேகங்கள் & பின்னூட்டம் (Student Queries & Feedback)</h3>
       <p class="notice">தேர்வில் மாணவர்கள் ஆசிரியரிடம் கேட்ட கேள்விகள் மற்றும் சந்தேகங்கள்.</p>
       <table class="report-table margin-top">
@@ -144,139 +143,153 @@
     </div>
   </div>
 
-<!-- PRIVACY POLICY MODAL -->
-<div id="privacyModal" class="modal-overlay hidden no-print">
-  <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
-    <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
-    <h3>🔒 தனியுரிமைக் கொள்கை (Privacy Policy)</h3>
-    <p class="notice" style="margin-top: 10px;">ஹரிமணி பள்ளி வலைத்தளம் மாணவர்களின் தரவுப் பாதுகாப்பிற்கு முக்கியத்துவம் அளிக்கிறது.</p>
+  <!-- PRIVACY POLICY MODAL -->
+  <div id="privacyModal" class="modal-overlay hidden no-print">
+    <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+      <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
+      <h3>🔒 தனியுரிமைக் கொள்கை (Privacy Policy)</h3>
+      <p class="notice" style="margin-top: 10px;">ஹரிமணி பள்ளி வலைத்தளம் மாணவர்களின் தரவுப் பாதுகாப்பிற்கு முக்கியத்துவம் அளிக்கிறது.</p>
+    </div>
   </div>
-</div>
 
-<!-- CONTACT US MODAL -->
-<div id="contactModal" class="modal-overlay hidden no-print">
-  <div class="modal-content" style="max-width: 500px;">
-    <button class="modal-close" onclick="closeModal('contactModal')">&times;</button>
-    <h3>📞 எங்களைத் தொடர்பு கொள்ள (Contact Us)</h3>
-    <p class="notice" style="margin-top: 10px;">மின்னஞ்சல்: suguradhakrishnan@gmail.com</p>
+  <!-- CONTACT US MODAL -->
+  <div id="contactModal" class="modal-overlay hidden no-print">
+    <div class="modal-content" style="max-width: 500px;">
+      <button class="modal-close" onclick="closeModal('contactModal')">&times;</button>
+      <h3>📞 எங்களைத் தொடர்பு கொள்ள (Contact Us)</h3>
+      <p class="notice" style="margin-top: 10px;">மின்னஞ்சல்: suguradhakrishnan@gmail.com</p>
+    </div>
   </div>
-</div>
 
-<!-- ABOUT US MODAL -->
-<div id="aboutModal" class="modal-overlay hidden no-print">
-  <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
-    <button class="modal-close" onclick="closeModal('aboutModal')">&times;</button>
-    <h3>🏫 எங்களைப் பற்றி (About Us)</h3>
-    <p class="notice" style="margin-top: 10px; line-height: 1.6;">
-      <strong>ஹரிமணி பள்ளி வலைத்தளம் (HariMani School Portal)</strong> NCERT, Metric மற்றும் State Board மாணவர்களுக்கான நவீன கற்றல் மற்றும் மதிப்பீட்டு மேடை ஆகும்.
-    </p>
+  <!-- ABOUT US MODAL -->
+  <div id="aboutModal" class="modal-overlay hidden no-print">
+    <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+      <button class="modal-close" onclick="closeModal('aboutModal')">&times;</button>
+      <h3>🏫 எங்களைப் பற்றி (About Us)</h3>
+      <p class="notice" style="margin-top: 10px; line-height: 1.6;">
+        <strong>ஹரிமணி பள்ளி வலைத்தளம் (HariMani School Portal)</strong> NCERT, Metric மற்றும் State Board மாணவர்களுக்கான நவீன கற்றல் மற்றும் மதிப்பீட்டு மேடை ஆகும்.
+      </p>
+    </div>
   </div>
-</div>
 
-<!-- TERMS & CONDITIONS MODAL -->
-<div id="termsModal" class="modal-overlay hidden no-print">
-  <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
-    <button class="modal-close" onclick="closeModal('termsModal')">&times;</button>
-    <h3>📜 விதிமுறைகள் மற்றும் நிபந்தனைகள் (Terms & Conditions)</h3>
-    <p class="notice" style="margin-top: 10px; line-height: 1.6;">கல்வி நோக்கத்திற்காக மட்டுமே வழங்கப்படுகின்றன.</p>
+  <!-- TERMS & CONDITIONS MODAL -->
+  <div id="termsModal" class="modal-overlay hidden no-print">
+    <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+      <button class="modal-close" onclick="closeModal('termsModal')">&times;</button>
+      <h3>📜 விதிமுறைகள் மற்றும் நிபந்தனைகள் (Terms & Conditions)</h3>
+      <p class="notice" style="margin-top: 10px; line-height: 1.6;">கல்வி நோக்கத்திற்காக மட்டுமே வழங்கப்படுகின்றன.</p>
+    </div>
   </div>
-</div>
 
   <!-- TAB 1: ATTEND TEST -->
   <div id="playTab">
-    <div id="guestBanner" class="card no-print" style="background:#fff8e1; border-color:#ffe082; padding:12px 18px;">
-      <strong>👋 Welcome, Guest Student!</strong> Sign In or Register to unlock score rewards and stream-specific tests.
+    <div id="guestBanner" class="card no-print" style="background:#fffbeb; border-color:#fef3c7; padding:14px 20px; border-radius:10px; display:flex; align-items:center; gap:12px;">
+      <span style="font-size:1.5rem;">👋</span>
+      <div>
+        <strong style="color:#92400e;">Welcome, Guest Student!</strong>
+        <p style="margin:2px 0 0 0; font-size:0.9rem; color:#b45309;">Sign In or Register to unlock score rewards and stream-specific tests.</p>
+      </div>
     </div>
 
-   <div id="quizSetupCard" class="card no-print">
-  <h3>🎯 Assessment Arena (NCERT / Metric / State Board)</h3>
-  <p class="notice" id="playScopeNotice">Select Student Stream, Category, Class, Subject, and Chapter to begin.</p>
-  
-  <div class="grid-3">
-    <div class="form-group">
-      <label>Student Stream:</label>
-      <select id="playStreamSelect" onchange="syncPlayStreamDropdowns()">
-        <option value="ncert">NCERT Student</option>
-        <option value="metric">Metric Student</option>
-        <option value="stateboard">State Board Student</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Question Category:</label>
-      <select id="playTypeSelect">
-        <option value="all">Mixed (All Categories)</option>
-        <option value="mcq">MCQ</option>
-        <option value="tf">True or False</option>
-        <option value="fib">Fill in the Blanks</option>
-        <option value="match">Match the Following</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Class / Standard:</label>
-      <select id="playStdSelect" onchange="syncPlaySubjects()"></select>
-    </div>
-  </div>
+    <div id="quizSetupCard" class="card professional-card">
+      <div class="card-header-title">
+        <h3>🎯 Assessment Arena</h3>
+        <span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">NCERT / Metric / State Board</span>
+      </div>
+      <p class="notice" id="playScopeNotice">Select Student Stream, Category, Class, Subject, and Chapter to begin.</p>
+      
+      <div class="grid-3">
+        <div class="form-group">
+          <label>Student Stream:</label>
+          <select id="playStreamSelect" onchange="syncPlayStreamDropdowns()">
+            <option value="ncert">NCERT Student</option>
+            <option value="metric">Metric Student</option>
+            <option value="stateboard">State Board Student</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Question Category:</label>
+          <select id="playTypeSelect">
+            <option value="all">Mixed (All Categories)</option>
+            <option value="mcq">MCQ</option>
+            <option value="tf">True or False</option>
+            <option value="fib">Fill in the Blanks</option>
+            <option value="match">Match the Following</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Class / Standard:</label>
+          <select id="playStdSelect" onchange="syncPlaySubjects()"></select>
+        </div>
+      </div>
 
-  <div class="grid-2">
-    <div class="form-group">
-      <label>Subject:</label>
-      <select id="playSubSelect" onchange="syncPlayChapters()"></select>
-    </div>
-    <div class="form-group">
-      <label>Unit / Chapter:</label>
-      <select id="playChapterSelect" onchange="syncPlayTopics()"></select>
-    </div>
-  </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Subject:</label>
+          <select id="playSubSelect" onchange="syncPlayChapters()"></select>
+        </div>
+        <div class="form-group">
+          <label>Unit / Chapter:</label>
+          <select id="playChapterSelect" onchange="syncPlayTopics()"></select>
+        </div>
+      </div>
 
-  <div class="grid-2">
-    <div class="form-group">
-      <label>Topic / Section:</label>
-      <select id="playTopicSelect">
-        <option value="All">All Topics</option>
-      </select>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Topic / Section:</label>
+          <select id="playTopicSelect">
+            <option value="All">All Topics</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Assessment Mode:</label>
+          <select id="playAssessmentMode">
+            <option value="text">✍️ Text Mode (Standard)</option>
+            <option value="voice">🎙️ Voice Conversational Mode</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px dashed #cbd5e1; margin-top:10px;">
+        <label style="color:var(--primary); font-weight:600; display:block; margin-bottom:6px;">🔍 Keyword / Topic Search Assessment (Optional):</label>
+        <input type="text" id="playKeywordInput" placeholder="Enter keyword (e.g., Photosynthesis, Geometry, Verka)..." style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
+        <small style="color:#64748b; display:block; margin-top:4px;">If a keyword is provided, questions matching this keyword will be pulled automatically.</small>
+      </div>
+
+      <div class="grid-2 margin-top">
+        <div class="form-group">
+          <label>Timer per Question:</label>
+          <select id="playTimerSelect">
+            <option value="0">No Timer</option>
+            <option value="15">15 Seconds</option>
+            <option value="20" selected>20 Seconds</option>
+            <option value="30">30 Seconds</option>
+            <option value="60">60 Seconds</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Question Count:</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="number" id="playCountInput" min="1" max="10" value="5" style="flex:1;">
+            <label style="font-size:0.85rem; white-space:nowrap; cursor:pointer; display:flex; align-items:center; gap:4px;">
+              <input type="checkbox" id="playAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width:auto;" disabled> All Available
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-100 margin-top" style="padding:12px; font-size:1.05rem; font-weight:600;" onclick="startQuiz()">🚀 Start Assessment</button>
     </div>
-    <div class="form-group">
-      <label>Assessment Mode:</label>
-      <select id="playAssessmentMode">
-        <option value="text">✍️ Text Mode (Standard)</option>
-        <option value="voice">🎙️ Voice Conversational Mode</option>
-      </select>
-    </div>
-  </div>
 
-  <div class="form-group">
-    <label>Timer per Question:</label>
-    <select id="playTimerSelect">
-      <option value="0">No Timer</option>
-      <option value="15">15 Seconds</option>
-      <option value="20" selected>20 Seconds</option>
-      <option value="30">30 Seconds</option>
-      <option value="60">60 Seconds</option>
-    </select>
-  </div>
-
-  <div class="form-group">
-    <label>Question Count:</label>
-    <div style="display:flex; gap:8px; align-items:center;">
-      <input type="number" id="playCountInput" min="1" max="10" value="5" style="flex:1;">
-      <label style="font-size:0.85rem; white-space:nowrap; cursor:pointer;">
-        <input type="checkbox" id="playAllCheckbox" onchange="toggleSelectAll(this.checked)" style="width:auto;" disabled> All Available
-      </label>
-    </div>
-  </div>
-
-  <button class="btn btn-primary w-100 margin-top" onclick="startQuiz()">🚀 Start Assessment</button>
-</div>
-
-   <!-- ACTIVE TEST CARD -->
-    <div id="quizActiveCard" class="card hidden no-print">
+    <!-- ACTIVE TEST CARD -->
+    <div id="quizActiveCard" class="card hidden no-print professional-card">
       <div class="quiz-top-bar">
         <span id="quizProgressBadge" class="badge-pill">Question 1 / 5</span>
         <div style="display:flex; gap:10px; align-items:center;">
-          <!-- Bilingual Translation Toggle Buttons -->
           <div class="bilingual-toggle-bar">
-            <button class="btn btn-outline-dark" style="padding:4px 8px; font-size:0.75rem;" onclick="translateTestContent('en')">🇬🇧 English</button>
-            <button class="btn btn-outline-dark" style="padding:4px 8px; font-size:0.75rem;" onclick="translateTestContent('ta')">🇮🇳 தமிழ்</button>
+            <button class="btn btn-outline-dark" style="padding:4px 10px; font-size:0.8rem;" onclick="translateTestContent('en')">🇬🇧 English</button>
+            <button class="btn btn-outline-dark" style="padding:4px 10px; font-size:0.8rem;" onclick="translateTestContent('ta')">🇮🇳 தமிழ்</button>
           </div>
           <div id="timerContainer" class="timer-badge">⏱️ Time Left: <span id="timerText">20s</span></div>
         </div>
@@ -285,38 +298,38 @@
         <div id="timerBarFill" class="timer-bar-fill"></div>
       </div>
       
-      <div id="singleQuestionArea" style="margin-top:15px;"></div>
+      <div id="singleQuestionArea" style="margin-top:20px;"></div>
       <div id="voiceTranscriptBox" style="margin-top:10px; font-style:italic; color:#003366; font-weight:600;"></div>
 
-      <div class="quiz-footer-actions">
+      <div class="quiz-footer-actions margin-top">
         <button id="btnNextQuestion" class="btn btn-primary" onclick="nextQuestion(false)">Next Question ⏩</button>
       </div>
     </div>
 
     <!-- RESULT SCORECARD -->
-    <div id="quizResultCard" class="card text-center hidden no-print">
+    <div id="quizResultCard" class="card text-center hidden no-print professional-card">
       <h2>🎉 Assessment Finished!</h2>
-      <div id="resultScoreDisplay" style="font-size: 2.2rem; font-weight: bold; margin: 15px 0; color: var(--primary);"></div>
-      <p id="resultFeedback" style="font-size: 1.1rem;"></p>
+      <div id="resultScoreDisplay" style="font-size: 2.5rem; font-weight: bold; margin: 15px 0; color: var(--primary);"></div>
+      <p id="resultFeedback" style="font-size: 1.1rem; color:#475569;"></p>
 
       <div id="bonusRewardAlert" class="bonus-alert hidden">
         <h4>🌟 100% PERFECT SCORE BONUS UNLOCKED!</h4>
         <p>வாழ்த்துகள்! நீங்கள் முழு மதிப்பெண் பெற்றுள்ளதால் <strong>+4 கூடுதல் தேர்வுகள் (Bonus Retakes)</strong> மற்றும் ஆசிரியரிடம் நேரடி பின்னூட்டம் பெறும் சலுகை திறக்கப்பட்டுள்ளது.</p>
-        <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
-          <input type="text" id="teacherFeedbackMessage" placeholder="ஆசிரியரிடம் உங்கள் சந்தேகம் அல்லது கருத்தைக் கேட்கவும்..." style="max-width:420px;">
+        <div style="margin-top:12px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+          <input type="text" id="teacherFeedbackMessage" placeholder="ஆசிரியரிடம் உங்கள் சந்தேகம் அல்லது கருத்தைக் கேட்கவும்..." style="max-width:420px; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
           <button class="btn btn-success" onclick="submitTeacherFeedback()">📩 ஆசிரியருக்கு அனுப்புக</button>
         </div>
       </div>
 
-      <div style="display:flex; justify-content:center; gap:12px; margin-top:20px; flex-wrap:wrap;">
+      <div style="display:flex; justify-content:center; gap:12px; margin-top:25px; flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="resetQuizView()">Retake / New Test</button>
         <button class="btn btn-secondary" onclick="toggleExamReview()">📖 Review All Questions</button>
         <button id="btnRetakeWrong" class="btn btn-danger hidden" onclick="retakeWrongOnly()">🔁 தவறான வினாக்களை மட்டும் மீண்டும் எழுது</button>
         <button id="btnDownloadCert" class="btn btn-success hidden" onclick="downloadCertificate()">🎓 பாராட்டுச் சான்றிதழ் (Download Certificate)</button>
       </div>
 
-      <div id="quizReviewArea" class="hidden" style="margin-top:25px; text-align:left;">
-        <h3 style="border-bottom:2px solid var(--border); padding-bottom:8px;">🔍 முழு வினாக்கள் மறுபார்வை (Question Review)</h3>
+      <div id="quizReviewArea" class="hidden" style="margin-top:30px; text-align:left; border-top:1px solid #e2e8f0; padding-top:20px;">
+        <h3 style="margin-bottom:15px;">🔍 முழு வினாக்கள் மறுபார்வை (Question Review)</h3>
         <div id="reviewQuestionsList"></div>
       </div>
     </div>
@@ -324,17 +337,17 @@
 
   <!-- TAB: LEADERBOARD -->
   <div id="leaderboardTab" class="hidden no-print">
-    <div class="card">
+    <div class="card professional-card">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <h3 style="margin:0;">🏆 பள்ளித் தரவரிசைப் பட்டியல் (Leaderboard)</h3>
         <div style="display:flex; gap:8px; align-items:center;">
-          <select id="leaderboardStreamFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px;">
+          <select id="leaderboardStreamFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px;">
             <option value="all">அனைத்து பிரிவுகளும் (All Streams)</option>
             <option value="ncert">NCERT Student</option>
             <option value="metric">Metric Student</option>
             <option value="stateboard">State Board Student</option>
           </select>
-          <select id="leaderboardStdFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px;"></select>
+          <select id="leaderboardStdFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px;"></select>
         </div>
       </div>
       <p class="notice margin-top">அதிக மதிப்பெண்கள் மற்றும் தொடர்ச்சியாகத் தேர்வு எழுதிய முன்னணி மாணவர்கள்.</p>
@@ -357,14 +370,14 @@
 
   <!-- TAB 2: CREATE / AUTHOR QUESTIONS -->
   <div id="createTab" class="hidden no-print">
-    <div style="display:flex; gap:10px; margin-bottom:15px;">
+    <div style="display:flex; gap:10px; margin-bottom:20px;">
       <button id="btnMethodManual" class="btn btn-primary flex-1" onclick="switchCreateMethod('manual')">✍️ Manual Creation</button>
       <button id="btnMethodAi" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('ai')">📷 AI Book Parser</button>
       <button id="btnMethodCsv" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('csv')">📁 CSV Bulk Import</button>
     </div>
 
-    <div class="card" id="targetHierarchyCard" style="background:#fcfcfc;">
-      <h4>1. Target Stream & Hierarchy</h4>
+    <div class="card professional-card" id="targetHierarchyCard">
+      <h4 style="color:var(--primary); margin-top:0;">1. Target Stream & Hierarchy</h4>
       <div class="grid-3">
         <div class="form-group">
           <label>Student Stream:</label>
@@ -397,8 +410,8 @@
     </div>
 
     <!-- SECTION 2A: MANUAL CREATE -->
-    <div id="sectionManualCreate" class="card">
-      <h4>2. Question Details</h4>
+    <div id="sectionManualCreate" class="card professional-card">
+      <h4 style="color:var(--primary); margin-top:0;">2. Question Details</h4>
       
       <div class="form-group">
         <label>Question Type / Category:</label>
@@ -469,8 +482,8 @@
     </div>
 
     <!-- SECTION 2B: AI DOCUMENT / PDF PARSER -->
-    <div id="sectionAiCreate" class="card hidden">
-      <h4>2. AI Document / PDF Parser</h4>
+    <div id="sectionAiCreate" class="card professional-card hidden">
+      <h4 style="color:var(--primary); margin-top:0;">2. AI Document / PDF Parser</h4>
       <div class="grid-2">
         <div class="form-group">
           <label>Upload Textbook File (PDF or Image):</label>
@@ -483,7 +496,7 @@
       </div>
       <button class="btn btn-secondary w-100" id="btnExtractAi" onclick="generateViaAI()">⚡ Parse & Generate Multi-Category Quiz</button>
       
-      <div id="aiBatchProgressArea" class="hidden margin-top" style="background:#f8f9fa; padding:15px; border-radius:6px; border:1px solid var(--border);">
+      <div id="aiBatchProgressArea" class="hidden margin-top" style="background:#f8f9fa; padding:15px; border-radius:6px; border:1px solid #e2e8f0;">
         <div style="display:flex; justify-content:space-between; font-weight:600; font-size:0.9rem; margin-bottom:6px;">
           <span id="aiBatchStatusText">Processing...</span>
           <span id="aiBatchProgressPct">0%</span>
@@ -503,11 +516,11 @@
     </div>
 
     <!-- SECTION 2C: CSV BULK IMPORTER -->
-    <div id="sectionCsvCreate" class="card hidden">
+    <div id="sectionCsvCreate" class="card professional-card hidden">
       <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:8px; margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <h4 style="margin:0; color:#15803d;">🤖 Step 1: AI Prompt</h4>
-          <a href="https://aistudio.google.com/prompts/new_chat" target="_blank" class="btn btn-outline" style="font-size:0.8rem; padding:4px 10px; text-decoration:none; background:#166534; border:none;">🚀 Open AI Studio</a>
+          <a href="https://aistudio.google.com/prompts/new_chat" target="_blank" class="btn btn-outline" style="font-size:0.8rem; padding:4px 10px; text-decoration:none; background:#166534; border:none; color:#fff;">🚀 Open AI Studio</a>
         </div>
         <div style="position:relative;">
           <textarea id="aiStudioPromptTextarea" rows="9" readonly style="width:100%; font-family:monospace; font-size:0.8rem; background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; color:#1e293b; resize:vertical;"></textarea>
@@ -532,7 +545,7 @@
           <h4 style="margin:0;">Detected Questions (<span id="standaloneCsvCount" style="color:var(--primary); font-weight:bold;">0</span> Records)</h4>
           <span id="csvDuplicateCountBadge" class="badge" style="background:#fee2e2; color:#991b1b;">0 Potential Duplicates</span>
         </div>
-        <div id="standaloneCsvList" class="preview-box" style="max-height: 250px; overflow-y: auto; background:#fff; padding:10px; border:1px solid var(--border); border-radius:6px;"></div>
+        <div id="standaloneCsvList" class="preview-box" style="max-height: 250px; overflow-y: auto; background:#fff; padding:10px; border:1px solid #e2e8f0; border-radius:6px;"></div>
         <button class="btn btn-primary w-100 margin-top" id="btnUploadStandaloneCsv" onclick="submitStandaloneCsvToSheet()">
           🚀 Upload All to Google Sheet
         </button>
@@ -540,9 +553,9 @@
     </div>
   </div>
 
-<!-- TAB 3: QUESTION BANK & PRINT PAPER -->
+  <!-- TAB 3: QUESTION BANK & PRINT PAPER -->
   <div id="manageTab" class="hidden no-print">
-    <div class="card">
+    <div class="card professional-card">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <h3 style="margin:0;">🗂️ Question Bank</h3>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -552,10 +565,9 @@
         </div>
       </div>
 
-<!-- Added keyword search box -->
-      <div class="grid-3 margin-top" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
-        <div class="form-group"><label>🔍 Search by Words:</label><input type="text" id="manageSearchInput" placeholder="Type keyword..." oninput="renderManageTable()"></div>
-        <div class="form-group"><label>Filter Stream:</label>
+      <div class="grid-4 margin-top" style="grid-template-columns: 1fr 1fr 1fr 1fr; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+        <div class="form-group" style="margin:0;"><label>🔍 Search by Words:</label><input type="text" id="manageSearchInput" placeholder="Type keyword..." oninput="renderManageTable()"></div>
+        <div class="form-group" style="margin:0;"><label>Filter Stream:</label>
           <select id="manageStreamFilter" onchange="renderManageTable()">
             <option value="">All Streams</option>
             <option value="ncert">NCERT Student</option>
@@ -563,8 +575,8 @@
             <option value="stateboard">State Board Student</option>
           </select>
         </div>
-        <div class="form-group"><label>Filter Standard:</label><select id="manageStdFilter" onchange="renderManageTable()"></select></div>
-        <div class="form-group"><label>Filter Subject:</label><select id="manageSubFilter" onchange="renderManageTable()"></select></div>
+        <div class="form-group" style="margin:0;"><label>Filter Standard:</label><select id="manageStdFilter" onchange="renderManageTable()"></select></div>
+        <div class="form-group" style="margin:0;"><label>Filter Subject:</label><select id="manageSubFilter" onchange="renderManageTable()"></select></div>
       </div>
 
       <table class="report-table margin-top">
@@ -584,42 +596,42 @@
     </div>
   </div>
 
-<!-- MODAL: EDIT QUESTION -->
-<div id="modalEditQuestion" class="modal-overlay hidden no-print">
-  <div class="modal-content" style="max-width:600px; max-height:85vh; overflow-y:auto;">
-    <button class="modal-close" onclick="closeModal('modalEditQuestion')">&times;</button>
-    <h3>✏️ Edit Question Details</h3>
-    <input type="hidden" id="editQId">
+  <!-- MODAL: EDIT QUESTION -->
+  <div id="modalEditQuestion" class="modal-overlay hidden no-print">
+    <div class="modal-content professional-modal" style="max-width:600px; max-height:85vh; overflow-y:auto;">
+      <button class="modal-close" onclick="closeModal('modalEditQuestion')">&times;</button>
+      <h3 style="margin-top:0; color:var(--primary);">✏️ Edit Question Details</h3>
+      <input type="hidden" id="editQId">
 
-    <div class="form-group">
-      <label>Question Statement:</label>
-      <textarea id="editQText" rows="3"></textarea>
-    </div>
-    <div class="grid-2">
-      <div class="form-group"><label>Option A:</label><input type="text" id="editOptA"></div>
-      <div class="form-group"><label>Option B:</label><input type="text" id="editOptB"></div>
-      <div class="form-group"><label>Option C:</label><input type="text" id="editOptC"></div>
-      <div class="form-group"><label>Option D:</label><input type="text" id="editOptD"></div>
-    </div>
-    <div class="form-group">
-      <label>Correct Answer (Option number, True/False, or Word):</label>
-      <input type="text" id="editCorrectOpt">
-    </div>
-    <div class="form-group">
-      <label>Explanation:</label>
-      <textarea id="editExplanation" rows="2"></textarea>
-    </div>
+      <div class="form-group">
+        <label>Question Statement:</label>
+        <textarea id="editQText" rows="3"></textarea>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Option A:</label><input type="text" id="editOptA"></div>
+        <div class="form-group"><label>Option B:</label><input type="text" id="editOptB"></div>
+        <div class="form-group"><label>Option C:</label><input type="text" id="editOptC"></div>
+        <div class="form-group"><label>Option D:</label><input type="text" id="editOptD"></div>
+      </div>
+      <div class="form-group">
+        <label>Correct Answer (Option number, True/False, or Word):</label>
+        <input type="text" id="editCorrectOpt">
+      </div>
+      <div class="form-group">
+        <label>Explanation:</label>
+        <textarea id="editExplanation" rows="2"></textarea>
+      </div>
 
-    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-      <button class="btn btn-outline-dark" onclick="closeModal('modalEditQuestion')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveEditedQuestion()">💾 Save Changes</button>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+        <button class="btn btn-outline-dark" onclick="closeModal('modalEditQuestion')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditedQuestion()">💾 Save Changes</button>
+      </div>
     </div>
   </div>
-</div>
 
   <!-- TAB 4: MY SCORES & BADGES -->
   <div id="reportsTab" class="hidden no-print">
-    <div class="card">
+    <div class="card professional-card">
       <h3>🎖️ Student Achievements & Streaks</h3>
       <div id="badgesContainer" class="badges-deck"></div>
 
@@ -634,17 +646,17 @@
       </div>
 
       <div style="display:flex; gap:12px; margin:15px 0;">
-        <div style="flex:1; background:#e8f4fd; border:1px solid #b6d4fe; padding:10px; border-radius:6px; text-align:center;">
-          <div style="font-size:0.8rem; font-weight:bold; color:#084298;">TESTS ATTEMPTED</div>
-          <div id="repStatTotal" style="font-size:1.4rem; font-weight:bold; color:var(--primary);">0</div>
+        <div style="flex:1; background:#f0f9ff; border:1px solid #bae6fd; padding:12px; border-radius:8px; text-align:center;">
+          <div style="font-size:0.8rem; font-weight:bold; color:#0369a1;">TESTS ATTEMPTED</div>
+          <div id="repStatTotal" style="font-size:1.5rem; font-weight:bold; color:var(--primary);">0</div>
         </div>
-        <div style="flex:1; background:#e2f0d9; border:1px solid #c3e6cb; padding:10px; border-radius:6px; text-align:center;">
-          <div style="font-size:0.8rem; font-weight:bold; color:#155724;">AVERAGE ACCURACY</div>
-          <div id="repStatAvg" style="font-size:1.4rem; font-weight:bold; color:var(--accent);">0%</div>
+        <div style="flex:1; background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px; text-align:center;">
+          <div style="font-size:0.8rem; font-weight:bold; color:#15803d;">AVERAGE ACCURACY</div>
+          <div id="repStatAvg" style="font-size:1.5rem; font-weight:bold; color:var(--accent);">0%</div>
         </div>
-        <div style="flex:1; background:#fff3cd; border:1px solid #ffeeba; padding:10px; border-radius:6px; text-align:center;">
-          <div style="font-size:0.8rem; font-weight:bold; color:#856404;">CURRENT STREAK</div>
-          <div id="repStatStreak" style="font-size:1.4rem; font-weight:bold; color:d97706;">0 Days</div>
+        <div style="flex:1; background:#fef3c7; border:1px solid #fde68a; padding:12px; border-radius:8px; text-align:center;">
+          <div style="font-size:0.8rem; font-weight:bold; color:#b45309;">CURRENT STREAK</div>
+          <div id="repStatStreak" style="font-size:1.5rem; font-weight:bold; color:#d97706;">0 Days</div>
         </div>
       </div>
 
@@ -666,7 +678,7 @@
 
   <!-- TAB 5: TEACHER SCORES -->
   <div id="teacherScoresTab" class="hidden no-print">
-    <div class="card">
+    <div class="card professional-card">
       <h3>📈 Student Scores (Assigned Classes)</h3>
       <div class="grid-3">
         <div class="form-group"><label>Search Student:</label><input type="text" id="tchRepSearchStudent" oninput="filterTeacherStudentScores()"></div>
@@ -724,7 +736,7 @@
     </div>
 
     <!-- SUBVIEW 1: TEACHER MANAGEMENT -->
-    <div id="prViewTeachers" class="card">
+    <div id="prViewTeachers" class="card professional-card">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
         <div>
           <h3 style="margin:0;">Faculty & Teacher Roster</h3>
@@ -755,7 +767,7 @@
     </div>
 
     <!-- SUBVIEW 2: STUDENT MANAGEMENT -->
-    <div id="prViewStudents" class="card hidden">
+    <div id="prViewStudents" class="card professional-card hidden">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:15px;">
         <div>
           <h3 style="margin:0;">Student Registry & Access Matrix</h3>
@@ -794,7 +806,7 @@
     </div>
 
     <!-- SUBVIEW 3: ASSESSMENT LOGS -->
-    <div id="prViewAnalytics" class="card hidden">
+    <div id="prViewAnalytics" class="card professional-card hidden">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
         <div>
           <h3 style="margin:0;">School Assessment Master Registry</h3>
@@ -802,7 +814,7 @@
         </div>
       </div>
 
-      <div class="grid-3" style="background:#f8f9fa; padding:12px; border-radius:6px; border:1px solid var(--border);">
+      <div class="grid-3" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
         <div class="form-group" style="margin:0;">
           <label>Filter Student:</label>
           <input type="text" id="prFilterStudent" placeholder="Search by name/ID..." oninput="filterPrincipalScores()">
@@ -845,9 +857,9 @@
 
 <!-- MODAL: ONBOARD NEW TEACHER -->
 <div id="modalCreateTeacher" class="modal-overlay hidden no-print">
-  <div class="modal-content" style="max-width:500px;">
+  <div class="modal-content professional-modal" style="max-width:500px;">
     <button class="modal-close" onclick="closeModal('modalCreateTeacher')">&times;</button>
-    <h3>🧑‍🏫 Onboard Faculty Member</h3>
+    <h3 style="color:var(--primary); margin-top:0;">🧑‍🏫 Onboard Faculty Member</h3>
     <p class="notice">Create a teacher profile with stream assignment.</p>
     
     <div class="form-group">
@@ -877,9 +889,9 @@
 
 <!-- MODAL: EDIT TEACHER SCOPE -->
 <div id="modalEditTeacherScope" class="modal-overlay hidden no-print">
-  <div class="modal-content" style="max-width:600px; max-height:85vh; overflow-y:auto;">
+  <div class="modal-content professional-modal" style="max-width:600px; max-height:85vh; overflow-y:auto;">
     <button class="modal-close" onclick="closeModal('modalEditTeacherScope')">&times;</button>
-    <h3 id="editTeacherModalTitle">Configure Faculty Access</h3>
+    <h3 id="editTeacherModalTitle" style="color:var(--primary); margin-top:0;">Configure Faculty Access</h3>
     <p class="notice" id="editTeacherModalSub"></p>
     <input type="hidden" id="editTeacherTargetId">
 
@@ -907,9 +919,9 @@
 
 <!-- MODAL: EDIT STUDENT SCOPE -->
 <div id="modalEditStudentScope" class="modal-overlay hidden no-print">
-  <div class="modal-content" style="max-width:550px; max-height:85vh; overflow-y:auto;">
+  <div class="modal-content professional-modal" style="max-width:550px; max-height:85vh; overflow-y:auto;">
     <button class="modal-close" onclick="closeModal('modalEditStudentScope')">&times;</button>
-    <h3 id="editStudentModalTitle">Manage Student Enrollment</h3>
+    <h3 id="editStudentModalTitle" style="color:var(--primary); margin-top:0;">Manage Student Enrollment</h3>
     <p class="notice" id="editStudentModalSub"></p>
     <input type="hidden" id="editStudentTargetId">
 
@@ -940,9 +952,9 @@
 
 <!-- SIGN IN MODAL -->
 <div id="loginModal" class="modal-overlay hidden no-print">
-  <div class="modal-content">
+  <div class="modal-content professional-modal">
     <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
-    <h3>Sign In to HariMani School</h3>
+    <h3 style="color:var(--primary); margin-top:0;">Sign In to HariMani School</h3>
     <p class="notice">Access for Principal, Teachers, Students, and Aspirants.</p>
     <div class="form-group">
       <label>User ID / Roll Number:</label>
@@ -958,9 +970,9 @@
 
 <!-- SIGN UP MODAL -->
 <div id="signupModal" class="modal-overlay hidden no-print">
-  <div class="modal-content">
+  <div class="modal-content professional-modal">
     <button class="modal-close" onclick="closeModal('signupModal')">&times;</button>
-    <h3>Student / Aspirant Registration</h3>
+    <h3 style="color:var(--primary); margin-top:0;">Student / Aspirant Registration</h3>
     <div class="form-group">
       <label>Student Category / Stream:</label>
       <select id="signupStudentStream">
@@ -999,15 +1011,15 @@
 <script src="script.js"></script>
 
 </body>
-<footer class="no-print" style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid var(--border); background: #ffffff; color: var(--text-muted); font-size: 0.85rem;">
-  <p style="margin: 0 0 8px 0;">🏫 HariMani School - LMS & Assessment Portal (NCERT, Metric & State Board)</p>
+<footer class="no-print" style="text-align: center; padding: 25px 20px; margin-top: 50px; border-top: 1px solid #e2e8f0; background: #ffffff; color: #64748b; font-size: 0.85rem;">
+  <p style="margin: 0 0 10px 0; font-weight: 500;">🏫 HariMani School - Enterprise LMS & Assessment Portal (NCERT, Metric & State Board)</p>
   <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
     <a href="#" onclick="openModal('aboutModal'); return false;" style="color: var(--primary); text-decoration: none;">About Us</a>
-    <span>|</span>
+    <span>•</span>
     <a href="#" onclick="openModal('termsModal'); return false;" style="color: var(--primary); text-decoration: none;">Terms & Conditions</a>
-    <span>|</span>
+    <span>•</span>
     <a href="#" onclick="openModal('privacyModal'); return false;" style="color: var(--primary); text-decoration: none;">Privacy Policy</a>
-    <span>|</span>
+    <span>•</span>
     <a href="#" onclick="openModal('contactModal'); return false;" style="color: var(--primary); text-decoration: none;">Contact Us</a>
   </div>
 </footer>

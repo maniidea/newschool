@@ -1067,15 +1067,77 @@ function setupTimer() {
 }
 
 function showExplanationBox() {
-  const q = activeQuizList[currentQIndex] ;
-  const boxArea = document.getElementById("explanationBoxArea") ;
-  if (!boxArea || !q.explanation) return;
+  const q = activeQuizList[currentQIndex];
+  const boxArea = document.getElementById("explanationBoxArea");
+  if (!boxArea) return;
+
+  const safeQ = encodeURIComponent(q.question || "");
+  const safeExp = encodeURIComponent(q.explanation || "");
 
   boxArea.innerHTML = `
-    <div class="explanation-card" style="margin-top:15px;">
-      <strong>💡 ஆசிரியர் விளக்கம் (${(q.stream || 'ncert').toUpperCase()}):</strong> ${q.explanation}
+    <div class="explanation-card" style="margin-top:15px; background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <strong style="color:#166534;">💡 ஆசிரியர் விளக்கம் (${(q.stream || 'ncert').toUpperCase()})</strong>
+        <button class="btn btn-outline-dark" style="font-size:0.75rem; padding:4px 8px;" onclick="fetchAiDoubtClarification('${safeQ}', '${safeExp}')">🤖 Ask AI for Detailed Doubt Clarification</button>
+      </div>
+      <div id="aiDoubtContent">${q.explanation || 'சரிபார்க்கப்பட்டது.'}</div>
     </div>
-  ` ;
+  `;
+}
+
+async function fetchAiDoubtClarification(questionText, baseExplanation) {
+  const container = document.getElementById("aiDoubtContent");
+  if (!container) return;
+
+  // Check daily limit if user is a student
+  if (currentUser && currentUser.role === "student") {
+    const todayStr = new Date().toISOString().split('T')[0]; // e.g., "2026-09-08"
+    const usageKey = `hms_ai_doubts_${currentUser.id}_${todayStr}`;
+    
+    let usedCount = parseInt(localStorage.getItem(usageKey) || "0", 10);
+    
+    if (usedCount >= 3) {
+      alert("⚠️ You have reached your daily limit of 3 AI doubt clarifications for today. Try again tomorrow!");
+      return;
+    }
+    
+    // Increment usage count
+    localStorage.setItem(usageKey, usedCount + 1);
+  }
+
+  const decodedQ = decodeURIComponent(questionText);
+  const decodedExp = decodeURIComponent(baseExplanation);
+
+  container.innerHTML = "⏳ AI is analyzing your doubt and generating a detailed step-by-step explanation...";
+
+  try {
+    const payload = {
+      action: "getAiDoubtExplanation",
+      question: decodedQ,
+      context: decodedExp,
+      language: activeTestLanguage
+    };
+
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await res.json();
+    if (data && data.success) {
+      container.innerHTML = `
+        <div style="margin-top:8px; color:#0f172a; line-height:1.5;">
+          <strong>🔍 AI Detailed Breakdown:</strong><br>
+          ${data.explanation}
+        </div>
+      `;
+    } else {
+      container.innerHTML = `<div style="color:#166534;">${decodedExp}<br><small style="color:#64748b;">(AI expansion unavailable at the moment)</small></div>`;
+    }
+  } catch (err) {
+    container.innerHTML = `<div style="color:#166534;">${decodedExp}</div>`;
+  }
 }
 
 function checkMcqAnswer(selected, btn) {

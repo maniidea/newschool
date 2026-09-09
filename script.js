@@ -1,8 +1,4 @@
-const SCRIPT_URL = 
-
-"https://script.google.com/macros/s/AKfycbwRKCTYddMALyLdSrik2dQXOg1GVuscLs8-
-
-8vnkD2LBJNuxGpqIKls2y8IoPEvfpCnQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRKCTYddMALyLdSrik2dQXOg1GVuscLs8-8vnkD2LBJNuxGpqIKls2y8IoPEvfpCnQ/exec";
 
 let currentUser = null;
 let masterCurriculum = [];
@@ -33,21 +29,15 @@ let currentUtterance = null;
 let activeTestLanguage = "en"; // 'en' for English, 'ta' for Tamil
 
 // Audio Sound FX
-const soundCorrect = new Audio
-
-("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
-const soundWrong = new Audio
-
-("https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg");
+const soundCorrect = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
+const soundWrong = new Audio("https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg");
 
 const GLOBAL_STANDARDS = [
   "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12",
   "UG-1st-Year", "UG-2nd-Year", "UG-Final-Year", "PG", "Diploma"
 ];
 
-const GLOBAL_SUBJECTS = ["Science", "Maths", "Social Science", "English", "Hindi", 
-
-"Tamil", "Botany", "Zoology", "Physics", "Chemistry"];
+const GLOBAL_SUBJECTS = ["Science", "Maths", "Social Science", "English", "Hindi", "Tamil", "Botany", "Zoology", "Physics", "Chemistry"];
 
 function initApp() {
   const savedUser = localStorage.getItem("hmsUser");
@@ -69,9 +59,7 @@ if (document.readyState === "loading") {
 function populateAllDropdowns() {
   const signupStd = document.getElementById("signupStd");
   if (signupStd) {
-    signupStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}
-
-</option>`).join("");
+    signupStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}</option>`).join("");
   }
 
   const playStd = document.getElementById("playStdSelect");
@@ -79,22 +67,14 @@ function populateAllDropdowns() {
     let allowed = GLOBAL_STANDARDS;
     if (currentUser) {
       if (currentUser.role === "student") {
-        allowed = (currentUser.standards && currentUser.standards.length > 0) ? 
-
-currentUser.standards : ["1"];
-      } else if (currentUser.role === "aspirant" || currentUser.role === "principal") 
-
-{
+        allowed = (currentUser.standards && currentUser.standards.length > 0) ? currentUser.standards : ["1"];
+      } else if (currentUser.role === "aspirant" || currentUser.role === "principal") {
         allowed = GLOBAL_STANDARDS;
       } else if (currentUser.role === "teacher") {
-        allowed = (currentUser.standards && currentUser.standards.length > 0) ? 
-
-currentUser.standards : GLOBAL_STANDARDS;
+        allowed = (currentUser.standards && currentUser.standards.length > 0) ? currentUser.standards : GLOBAL_STANDARDS;
       }
     }
-    playStd.innerHTML = allowed.map(s => `<option value="${s}">${s}</option>`).join
-
-("");
+    playStd.innerHTML = allowed.map(s => `<option value="${s}">${s}</option>`).join("");
     syncPlaySubjects();
   }
 
@@ -102,54 +82,34 @@ currentUser.standards : GLOBAL_STANDARDS;
   if (authStd) {
     let allowedStds = GLOBAL_STANDARDS;
     if (currentUser && currentUser.role === "teacher") {
-      allowedStds = (currentUser.standards && currentUser.standards.length > 0) ? 
-
-currentUser.standards : GLOBAL_STANDARDS;
+      allowedStds = (currentUser.standards && currentUser.standards.length > 0) ? currentUser.standards : GLOBAL_STANDARDS;
     }
-    authStd.innerHTML = allowedStds.map(s => `<option value="${s}">${s}
-
-</option>`).join("");
+    authStd.innerHTML = allowedStds.map(s => `<option value="${s}">${s}</option>`).join("");
     syncAuthorSubjects();
   }
 
   const ncertStd = document.getElementById("ncertConfigStd");
-  if (ncertStd) ncertStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option 
-
-value="${s}">வகுப்பு ${s}</option>`).join("");
+  if (ncertStd) ncertStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("");
   
   const ncertSub = document.getElementById("ncertConfigSub");
-  if (ncertSub) ncertSub.innerHTML = GLOBAL_SUBJECTS.map(s => `<option value="${s}">
-
-${s}</option>`).join("");
+  if (ncertSub) ncertSub.innerHTML = GLOBAL_SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join("");
 
   const ncertViewStd = document.getElementById("ncertViewStdSelect");
-  if (ncertViewStd) ncertViewStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option 
+  if (ncertViewStd) ncertViewStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("");
 
-value="${s}">வகுப்பு ${s}</option>`).join("");
-
-  ["manageStdFilter", "repStdFilter", "tchRepStdFilter", "prFilterStd"].forEach(id => 
-
-{
+  ["manageStdFilter", "repStdFilter", "tchRepStdFilter", "prFilterStd"].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = '<option value="">All Standards</option>' + 
-
-GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}</option>`).join("");
+    if (el) el.innerHTML = '<option value="">All Standards</option>' + GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}</option>`).join("");
   });
 
   const lbFilter = document.getElementById("leaderboardStdFilter");
   if (lbFilter) {
-    lbFilter.innerHTML = '<option value="all">அனைத்து வகுப்புகள் (All Classes)</option>' + 
-
-GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("");
+    lbFilter.innerHTML = '<option value="all">அனைத்து வகுப்புகள் (All Classes)</option>' + GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("");
   }
 
-  ["manageSubFilter", "repSubFilter", "tchRepSubFilter", "prFilterSub"].forEach(id => 
-
-{
+  ["manageSubFilter", "repSubFilter", "tchRepSubFilter", "prFilterSub"].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = '<option value="">All Subjects</option>' + 
-
-GLOBAL_SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join("");
+    if (el) el.innerHTML = '<option value="">All Subjects</option>' + GLOBAL_SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join("");
   });
 }
 
@@ -157,9 +117,7 @@ let masterBookLinks = [];
 
 async function loadPortalData() {
   try {
-    const url = `${SCRIPT_URL}?action=getInitialData${currentUser ? '&userId=' + 
-
-encodeURIComponent(currentUser.id) : ''}`;
+    const url = `${SCRIPT_URL}?action=getInitialData${currentUser ? '&userId=' + encodeURIComponent(currentUser.id) : ''}`;
     const res = await fetch(url);
     const data = await res.json();
 
@@ -207,47 +165,27 @@ function updateAuthUI() {
 
     if (userBadge) {
       userBadge.classList.remove("hidden");
-      let scope = `Class ${currentUser.standards.join(", ")} 
-
-(${(currentUser.studentStream || 'ncert').toUpperCase()})`;
+      let scope = `Class ${currentUser.standards.join(", ")} (${(currentUser.studentStream || 'ncert').toUpperCase()})`;
       if (currentUser.role === "principal") scope = "Master School Control";
-      else if (currentUser.role === "aspirant") scope = "Aspirant Mode (Classes 5-
-
-12)";
-      else if (currentUser.role === "teacher") scope = `Classes: 
-
-[${currentUser.standards.join(",")}], Subs: [${currentUser.subjects.join(",")}]`;
-      userBadge.innerText = `${currentUser.name} (${currentUser.role.toUpperCase()}) | 
-
-${scope}`;
+      else if (currentUser.role === "aspirant") scope = "Aspirant Mode (Classes 5-12)";
+      else if (currentUser.role === "teacher") scope = `Classes: [${currentUser.standards.join(",")}], Subs: [${currentUser.subjects.join(",")}]`;
+      userBadge.innerText = `${currentUser.name} (${currentUser.role.toUpperCase()}) | ${scope}`;
     }
 
     if (playScopeNotice) {
       if (currentUser.role === "student") {
-        playScopeNotice.innerText = `Attending Class ${currentUser.standards.join(", 
-
-")} Assessments (${(currentUser.studentStream || 'ncert').toUpperCase()} Stream).`;
+        playScopeNotice.innerText = `Attending Class ${currentUser.standards.join(", ")} Assessments (${(currentUser.studentStream || 'ncert').toUpperCase()} Stream).`;
       } else {
-        playScopeNotice.innerText = `Select Student Stream, Category, Standard, 
-
-Subject, and Topic to begin.`;
+        playScopeNotice.innerText = `Select Student Stream, Category, Standard, Subject, and Topic to begin.`;
       }
     }
 
     if (currentUser.role === "principal") {
-      document.querySelectorAll(".principal-only").forEach(el => el.classList.remove
-
-("hidden"));
-      document.querySelectorAll(".teacher-principal-only").forEach(el => 
-
-el.classList.remove("hidden"));
+      document.querySelectorAll(".principal-only").forEach(el => el.classList.remove("hidden"));
+      document.querySelectorAll(".teacher-principal-only").forEach(el => el.classList.remove("hidden"));
     } else if (currentUser.role === "teacher") {
-      document.querySelectorAll(".teacher-only").forEach(el => el.classList.remove
-
-("hidden"));
-      document.querySelectorAll(".teacher-principal-only").forEach(el => 
-
-el.classList.remove("hidden"));
+      document.querySelectorAll(".teacher-only").forEach(el => el.classList.remove("hidden"));
+      document.querySelectorAll(".teacher-principal-only").forEach(el => el.classList.remove("hidden"));
     }
     
     const tabScores = document.getElementById("tabMyScores");
@@ -274,14 +212,10 @@ el.classList.remove("hidden"));
     if (tabReplies) tabReplies.classList.add("hidden");
 
     if (playScopeNotice) {
-      playScopeNotice.innerText = `Select Student Stream, Category, Standard, Subject, 
-
-and Topic to begin.`;
+      playScopeNotice.innerText = `Select Student Stream, Category, Standard, Subject, and Topic to begin.`;
     }
 
-    document.querySelectorAll(".teacher-principal-only, .teacher-only, .principal-
-
-only").forEach(el => el.classList.add("hidden"));
+    document.querySelectorAll(".teacher-principal-only, .teacher-only, .principal-only").forEach(el => el.classList.add("hidden"));
     const tabScores = document.getElementById("tabMyScores");
     if (tabScores) tabScores.classList.add("hidden");
   }
@@ -350,9 +284,7 @@ function syncPlayChapters() {
   const chapterMap = new Map();
 
   masterQuestions
-    .filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub 
-
-&& (!q.stream || q.stream === selectedStream))
+    .filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && (!q.stream || q.stream === selectedStream))
     .forEach(q => {
       if (q.chapter) {
         const cleanName = normalizeText(q.chapter);
@@ -364,9 +296,7 @@ function syncPlayChapters() {
     });
 
   const uniqueChapters = Array.from(chapterMap.values());
-  chapSelect.innerHTML = '<option value="All">All Units / Chapters</option>' + 
-
-uniqueChapters.map(c => `<option value="${c}">${c}</option>`).join("");
+  chapSelect.innerHTML = '<option value="All">All Units / Chapters</option>' + uniqueChapters.map(c => `<option value="${c}">${c}</option>`).join("");
   syncPlayTopics();
 }
 
@@ -383,13 +313,9 @@ function syncPlayTopics() {
   const chap = chapSelect.value || "All";
   const selectedStream = streamSelect ? streamSelect.value : "ncert";
 
-  let filtered = masterQuestions.filter(q => q.standard === std && normalizeText
-
-(q.subject).toLowerCase() === sub && (!q.stream || q.stream === selectedStream));
+  let filtered = masterQuestions.filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && (!q.stream || q.stream === selectedStream));
   if (chap !== "All") {
-    filtered = filtered.filter(q => normalizeText(q.chapter).toLowerCase() === 
-
-chap.toLowerCase());
+    filtered = filtered.filter(q => normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
   }
 
   const topicMap = new Map();
@@ -404,22 +330,14 @@ chap.toLowerCase());
   });
 
   const uniqueTopics = Array.from(topicMap.values());
-  topicSelect.innerHTML = '<option value="All">All Topics</option>' + 
-
-uniqueTopics.map(t => `<option value="${t}">${t}</option>`).join("");
+  topicSelect.innerHTML = '<option value="All">All Topics</option>' + uniqueTopics.map(t => `<option value="${t}">${t}</option>`).join("");
 }
 
 function syncAuthorSubjects() {
   const subSelect = document.getElementById("authorSubSelect");
   if (!subSelect) return;
-  const allowedSubs = (currentUser && currentUser.subjects && 
-
-currentUser.subjects.length > 0 && !currentUser.subjects.includes("All")) ? 
-
-currentUser.subjects : GLOBAL_SUBJECTS;
-  subSelect.innerHTML = allowedSubs.map(s => `<option value="${s}">${s}
-
-</option>`).join("");
+  const allowedSubs = (currentUser && currentUser.subjects && currentUser.subjects.length > 0 && !currentUser.subjects.includes("All")) ? currentUser.subjects : GLOBAL_SUBJECTS;
+  subSelect.innerHTML = allowedSubs.map(s => `<option value="${s}">${s}</option>`).join("");
   syncAuthorChapters();
   if (typeof updateAiPromptPreview === "function") updateAiPromptPreview();
 }
@@ -432,9 +350,7 @@ function syncAuthorChapters() {
 
   const std = authStd.value;
   const sub = subSelect.value.toLowerCase();
-  const matched = masterCurriculum.filter(c => c.standard === std && (c.subject || 
-
-'').toLowerCase() === sub);
+  const matched = masterCurriculum.filter(c => c.standard === std && (c.subject || '').toLowerCase() === sub);
   datalist.innerHTML = matched.map(c => `<option value="${c.chapter}">`).join("");
   if (typeof updateAiPromptPreview === "function") updateAiPromptPreview();
 }
@@ -484,9 +400,7 @@ async function handleSignUp() {
   const pass = document.getElementById("signupPassword").value.trim();
   const std = document.getElementById("signupStd").value;
 
-  if (!userId || !name || !pass) return alert("Please complete all registration 
-
-fields.");
+  if (!userId || !name || !pass) return alert("Please complete all registration fields.");
 
   const payload = {
     action: "registerUser", 
@@ -546,33 +460,21 @@ function load30DaysChallenge() {
     const isUnlocked = day <= (completedDays + 1);
     const isCompleted = day <= completedDays;
 
-    let statusStyle = isCompleted ? "background: #d4edda; border-color: #28a745; 
-
-color: #155724;" : 
-                      isUnlocked ? "background: #fff; border-color: var(--primary); 
-
-color: var(--primary);" : 
+    let statusStyle = isCompleted ? "background: #d4edda; border-color: #28a745; color: #155724;" : 
+                      isUnlocked ? "background: #fff; border-color: var(--primary); color: var(--primary);" : 
                       "background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8;";
     
-    let badgeText = isCompleted ? "✅ முடிந்தது (Completed)" : isUnlocked ? "🔓 திறந்துள்ளது 
-
-(Unlocked)" : "🔒 பூட்டப்பட்டுள்ளது (Locked)";
+    let badgeText = isCompleted ? "✅ முடிந்தது (Completed)" : isUnlocked ? "🔓 திறந்துள்ளது (Unlocked)" : "🔒 பூட்டப்பட்டுள்ளது (Locked)";
 
     html += `
-      <div class="card" style="margin-bottom:0; padding:15px; text-align:center; 
-
-${statusStyle}">
+      <div class="card" style="margin-bottom:0; padding:15px; text-align:center; ${statusStyle}">
         <h4 style="margin:0 0 8px 0;">நாள் (Day) ${day}</h4>
         <p style="font-size:0.85rem; margin:0 0 10px 0;">${badgeText}</p>
-        <button class="btn ${isCompleted ? 'btn-success' : isUnlocked ? 'btn-primary' 
-
-: 'btn-outline-dark'}" 
+        <button class="btn ${isCompleted ? 'btn-success' : isUnlocked ? 'btn-primary' : 'btn-outline-dark'}" 
                 style="width:100%; font-size:0.85rem; padding:6px;" 
                 ${!isUnlocked ? 'disabled' : ''} 
                 onclick="startChallengeDay(${day})">
-          ${isCompleted ? 'மீண்டும் எழுது (Retake)' : isUnlocked ? 'தேவைத் தொடங்கு (Start 
-
-Test)' : 'பூட்டப்பட்டுள்ளது'}
+          ${isCompleted ? 'மீண்டும் எழுது (Retake)' : isUnlocked ? 'தேவைத் தொடங்கு (Start Test)' : 'பூட்டப்பட்டுள்ளது'}
         </button>
       </div>
     `;
@@ -590,76 +492,42 @@ function startChallengeDay(dayNumber) {
 function switchTab(tab, eventTarget) {
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
   
-  ["playTab", "createTab", "manageTab", "reportsTab", "teacherScoresTab", 
-
-"principalTab", "leaderboardTab", "feedbackTab", "myRepliesTab", "challenge30Tab", 
-
-"ncertBooksTab"].forEach(id => {
+  ["playTab", "createTab", "manageTab", "reportsTab", "teacherScoresTab", "principalTab", "leaderboardTab", "feedbackTab", "myRepliesTab", "challenge30Tab", "ncertBooksTab"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
 
   if (eventTarget) eventTarget.classList.add("active");
 
-  if (tab === "play") document.getElementById("playTab").classList.remove("hidden"), 
-
-resetQuizView();
-  if (tab === "challenge30") document.getElementById
-
-("challenge30Tab").classList.remove("hidden"), load30DaysChallenge();
-  if (tab === "create") document.getElementById("createTab").classList.remove
-
-("hidden"), updateAiPromptPreview();
-  if (tab === "manage") document.getElementById("manageTab").classList.remove
-
-("hidden"), renderManageTable();
-  if (tab === "reports") document.getElementById("reportsTab").classList.remove
-
-("hidden"), loadUserReports();
-  if (tab === "leaderboard") document.getElementById
-
-("leaderboardTab").classList.remove("hidden"), loadLeaderboard();
-  if (tab === "teacherScores") document.getElementById
-
-("teacherScoresTab").classList.remove("hidden"), loadTeacherStudentScores();
-  if (tab === "principal") document.getElementById("principalTab").classList.remove
-
-("hidden"), loadPrincipalDashboard();
-  if (tab === "feedback") document.getElementById("feedbackTab").classList.remove
-
-("hidden"), loadFeedbackTab();
-  if (tab === "ncertBooks") document.getElementById("ncertBooksTab").classList.remove
-
-("hidden"), initNcertBooksTab();
-  if (tab === "myReplies") document.getElementById("myRepliesTab").classList.remove
-
-("hidden"), loadStudentReplies();
+  if (tab === "play") document.getElementById("playTab").classList.remove("hidden"), resetQuizView();
+  if (tab === "challenge30") document.getElementById("challenge30Tab").classList.remove("hidden"), load30DaysChallenge();
+  if (tab === "create") document.getElementById("createTab").classList.remove("hidden"), updateAiPromptPreview();
+  if (tab === "manage") document.getElementById("manageTab").classList.remove("hidden"), renderManageTable();
+  if (tab === "reports") document.getElementById("reportsTab").classList.remove("hidden"), loadUserReports();
+  if (tab === "leaderboard") document.getElementById("leaderboardTab").classList.remove("hidden"), loadLeaderboard();
+  if (tab === "teacherScores") document.getElementById("teacherScoresTab").classList.remove("hidden"), loadTeacherStudentScores();
+  if (tab === "principal") document.getElementById("principalTab").classList.remove("hidden"), loadPrincipalDashboard();
+  if (tab === "feedback") document.getElementById("feedbackTab").classList.remove("hidden"), loadFeedbackTab();
+  if (tab === "ncertBooks") document.getElementById("ncertBooksTab").classList.remove("hidden"), initNcertBooksTab();
+  if (tab === "myReplies") document.getElementById("myRepliesTab").classList.remove("hidden"), loadStudentReplies();
 }
 
 async function loadFeedbackTab() {
   if (!currentUser) return;
   const tbody = document.getElementById("feedbackTableBody");
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">பின்னூட்டங்கள் 
-
-ஏற்றப்படுகின்றன...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">பின்னூட்டங்கள் ஏற்றப்படுகின்றன...</td></tr>`;
 
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getFeedbackList&userId=
-
-${encodeURIComponent(currentUser.id)}`);
+    const res = await fetch(`${SCRIPT_URL}?action=getFeedbackList&userId=${encodeURIComponent(currentUser.id)}`);
     const data = await res.json();
     if (data && data.success) {
       renderFeedbackList(data.feedback || []);
     } else {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; 
-
-color:red;">பின்னூட்டம் கிடைக்கவில்லை.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">பின்னூட்டம் கிடைக்கவில்லை.</td></tr>`;
     }
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">பிழை: 
-
-${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">பிழை: ${err.message}</td></tr>`;
   }
 }
 
@@ -667,17 +535,11 @@ function initNcertBooksTab() {
   const viewStdSelect = document.getElementById("ncertViewStdSelect");
   if (viewStdSelect && GLOBAL_STANDARDS) {
     let allowed = GLOBAL_STANDARDS;
-    if (currentUser && currentUser.role === "student" && currentUser.standards && 
-
-currentUser.standards.length > 0) {
+    if (currentUser && currentUser.role === "student" && currentUser.standards && currentUser.standards.length > 0) {
       allowed = currentUser.standards;
     }
-    viewStdSelect.innerHTML = allowed.map(s => `<option value="${s}">வகுப்பு ${s}
-
-</option>`).join("");
-    if (currentUser && currentUser.role === "student" && currentUser.standards && 
-
-currentUser.standards.length > 0) {
+    viewStdSelect.innerHTML = allowed.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("");
+    if (currentUser && currentUser.role === "student" && currentUser.standards && currentUser.standards.length > 0) {
       viewStdSelect.value = currentUser.standards[0];
     }
   }
@@ -690,9 +552,7 @@ currentUser.standards.length > 0) {
 
 async function saveNcertDriveLink() {
   const stream = document.getElementById("configBookStream").value;
-  const std = (document.getElementById("ncertConfigStd").value || "").replace(/[^0-
-
-9a-zA-Z\-]/g, "");
+  const std = (document.getElementById("ncertConfigStd").value || "").replace(/[^0-9a-zA-Z\-]/g, "");
   const sub = document.getElementById("ncertConfigSub").value;
   const url = document.getElementById("ncertDriveUrlInput").value.trim();
 
@@ -710,17 +570,13 @@ async function saveNcertDriveLink() {
     standard: std,
     subject: sub,
     url: url,
-    updatedBy: currentUser ? `${currentUser.name} (${currentUser.role.toUpperCase()})` 
-
-: "Principal"
+    updatedBy: currentUser ? `${currentUser.name} (${currentUser.role.toUpperCase()})` : "Principal"
   };
 
   try {
     const res = await callAppsScript(payload);
     if (res && res.success) {
-      alert(`✅ [${stream.toUpperCase()}] வகுப்பு ${std} - ${sub} பாடத்திற்கான டிரைவ் இணைப்பு 
-
-கூகுள் ஷீட்டில் சேமிக்கப்பட்டது!`);
+      alert(`✅ [${stream.toUpperCase()}] வகுப்பு ${std} - ${sub} பாடத்திற்கான டிரைவ் இணைப்பு கூகுள் ஷீட்டில் சேமிக்கப்பட்டது!`);
       document.getElementById("ncertDriveUrlInput").value = "";
       await loadPortalData();
     } else {
@@ -760,9 +616,7 @@ function renderNcertBooksViewer() {
 
     const record = masterBookLinks.find(item => {
       const itemStream = (item.stream || "").toString().trim().toLowerCase();
-      const itemStd = (item.standard || "").toString().replace(/[^0-9a-zA-Z\-]/g, 
-
-"").trim();
+      const itemStd = (item.standard || "").toString().replace(/[^0-9a-zA-Z\-]/g, "").trim();
       const itemSub = (item.subject || "").toString().trim().toLowerCase();
       
       return itemStream === stream && 
@@ -774,29 +628,17 @@ function renderNcertBooksViewer() {
     matchedCount++;
 
     html += `
-      <div class="card" style="margin-bottom:0; padding:15px; text-align:center; 
-
-background:${hasLink ? '#f0fdf4' : '#fff'}; border-color:${hasLink ? '#bbf7d0' : 'var
-
-(--border)'};">
+      <div class="card" style="margin-bottom:0; padding:15px; text-align:center; background:${hasLink ? '#f0fdf4' : '#fff'}; border-color:${hasLink ? '#bbf7d0' : 'var(--border)'};">
         <div style="font-size:2rem; margin-bottom:8px;">📖</div>
         <h4 style="margin:0 0 6px 0; color:var(--primary);">${sub}</h4>
-        <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px 0;">
-
-[${stream.toUpperCase()}] வகுப்பு ${std} புத்தகம்</p>
+        <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px 0;">[${stream.toUpperCase()}] வகுப்பு ${std} புத்தகம்</p>
         ${hasLink ? `
-          <a href="${record.url}" target="_blank" class="btn btn-success" 
-
-style="width:100%; font-size:0.85rem; padding:8px; text-decoration:none;">
+          <a href="${record.url}" target="_blank" class="btn btn-success" style="width:100%; font-size:0.85rem; padding:8px; text-decoration:none;">
             📂 டிரைவ் கோப்பகத்தைத் திற (Open Drive)
           </a>
-          <div style="font-size:0.75rem; color:#15803d; margin-top:6px;">புதுப்பிக்கப்பட்டது: 
-
-${record.date || 'recently'}</div>
+          <div style="font-size:0.75rem; color:#15803d; margin-top:6px;">புதுப்பிக்கப்பட்டது: ${record.date || 'recently'}</div>
         ` : `
-          <button class="btn btn-outline-dark" style="width:100%; font-size:0.85rem; 
-
-padding:8px;" disabled>
+          <button class="btn btn-outline-dark" style="width:100%; font-size:0.85rem; padding:8px;" disabled>
             ⏳ இணைப்பு விரைவில் இணைக்கப்படும்
           </button>
         `}
@@ -805,9 +647,7 @@ padding:8px;" disabled>
   });
 
   if (matchedCount === 0) {
-    container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; 
-
-color:#64748b; padding:20px;">பாடங்கள் எதுவும் கிடைக்கவில்லை.</div>`;
+    container.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; color:#64748b; padding:20px;">பாடங்கள் எதுவும் கிடைக்கவில்லை.</div>`;
   } else {
     container.innerHTML = html;
   }
@@ -819,9 +659,7 @@ function renderFeedbackList(list) {
   tbody.innerHTML = "";
 
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">மாணவர்கள் இன்னும் 
-
-எந்தச் சந்தேகமும் அனுப்பவில்லை.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">மாணவர்கள் இன்னும் எந்தச் சந்தேகமும் அனுப்பவில்லை.</td></tr>`;
     return;
   }
 
@@ -829,9 +667,7 @@ function renderFeedbackList(list) {
     const hasReply = Boolean(item.reply);
     tbody.innerHTML += `
       <tr>
-        <td><strong>${item.userName}</strong><br><small style="color:#64748b;">
-
-(${item.userId})</small></td>
+        <td><strong>${item.userName}</strong><br><small style="color:#64748b;">(${item.userId})</small></td>
         <td>வகுப்பு ${item.standard}<br><small>${item.subject}</small></td>
         <td><span class="badge badge-success">${item.score}</span></td>
         <td style="max-width:250px; word-break:break-word;">
@@ -840,27 +676,19 @@ function renderFeedbackList(list) {
         </td>
         <td style="max-width:260px;">
           ${hasReply ? `
-            <div style="background:#e8f4fd; border-left:3px solid var(--primary); 
-
-padding:6px 10px; border-radius:4px; font-size:0.88rem;">
+            <div style="background:#e8f4fd; border-left:3px solid var(--primary); padding:6px 10px; border-radius:4px; font-size:0.88rem;">
               <strong>${item.reply}</strong><br>
-              <small style="color:#084298;">— ${item.repliedBy} (${item.repliedAt})
-
-</small>
+              <small style="color:#084298;">— ${item.repliedBy} (${item.repliedAt})</small>
             </div>
           ` : `
-            <textarea id="replyText_${item.id}" rows="2" placeholder="பதிலை உள்ளிடவும்..." 
-
-style="font-size:0.85rem; padding:6px; width:100%;"></textarea>
+            <textarea id="replyText_${item.id}" rows="2" placeholder="பதிலை உள்ளிடவும்..." style="font-size:0.85rem; padding:6px; width:100%;"></textarea>
           `}
         </td>
         <td>
           ${hasReply ? `
             <span class="badge badge-success">பதிலளிக்கப்பட்டது</span>
           ` : `
-            <button class="btn btn-primary" style="padding:4px 10px; font-
-
-size:0.82rem;" onclick="submitTeacherReply('${item.id}')">அனுப்பு</button>
+            <button class="btn btn-primary" style="padding:4px 10px; font-size:0.82rem;" onclick="submitTeacherReply('${item.id}')">அனுப்பு</button>
           `}
         </td>
       </tr>
@@ -877,9 +705,7 @@ async function submitTeacherReply(feedbackId) {
     action: "replyTeacherFeedback", 
     feedbackId: feedbackId, 
     replyText: text, 
-    replierName: currentUser ? `${currentUser.name} (${currentUser.role.toUpperCase
-
-()})` : "Teacher" 
+    replierName: currentUser ? `${currentUser.name} (${currentUser.role.toUpperCase()})` : "Teacher" 
   };
 
   const res = await callAppsScript(payload);
@@ -899,50 +725,32 @@ async function loadStudentReplies() {
 
   try {
     const searchParam = encodeURIComponent(currentUser.id || currentUser.name);
-    const res = await fetch(`${SCRIPT_URL}?action=getUserFeedback&userId=
-
-${searchParam}`);
+    const res = await fetch(`${SCRIPT_URL}?action=getUserFeedback&userId=${searchParam}`);
     const data = await res.json();
 
     if (data && data.success && data.feedback && data.feedback.length > 0) {
       container.innerHTML = data.feedback.map((item, idx) => `
-        <div class="card" style="margin-bottom:12px; border-left:4px solid 
-
-${item.reply ? 'var(--accent)' : 'var(--secondary)'}; padding:14px; text-align:left;">
-          <div style="display:flex; justify-content:space-between; margin-
-
-bottom:6px;">
+        <div class="card" style="margin-bottom:12px; border-left:4px solid ${item.reply ? 'var(--accent)' : 'var(--secondary)'}; padding:14px; text-align:left;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
             <strong>${idx + 1}. வகுப்பு ${item.standard} • ${item.subject}</strong>
             <small style="color:#64748b;">${item.date}</small>
           </div>
-          <p style="margin:4px 0 10px 0; color:#1e293b;"><strong>உங்கள் சந்தேகம்:</strong> 
-
-"${item.message}"</p>
+          <p style="margin:4px 0 10px 0; color:#1e293b;"><strong>உங்கள் சந்தேகம்:</strong> "${item.message}"</p>
           ${item.reply ? `
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-
-
-radius:6px; padding:10px; color:#166534;">
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:10px; color:#166534;">
               <strong>🧑‍🏫 ஆசிரியரின் பதில்:</strong> ${item.reply}
-              <div style="font-size:0.78rem; margin-top:4px; color:#15803d;">வழங்கியவர்: 
-
-${item.repliedBy} (${item.repliedAt})</div>
+              <div style="font-size:0.78rem; margin-top:4px; color:#15803d;">வழங்கியவர்: ${item.repliedBy} (${item.repliedAt})</div>
             </div>
           ` : `
-            <span class="badge" style="background:#fef3c7; color:#92400e;">⏳ ஆசிரியர் 
-
-இன்னும் பதிலளிக்கவில்லை</span>
+            <span class="badge" style="background:#fef3c7; color:#92400e;">⏳ ஆசிரியர் இன்னும் பதிலளிக்கவில்லை</span>
           `}
         </div>
       `).join("");
     } else {
-      container.innerHTML = "<p style='text-align:center; color:#64748b;'>நீங்கள் இன்னும் 
-
-எந்தச் சந்தேகமும் ஆசிரியரிடம் கேட்கவில்லை.</p>";
+      container.innerHTML = "<p style='text-align:center; color:#64748b;'>நீங்கள் இன்னும் எந்தச் சந்தேகமும் ஆசிரியரிடம் கேட்கவில்லை.</p>";
     }
   } catch (err) {
-    container.innerHTML = `<p style='text-align:center; color:red;'>பிழை: 
-
-${err.message}</p>`;
+    container.innerHTML = `<p style='text-align:center; color:red;'>பிழை: ${err.message}</p>`;
   }
 }
 
@@ -978,12 +786,8 @@ function speakText(text, onComplete) {
     const targetVoice = voices.find(v => v.lang.startsWith(isTamil ? 'ta' : 'en'));
     if (targetVoice) currentUtterance.voice = targetVoice;
 
-    currentUtterance.onend = () => { currentUtterance = null; if (typeof onComplete 
-
-=== "function") onComplete(); };
-    currentUtterance.onerror = () => { currentUtterance = null; if (typeof onComplete 
-
-=== "function") onComplete(); };
+    currentUtterance.onend = () => { currentUtterance = null; if (typeof onComplete === "function") onComplete(); };
+    currentUtterance.onerror = () => { currentUtterance = null; if (typeof onComplete === "function") onComplete(); };
 
     window.speechSynthesis.speak(currentUtterance);
   } else if (typeof onComplete === "function") {
@@ -1039,9 +843,7 @@ async function startQuiz() {
   const chosenStream = streamEl ? streamEl.value : "ncert";
   const chosenType = typeEl ? typeEl.value : "all";
   const std = stdEl ? stdEl.value : "5";
-  const sub = subEl && subEl.value ? normalizeText(subEl.value).toLowerCase() : 
-
-"science";
+  const sub = subEl && subEl.value ? normalizeText(subEl.value).toLowerCase() : "science";
   const keyword = keywordEl ? keywordEl.value.toLowerCase().trim() : "";
   const isAspirant = currentUser && currentUser.role === "aspirant";
   const isPrincipal = currentUser && currentUser.role === "principal";
@@ -1053,39 +855,27 @@ async function startQuiz() {
   perQuestionTime = timerEl ? Number(timerEl.value) : 20;
 
   let matched = masterQuestions.filter(q => {
-    const mStream = (!q.stream || q.stream.toLowerCase() === chosenStream.toLowerCase
-
-());
-    const mType = (chosenType === "all" || (q.type || "mcq").toLowerCase() === 
-
-chosenType);
+    const mStream = (!q.stream || q.stream.toLowerCase() === chosenStream.toLowerCase());
+    const mType = (chosenType === "all" || (q.type || "mcq").toLowerCase() === chosenType);
 
     if (keyword && (isAspirant || isPrincipal)) {
-      const searchableText = `${q.question || ""} ${q.topic || ""} ${q.chapter || ""} 
-
-${q.subject || ""} ${q.explanation || ""}`.toLowerCase();
+      const searchableText = `${q.question || ""} ${q.topic || ""} ${q.chapter || ""} ${q.subject || ""} ${q.explanation || ""}`.toLowerCase();
       return mStream && mType && searchableText.includes(keyword);
     }
 
     const mStd = q.standard.toString().trim() === std.toString().trim();
     const mSub = normalizeText(q.subject).toLowerCase() === sub;
     const chap = chapEl ? chapEl.value : "All";
-    const mChap = (chap === "All" || normalizeText(q.chapter).toLowerCase() === 
-
-chap.toLowerCase());
+    const mChap = (chap === "All" || normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
     
-    const searchableText = `${q.question || ""} ${q.topic || ""} ${q.chapter || ""}
-
-`.toLowerCase();
+    const searchableText = `${q.question || ""} ${q.topic || ""} ${q.chapter || ""}`.toLowerCase();
     const mKeyword = !keyword || searchableText.includes(keyword);
 
     return mStream && mType && mStd && mSub && mChap && mKeyword;
   });
 
   if (matched.length === 0) {
-    return alert(keyword ? `No questions found matching keyword "${keyword}".` : `No 
-
-questions found matching your filter.`);
+    return alert(keyword ? `No questions found matching keyword "${keyword}".` : `No questions found matching your filter.`);
   }
 
   matched.sort(() => Math.random() - 0.5);
@@ -1113,9 +903,7 @@ async function renderCurrentQuestion() {
     try { recognitionInstance.stop(); } catch(e) {}
   }
 
-  if (!activeQuizList || activeQuizList.length === 0 || currentQIndex >= 
-
-activeQuizList.length) {
+  if (!activeQuizList || activeQuizList.length === 0 || currentQIndex >= activeQuizList.length) {
     finishQuiz();
     return;
   }
@@ -1137,14 +925,10 @@ activeQuizList.length) {
   };
 
   const badgeEl = document.getElementById("quizProgressBadge");
-  if (badgeEl) badgeEl.innerText = `Question ${currentQIndex + 1} of ${total} | 
-
-[${(labels[qType] || qType).toUpperCase()}]`;
+  if (badgeEl) badgeEl.innerText = `Question ${currentQIndex + 1} of ${total} | [${(labels[qType] || qType).toUpperCase()}]`;
   
   const nextBtn = document.getElementById("btnNextQuestion");
-  if (nextBtn) nextBtn.innerText = (currentQIndex === total - 1) ? "Submit Test 🏁" : 
-
-"Next Question ⏩";
+  if (nextBtn) nextBtn.innerText = (currentQIndex === total - 1) ? "Submit Test 🏁" : "Next Question ⏩";
 
   const area = document.getElementById("singleQuestionArea");
   if (!area) return;
@@ -1155,45 +939,29 @@ activeQuizList.length) {
   }
 
   const safeQuestionText = questionText.replace(/'/g, "\\'");
-  const audioBtnHtml = `<button class="btn btn-outline-dark voice-btn" 
-
-onclick="speakText('${safeQuestionText}')" title="கேள்வியை வாசி">🔊</button>`;
+  const audioBtnHtml = `<button class="btn btn-outline-dark voice-btn" onclick="speakText('${safeQuestionText}')" title="கேள்வியை வாசி">🔊</button>`;
 
   if (qType === "tf") {
     area.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; 
-
-gap:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
       </div>
-      <div class="options-grid" style="grid-template-columns: 1fr 1fr; margin-
-
-top:20px;">
-        <button class="opt-btn text-center" style="font-size:1.1rem; font-
-
-weight:bold;" onclick="checkTfAnswer('True', this)">✅ True / சரி</button>
-        <button class="opt-btn text-center" style="font-size:1.1rem; font-
-
-weight:bold;" onclick="checkTfAnswer('False', this)">❌ False / தவறு</button>
+      <div class="options-grid" style="grid-template-columns: 1fr 1fr; margin-top:20px;">
+        <button class="opt-btn text-center" style="font-size:1.1rem; font-weight:bold;" onclick="checkTfAnswer('True', this)">✅ True / சரி</button>
+        <button class="opt-btn text-center" style="font-size:1.1rem; font-weight:bold;" onclick="checkTfAnswer('False', this)">❌ False / தவறு</button>
       </div>
       <div id="explanationBoxArea"></div>
     `;
   } else if (qType === "fib") {
     area.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; 
-
-gap:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
       </div>
       <div style="margin-top:20px; display:flex; gap:10px;">
-        <input type="text" id="fibInput" placeholder="Type your answer here..." 
-
-style="font-size:1rem; padding:10px; flex:1;">
-        <button class="btn btn-primary" id="btnSubmitFib" onclick="checkFibAnswer
-
-()">Submit</button>
+        <input type="text" id="fibInput" placeholder="Type your answer here..." style="font-size:1rem; padding:10px; flex:1;">
+        <button class="btn btn-primary" id="btnSubmitFib" onclick="checkFibAnswer()">Submit</button>
       </div>
       <div id="fibFeedback" style="margin-top:10px; font-weight:bold;"></div>
       <div id="explanationBoxArea"></div>
@@ -1220,16 +988,10 @@ style="font-size:1rem; padding:10px; flex:1;">
     const shuffledRights = [...rightItems].sort(() => Math.random() - 0.5);
 
     let rowsHtml = leftItems.map((left, idx) => `
-      <div style="display:flex; align-items:center; justify-content:space-between; 
-
-margin-bottom:10px; background:#f8f9fa; padding:10px; border-radius:6px; border:1px 
-
-solid var(--border);">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid var(--border);">
         <span style="font-weight:600; width:45%;">${idx + 1}. ${left}</span>
         <span style="width:10%; text-align:center;">➡️</span>
-        <select class="match-select" data-left="${left}" style="width:45%; 
-
-padding:8px;">
+        <select class="match-select" data-left="${left}" style="width:45%; padding:8px;">
           <option value="">-- Select Match --</option>
           ${shuffledRights.map(r => `<option value="${r}">${r}</option>`).join("")}
         </select>
@@ -1237,16 +999,12 @@ padding:8px;">
     `).join("");
 
     area.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; 
-
-gap:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
       </div>
       <div style="margin-top:15px;">${rowsHtml}</div>
-      <button class="btn btn-primary margin-top" id="btnSubmitMatch" 
-
-onclick="checkMatchAnswer()">Check Matches</button>
+      <button class="btn btn-primary margin-top" id="btnSubmitMatch" onclick="checkMatchAnswer()">Check Matches</button>
       <div id="explanationBoxArea"></div>
     `;
   } else {
@@ -1263,25 +1021,15 @@ onclick="checkMatchAnswer()">Check Matches</button>
     }
 
     area.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; 
-
-gap:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
       </div>
       <div class="options-grid">
-        <button class="opt-btn" onclick="checkMcqAnswer('1', this)">A. ${optA}
-
-</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('2', this)">B. ${optB}
-
-</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('3', this)">C. ${optC}
-
-</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('4', this)">D. ${optD}
-
-</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('1', this)">A. ${optA}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('2', this)">B. ${optB}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('3', this)">C. ${optC}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('4', this)">D. ${optD}</button>
       </div>
       <div id="explanationBoxArea"></div>
     `;
@@ -1295,17 +1043,13 @@ gap:10px;">
     let optB = await translateTextContent(q.optB || '', activeTestLanguage);
     let optC = await translateTextContent(q.optC || '', activeTestLanguage);
     let optD = await translateTextContent(q.optD || '', activeTestLanguage);
-    speechText += `. Option A: ${optA}. Option B: ${optB}. Option C: ${optC}. Option 
-
-D: ${optD}.`;
+    speechText += `. Option A: ${optA}. Option B: ${optB}. Option C: ${optC}. Option D: ${optD}.`;
   } else if (qType === "tf") {
     speechText += activeTestLanguage === 'ta' ? `. சரி அல்லது தவறு?` : `. True or False?`;
   } else if (qType === "fib") {
-    speechText += activeTestLanguage === 'ta' ? `. கோடிட்ட இடத்தை நிரப்புக.` : `. Fill in the 
-
-blank.`;
+    speechText += activeTestLanguage === 'ta' ? `. கோடிட்ட இடத்தை நிரப்புக.` : `. Fill in the blank.`;
   } else if (qType === "match") {
-    speechText += activeTestLanguage === 'ta' ? `. பொருத்துக.` : `. Match the following.`;
+    speechText += activeTestLanguage === 'ta' ? `. ${questionText}` : `. ${questionText}`;
   }
 
   speakText(speechText, () => {
@@ -1316,9 +1060,7 @@ blank.`;
 }
 
 function startVoiceListeningSession(qType) {
-  const SpeechRecognition = window.SpeechRecognition || 
-
-window.webkitSpeechRecognition;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) return;
 
   recognitionInstance = new SpeechRecognition();
@@ -1347,9 +1089,7 @@ window.webkitSpeechRecognition;
     const qType = (q.type || "mcq").toLowerCase();
 
     if (qType === "mcq") {
-      if (spokenText.includes("a") || spokenText.includes("1") || spokenText.includes
-
-("முதல்")) {
+      if (spokenText.includes("a") || spokenText.includes("1") || spokenText.includes("முதல்")) {
         checkMcqAnswer('1', document.querySelectorAll(".opt-btn")[0]);
       } else if (spokenText.includes("b") || spokenText.includes("2")) {
         checkMcqAnswer('2', document.querySelectorAll(".opt-btn")[1]);
@@ -1360,13 +1100,9 @@ window.webkitSpeechRecognition;
       }
     } 
     else if (qType === "tf") {
-      if (spokenText.includes("true") || spokenText.includes("சரி") || 
-
-spokenText.includes("a")) {
+      if (spokenText.includes("true") || spokenText.includes("சரி") || spokenText.includes("a")) {
         checkTfAnswer('True', document.querySelectorAll(".opt-btn")[0]);
-      } else if (spokenText.includes("false") || spokenText.includes("தவறு") || 
-
-spokenText.includes("b")) {
+      } else if (spokenText.includes("false") || spokenText.includes("தவறு") || spokenText.includes("b")) {
         checkTfAnswer('False', document.querySelectorAll(".opt-btn")[1]);
       }
     }
@@ -1388,9 +1124,7 @@ spokenText.includes("b")) {
 
   recognitionInstance.onerror = function(event) {
     const transcriptBox = document.getElementById("voiceTranscriptBox");
-    if (transcriptBox) transcriptBox.innerText = "⚠️ குரல் அடையாளம் காணப்படவில்லை. மீண்டும் 
-
-முயற்சிக்கவும்.";
+    if (transcriptBox) transcriptBox.innerText = "⚠️ குரல் அடையாளம் காணப்படவில்லை. மீண்டும் முயற்சிக்கவும்.";
   };
 
   recognitionInstance.start();
@@ -1436,20 +1170,10 @@ function showExplanationBox() {
   const safeExp = encodeURIComponent(q.explanation || "");
 
   boxArea.innerHTML = `
-    <div class="explanation-card" style="margin-top:15px; background:#f0fdf4; 
-
-border:1px solid #bbf7d0; padding:12px; border-radius:8px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; 
-
-margin-bottom:6px;">
-        <strong style="color:#166534;">💡 ஆசிரியர் விளக்கம் (${(q.stream || 
-
-'ncert').toUpperCase()})</strong>
-        <button class="btn btn-outline-dark" style="font-size:0.75rem; padding:4px 
-
-8px;" onclick="fetchAiDoubtClarification('${safeQ}', '${safeExp}')">🤖 Ask AI for 
-
-Detailed Doubt Clarification</button>
+    <div class="explanation-card" style="margin-top:15px; background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <strong style="color:#166534;">💡 ஆசிரியர் விளக்கம் (${(q.stream || 'ncert').toUpperCase()})</strong>
+        <button class="btn btn-outline-dark" style="font-size:0.75rem; padding:4px 8px;" onclick="fetchAiDoubtClarification('${safeQ}', '${safeExp}')">🤖 Ask AI for Detailed Doubt Clarification</button>
       </div>
       <div id="aiDoubtContent">${q.explanation || 'சரிபார்க்கப்பட்டது.'}</div>
     </div>
@@ -1467,9 +1191,7 @@ async function fetchAiDoubtClarification(questionText, baseExplanation) {
     let usedCount = parseInt(localStorage.getItem(usageKey) || "0", 10);
     
     if (usedCount >= 3) {
-      alert("⚠️ You have reached your daily limit of 3 AI doubt clarifications for 
-
-today. Try again tomorrow!");
+      alert("⚠️ You have reached your daily limit of 3 AI doubt clarifications for today. Try again tomorrow!");
       return;
     }
     
@@ -1479,9 +1201,7 @@ today. Try again tomorrow!");
   const decodedQ = decodeURIComponent(questionText);
   const decodedExp = decodeURIComponent(baseExplanation);
 
-  container.innerHTML = "⏳ AI is analyzing your doubt and generating a detailed step-
-
-by-step explanation...";
+  container.innerHTML = "⏳ AI is analyzing your doubt and generating a detailed step-by-step explanation...";
 
   try {
     const payload = {
@@ -1506,9 +1226,7 @@ by-step explanation...";
         </div>
       `;
     } else {
-      container.innerHTML = `<div style="color:#166534;">${decodedExp}<br><small 
-
-style="color:#64748b;">(AI expansion unavailable at the moment)</small></div>`;
+      container.innerHTML = `<div style="color:#166534;">${decodedExp}<br><small style="color:#64748b;">(AI expansion unavailable at the moment)</small></div>`;
     }
   } catch (err) {
     container.innerHTML = `<div style="color:#166534;">${decodedExp}</div>`;
@@ -1547,9 +1265,7 @@ function checkMcqAnswer(selected, btn) {
   });
 
   showExplanationBox();
-  if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 
-
-4500);
+  if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 4500);
 }
 
 function checkTfAnswer(selected, btn) {
@@ -1558,12 +1274,8 @@ function checkTfAnswer(selected, btn) {
   clearInterval(timerInterval);
 
   const q = activeQuizList[currentQIndex];
-  let rawCorrect = (q.correctOpt !== undefined && q.correctOpt !== null) ? 
-
-q.correctOpt.toString().trim().toLowerCase() : "false";
-  let normalizedCorrect = (rawCorrect === "true" || rawCorrect === "1" || rawCorrect 
-
-=== "t") ? "true" : "false";
+  let rawCorrect = (q.correctOpt !== undefined && q.correctOpt !== null) ? q.correctOpt.toString().trim().toLowerCase() : "false";
+  let normalizedCorrect = (rawCorrect === "true" || rawCorrect === "1" || rawCorrect === "t") ? "true" : "false";
 
   const selectedNorm = selected.toString().trim().toLowerCase();
   const isCorrect = (selectedNorm === normalizedCorrect);
@@ -1594,9 +1306,7 @@ q.correctOpt.toString().trim().toLowerCase() : "false";
   });
 
   showExplanationBox();
-  if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 
-
-4500);
+  if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 4500);
 }
 
 function checkFibAnswer() {
@@ -1636,9 +1346,7 @@ function checkFibAnswer() {
   });
 
   showExplanationBox();
-  if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 
-
-4500);
+  if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 4500);
 }
 
 function checkMatchAnswer() {
@@ -1693,9 +1401,7 @@ function checkMatchAnswer() {
   });
 
   showExplanationBox();
-  if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 
-
-5500);
+  if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 5500);
 }
 
 function handleTimeUp() {
@@ -1768,9 +1474,7 @@ async function finishQuiz() {
 
   const total = activeQuizList.length;
   const pct = Math.round((userScore / total) * 100);
-  document.getElementById("resultScoreDisplay").innerText = `${userScore} / ${total} 
-
-(${pct}%)`;
+  document.getElementById("resultScoreDisplay").innerText = `${userScore} / ${total} (${pct}%)`;
 
   const bonusBox = document.getElementById("bonusRewardAlert");
   const btnWrong = document.getElementById("btnRetakeWrong");
@@ -1783,18 +1487,12 @@ async function finishQuiz() {
 
   if (currentUser) {
     if (pct === 100) {
-      if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, 
-
-origin: { y: 0.6 } });
-      msg = "🌟 PERFECT SCORE (100%)! போனஸ் சலுகை: 4 கூடுதல் தேர்வுகள் மற்றும் ஆசிரியர் பின்னூட்டம் 
-
-திறக்கப்பட்டது!";
+      if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+      msg = "🌟 PERFECT SCORE (100%)! போனஸ் சலுகை: 4 கூடுதல் தேர்வுகள் மற்றும் ஆசிரியர் பின்னூட்டம் திறக்கப்பட்டது!";
       bonusRetakesRemaining += 4;
       if (bonusBox) bonusBox.classList.remove("hidden");
     } else if (pct >= 80) {
-      if (typeof confetti === "function") confetti({ particleCount: 70, spread: 60, 
-
-origin: { y: 0.6 } });
+      if (typeof confetti === "function") confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
       msg = "🎉 சிறப்பான தேர்ச்சி!";
       if (bonusBox) bonusBox.classList.add("hidden");
     } else {
@@ -1811,9 +1509,7 @@ origin: { y: 0.6 } });
 
   document.getElementById("resultFeedback").innerText = msg;
 
-  const streamVal = document.getElementById("playStreamSelect") ? 
-
-document.getElementById("playStreamSelect").value : "ncert";
+  const streamVal = document.getElementById("playStreamSelect") ? document.getElementById("playStreamSelect").value : "ncert";
   const payload = {
     action: "saveScore", 
     userId: currentUser ? currentUser.id : "GUEST", 
@@ -1831,9 +1527,7 @@ document.getElementById("playStreamSelect").value : "ncert";
 }
 
 function retakeWrongOnly() {
-  if (!wrongQuestionsVault || wrongQuestionsVault.length === 0) return alert("தவறான 
-
-வினாக்கள் எதுவும் இல்லை!");
+  if (!wrongQuestionsVault || wrongQuestionsVault.length === 0) return alert("தவறான வினாக்கள் எதுவும் இல்லை!");
   activeQuizList = [...wrongQuestionsVault];
   wrongQuestionsVault = [];
   examReviewRecord = [];
@@ -1851,56 +1545,28 @@ function downloadCertificate() {
 
   const total = activeQuizList.length || 1;
   const pct = Math.round((userScore / total) * 100);
-  const studentName = (currentUser && currentUser.name) ? currentUser.name : "மதிப்புமிகு 
-
-மாணவர்";
-  const std = document.getElementById("playStdSelect") ? document.getElementById
-
-("playStdSelect").value : "5";
-  const sub = document.getElementById("playSubSelect") ? document.getElementById
-
-("playSubSelect").value : "பொது மதிப்பீடு";
-  const streamVal = document.getElementById("playStreamSelect") ? 
-
-document.getElementById("playStreamSelect").value.toUpperCase() : "NCERT";
+  const studentName = (currentUser && currentUser.name) ? currentUser.name : "மதிப்புமிகு மாணவர்";
+  const std = document.getElementById("playStdSelect") ? document.getElementById("playStdSelect").value : "5";
+  const sub = document.getElementById("playSubSelect") ? document.getElementById("playSubSelect").value : "பொது மதிப்பீடு";
+  const streamVal = document.getElementById("playStreamSelect") ? document.getElementById("playStreamSelect").value.toUpperCase() : "NCERT";
   const dateStr = new Date().toLocaleDateString('ta-IN');
 
   container.innerHTML = `
-    <div id="certCaptureElement" style="width: 900px; padding: 40px; border: 10px 
-
-solid #003366; background: #ffffff; text-align: center; font-family: 'Segoe UI', 
-
-Arial, sans-serif; box-sizing: border-box; color: #000000; margin: 0 auto;">
+    <div id="certCaptureElement" style="width: 900px; padding: 40px; border: 10px solid #003366; background: #ffffff; text-align: center; font-family: 'Segoe UI', Arial, sans-serif; box-sizing: border-box; color: #000000; margin: 0 auto;">
       <div style="border: 2px solid #e65100; padding: 25px;">
-        <h1 style="color: #003366; font-size: 30px; margin: 0 0 8px 0; font-weight: 
-
-bold;"> HariMani School (${streamVal} Stream) </h1>
-        <h3 style="color: #e65100; font-size: 18px; margin: 0 0 20px 0; text-
-
-transform: uppercase;">Certificate of Achievement</h3>
-        <p style="font-size: 16px; color: #475569; margin: 15px 0;">இச்சான்றிதழ் பெருமையுடன் 
-
-வழங்கப்படுகிறது</p>
-        <h2 style="font-size: 28px; color: #0f172a; margin: 10px 0 20px 0; border-
-
-bottom: 2px solid #cbd5e1; padding-bottom: 8px; display: inline-block;">
+        <h1 style="color: #003366; font-size: 30px; margin: 0 0 8px 0; font-weight: bold;"> HariMani School (${streamVal} Stream) </h1>
+        <h3 style="color: #e65100; font-size: 18px; margin: 0 0 20px 0; text-transform: uppercase;">Certificate of Achievement</h3>
+        <p style="font-size: 16px; color: #475569; margin: 15px 0;">இச்சான்றிதழ் பெருமையுடன் வழங்கப்படுகிறது</p>
+        <h2 style="font-size: 28px; color: #0f172a; margin: 10px 0 20px 0; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; display: inline-block;">
           ${studentName}
         </h2>
-        <p style="font-size: 16px; color: #334155; line-height: 1.8; margin: 15px 
-
-30px;">
+        <p style="font-size: 16px; color: #334155; line-height: 1.8; margin: 15px 30px;">
           வகுப்பு <strong>${std}</strong>, பாடம் <strong>${sub}</strong> மதிப்பீட்டுத் தேர்வில் பங்குபெற்று 
-          <strong>${userScore} / ${total} (${pct}%)</strong> மதிப்பெண்கள் பெற்று தேர்ச்சி 
-
-அடைந்துள்ளார்.
+          <strong>${userScore} / ${total} (${pct}%)</strong> மதிப்பெண்கள் பெற்று தேர்ச்சி அடைந்துள்ளார்.
         </p>
-        <div style="display: flex; justify-content: space-between; align-items: flex-
-
-end; margin-top: 50px; padding: 0 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 50px; padding: 0 40px;">
           <div style="font-size: 15px; color: #334155;">நாள்: ${dateStr}</div>
-          <div style="font-size: 16px; font-weight: bold; color: #003366; border-top: 
-
-2px solid #003366; padding-top: 5px;">HARIMANI PORTAL</div>
+          <div style="font-size: 16px; font-weight: bold; color: #003366; border-top: 2px solid #003366; padding-top: 5px;">HARIMANI PORTAL</div>
         </div>
       </div>
     </div>
@@ -1915,38 +1581,26 @@ end; margin-top: 50px; padding: 0 40px;">
     jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' }
   };
 
-  html2pdf().set(opt).from(captureEl).save().then(() => { container.innerHTML = ""; 
-
-});
+  html2pdf().set(opt).from(captureEl).save().then(() => { container.innerHTML = ""; });
 }
 
 async function loadLeaderboard() {
   const tbody = document.getElementById("leaderboardTbody");
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">தரவரிசைப் பட்டியல் 
-
-ஏற்றப்படுகிறது...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">தரவரிசைப் பட்டியல் ஏற்றப்படுகிறது...</td></tr>`;
 
   const stdFilter = (document.getElementById("leaderboardStdFilter")?.value) || "all";
-  const streamFilter = (document.getElementById("leaderboardStreamFilter")?.value) || 
-
-"all";
+  const streamFilter = (document.getElementById("leaderboardStreamFilter")?.value) || "all";
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getLeaderboard&standard=
-
-${encodeURIComponent(stdFilter)}&stream=${encodeURIComponent(streamFilter)}`);
+    const res = await fetch(`${SCRIPT_URL}?action=getLeaderboard&standard=${encodeURIComponent(stdFilter)}&stream=${encodeURIComponent(streamFilter)}`);
     const data = await res.json();
     if (data && data.success) {
       renderLeaderboardTable(data.leaderboard || []);
     } else {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; 
-
-color:red;">தரவுகள் கிடைக்கவில்லை.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">தரவுகள் கிடைக்கவில்லை.</td></tr>`;
     }
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">பிழை: 
-
-${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">பிழை: ${err.message}</td></tr>`;
   }
 }
 
@@ -1956,9 +1610,7 @@ function renderLeaderboardTable(list) {
   tbody.innerHTML = "";
 
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">இவ்வகுப்பில் இன்னும் 
-
-தேர்வுகள் பதிவாகவில்லை.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">இவ்வகுப்பில் இன்னும் தேர்வுகள் பதிவாகவில்லை.</td></tr>`;
     return;
   }
 
@@ -1968,12 +1620,8 @@ function renderLeaderboardTable(list) {
     tbody.innerHTML += `
       <tr>
         <td style="font-weight:bold; text-align:center;">${rankDisplay}</td>
-        <td><strong>${item.userName}</strong> <small style="color:#64748b;">
-
-(${item.userId})</small></td>
-        <td><span class="tag-pill">${(item.stream || 'ncert').toUpperCase()}</span> 
-
-வகுப்பு ${item.standard}</td>
+        <td><strong>${item.userName}</strong> <small style="color:#64748b;">(${item.userId})</small></td>
+        <td><span class="tag-pill">${(item.stream || 'ncert').toUpperCase()}</span> வகுப்பு ${item.standard}</td>
         <td>${item.testsCount} தேர்வுகள்</td>
         <td><strong>${item.totalScore} / ${item.totalPossible}</strong></td>
         <td><span class="badge badge-success">${item.percentage}%</span></td>
@@ -1997,36 +1645,22 @@ function toggleExamReview() {
   examReviewRecord.forEach((rec, idx) => {
     const q = rec.question;
     const card = document.createElement("div");
-    card.className = `review-item-card ${rec.isCorrect ? 'correct-border' : 'wrong-
-
-border'}`;
+    card.className = `review-item-card ${rec.isCorrect ? 'correct-border' : 'wrong-border'}`;
     card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; 
-
-gap:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <div style="font-weight:bold; font-size:1rem; margin-bottom:6px; flex:1;">
-          ${idx + 1}. [${(q.type || 'mcq').toUpperCase()}] (${(q.stream || 
-
-'ncert').toUpperCase()}) ${q.question}
+          ${idx + 1}. [${(q.type || 'mcq').toUpperCase()}] (${(q.stream || 'ncert').toUpperCase()}) ${q.question}
         </div>
-        <button class="btn btn-outline-dark voice-btn" onclick="speakText
-
-('${q.question.replace(/'/g, "\\'")}')" title="கேள்வியை வாசி">🔊</button>
+        <button class="btn btn-outline-dark voice-btn" onclick="speakText('${q.question.replace(/'/g, "\\'")}')" title="கேள்வியை வாசி">🔊</button>
       </div>
       <div style="margin-bottom:8px;">
-        <span class="badge ${rec.isCorrect ? 'badge-success' : 'badge-danger'}">
-
-${rec.isCorrect ? '✅ சரி' : '❌ தவறு'}</span>
+        <span class="badge ${rec.isCorrect ? 'badge-success' : 'badge-danger'}">${rec.isCorrect ? '✅ சரி' : '❌ தவறு'}</span>
       </div>
       <div style="font-size:0.9rem; margin-bottom:4px;">
-        <strong>உங்கள் விடை:</strong> <span style="color:${rec.isCorrect ? 'var(--accent)' 
-
-: 'var(--danger)'};">${rec.userChoice}</span>
+        <strong>உங்கள் விடை:</strong> <span style="color:${rec.isCorrect ? 'var(--accent)' : 'var(--danger)'};">${rec.userChoice}</span>
       </div>
       <div style="font-size:0.9rem; margin-bottom:6px;">
-        <strong>சரியான விடை:</strong> <span style="color:var(--accent); font-
-
-weight:600;">${rec.correctChoice}</span>
+        <strong>சரியான விடை:</strong> <span style="color:var(--accent); font-weight:600;">${rec.correctChoice}</span>
       </div>
       <div class="explanation-card" style="margin-top:8px;">
         <strong>📖 விளக்கம்:</strong> ${q.explanation || 'சரிபார்க்கப்பட்டது.'}
@@ -2066,18 +1700,10 @@ async function submitTeacherFeedback() {
 }
 
 function toggleManualTypeInputs(type) {
-  document.getElementById("wrapperMcqFields").classList.toggle("hidden", type !== 
-
-"mcq");
-  document.getElementById("wrapperTfFields").classList.toggle("hidden", type !== 
-
-"tf");
-  document.getElementById("wrapperFibFields").classList.toggle("hidden", type !== 
-
-"fib");
-  document.getElementById("wrapperMatchFields").classList.toggle("hidden", type !== 
-
-"match");
+  document.getElementById("wrapperMcqFields").classList.toggle("hidden", type !== "mcq");
+  document.getElementById("wrapperTfFields").classList.toggle("hidden", type !== "tf");
+  document.getElementById("wrapperFibFields").classList.toggle("hidden", type !== "fib");
+  document.getElementById("wrapperMatchFields").classList.toggle("hidden", type !== "match");
 }
 
 async function publishManualQuestion() {
@@ -2087,14 +1713,10 @@ async function publishManualQuestion() {
   const type = document.getElementById("manualQType").value;
   const std = document.getElementById("authorStdSelect").value;
   const sub = document.getElementById("authorSubSelect").value;
-  const chap = document.getElementById("authorChapterInput").value.trim() || 
-
-"General";
+  const chap = document.getElementById("authorChapterInput").value.trim() || "General";
   const topic = document.getElementById("authorTopicInput").value.trim() || "All";
   const qText = document.getElementById("manualQuestionText").value.trim();
-  const explanation = (document.getElementById("manualExplanation")?.value || 
-
-"").trim();
+  const explanation = (document.getElementById("manualExplanation")?.value || "").trim();
 
   if (!qText) return alert("Please enter the question statement.");
 
@@ -2140,17 +1762,13 @@ async function publishManualQuestion() {
   if (data && data.success) {
     alert("✅ Question successfully saved!");
     document.getElementById("manualQuestionText").value = "";
-    if (document.getElementById("manualExplanation")) document.getElementById
-
-("manualExplanation").value = "";
+    if (document.getElementById("manualExplanation")) document.getElementById("manualExplanation").value = "";
     await loadPortalData();
   }
 }
 
 async function extractTextFromPDF(file) {
-  if (typeof pdfjsLib === "undefined") throw new Error("PDF.js library is not 
-
-loaded.");
+  if (typeof pdfjsLib === "undefined") throw new Error("PDF.js library is not loaded.");
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   let fullText = "";
@@ -2158,9 +1776,7 @@ loaded.");
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    fullText += ` [Page ${i}] ` + textContent.items.map(item => item.str).join(" ") + 
-
-"\n";
+    fullText += ` [Page ${i}] ` + textContent.items.map(item => item.str).join(" ") + "\n";
   }
   return fullText;
 }
@@ -2222,9 +1838,7 @@ async function generateViaAI() {
       isText = false;
     }
 
-    statusText.innerText = `Generating ${requestedTotal} multi-category questions via 
-
-AI...`;
+    statusText.innerText = `Generating ${requestedTotal} multi-category questions via AI...`;
     progressPct.innerText = "50%";
     progressBar.style.width = "50%";
 
@@ -2240,16 +1854,10 @@ AI...`;
     progressPct.innerText = "100%";
     btnExtract.disabled = false;
 
-    if (data && data.success && Array.isArray(data.questions) && data.questions.length 
-
-> 0) {
-      statusText.innerText = `Generated ${data.questions.length} questions 
-
-successfully!`;
+    if (data && data.success && Array.isArray(data.questions) && data.questions.length > 0) {
+      statusText.innerText = `Generated ${data.questions.length} questions successfully!`;
       extractedAiBatch = data.questions;
-      document.getElementById("aiTotalCountBadge").innerText = 
-
-extractedAiBatch.length;
+      document.getElementById("aiTotalCountBadge").innerText = extractedAiBatch.length;
       renderAiPreview(extractedAiBatch);
       previewArea.classList.remove("hidden");
     } else {
@@ -2271,18 +1879,10 @@ function renderAiPreview(questions) {
     item.style.padding = "8px 0";
     item.style.borderBottom = "1px solid #e9ecef";
     item.innerHTML = `
-      <div style="font-weight:600;">${idx + 1}. [${(q.type || 'mcq').toUpperCase()}] 
-
-${q.question}</div>
-      ${q.optA ? `<div style="font-size:0.85rem; color:#555;">A) ${q.optA} | B) 
-
-${q.optB} | C) ${q.optC} | D) ${q.optD}</div>` : ''}
-      <div style="font-size:0.85rem; color:var(--accent); font-weight:bold;">Correct: 
-
-${q.correctOpt}</div>
-      <div style="font-size:0.82rem; color:#084298; margin-
-
-top:3px;"><strong>Explanation:</strong> ${q.explanation || 'N/A'}</div>
+      <div style="font-weight:600;">${idx + 1}. [${(q.type || 'mcq').toUpperCase()}] ${q.question}</div>
+      ${q.optA ? `<div style="font-size:0.85rem; color:#555;">A) ${q.optA} | B) ${q.optB} | C) ${q.optC} | D) ${q.optD}</div>` : ''}
+      <div style="font-size:0.85rem; color:var(--accent); font-weight:bold;">Correct: ${q.correctOpt}</div>
+      <div style="font-size:0.82rem; color:#084298; margin-top:3px;"><strong>Explanation:</strong> ${q.explanation || 'N/A'}</div>
     `;
     container.appendChild(item);
   });
@@ -2316,18 +1916,10 @@ function renderManageTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  const search = document.getElementById("manageSearchInput") ? 
-
-document.getElementById("manageSearchInput").value.toLowerCase().trim() : "";
-  const streamFilter = document.getElementById("manageStreamFilter") ? 
-
-document.getElementById("manageStreamFilter").value : "";
-  const std = document.getElementById("manageStdFilter") ? document.getElementById
-
-("manageStdFilter").value : "";
-  const sub = document.getElementById("manageSubFilter") ? document.getElementById
-
-("manageSubFilter").value.toLowerCase() : "";
+  const search = document.getElementById("manageSearchInput") ? document.getElementById("manageSearchInput").value.toLowerCase().trim() : "";
+  const streamFilter = document.getElementById("manageStreamFilter") ? document.getElementById("manageStreamFilter").value : "";
+  const std = document.getElementById("manageStdFilter") ? document.getElementById("manageStdFilter").value : "";
+  const sub = document.getElementById("manageSubFilter") ? document.getElementById("manageSubFilter").value.toLowerCase() : "";
 
   const isPrincipal = currentUser && (currentUser.role === "principal");
   const myId = currentUser ? currentUser.id.toLowerCase() : "";
@@ -2337,9 +1929,7 @@ document.getElementById("manageStreamFilter").value : "";
     if (!isPrincipal && !isOwner) return false;
 
     const mStream = !streamFilter || (q.stream || 'ncert') === streamFilter;
-    const fullTextSearch = `${q.question || ""} ${q.optA || ""} ${q.optB || ""} 
-
-${q.optC || ""} ${q.optD || ""} ${q.explanation || ""}`.toLowerCase();
+    const fullTextSearch = `${q.question || ""} ${q.optA || ""} ${q.optB || ""} ${q.optC || ""} ${q.optD || ""} ${q.explanation || ""}`.toLowerCase();
     const mSearch = !search || fullTextSearch.includes(search);
     const mStd = !std || q.standard === std;
     const mSub = !sub || (q.subject || "").toLowerCase() === sub;
@@ -2347,9 +1937,7 @@ ${q.optC || ""} ${q.optD || ""} ${q.explanation || ""}`.toLowerCase();
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; 
-
-color:#64748b;">No questions found matching your search.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#64748b;">No questions found matching your search.</td></tr>`;
     return;
   }
 
@@ -2358,47 +1946,25 @@ color:#64748b;">No questions found matching your search.</td></tr>`;
 
   let htmlContent = "";
   if (filtered.length > displayLimit) {
-    htmlContent += `<tr><td colspan="7" style="text-align:center; background:#fffbeb; 
-
-color:#92400e; font-size:0.85rem; padding:8px;">Showing first ${displayLimit} of 
-
-${filtered.length} matching questions. Use filters or search to narrow down 
-
-results.</td></tr>`;
+    htmlContent += `<tr><td colspan="7" style="text-align:center; background:#fffbeb; color:#92400e; font-size:0.85rem; padding:8px;">Showing first ${displayLimit} of ${filtered.length} matching questions. Use filters or search to narrow down results.</td></tr>`;
   }
 
   paginatedList.forEach(q => {
     htmlContent += `
       <tr>
-        <td><span class="tag-pill">${(q.stream || 'ncert').toUpperCase()}
-
-</span><br><strong>Class ${q.standard || '5'}</strong></td>
-        <td><span class="badge" style="background:#003366; color:#fff;">${(q.type || 
-
-'mcq').toUpperCase()}</span></td>
+        <td><span class="tag-pill">${(q.stream || 'ncert').toUpperCase()}</span><br><strong>Class ${q.standard || '5'}</strong></td>
+        <td><span class="badge" style="background:#003366; color:#fff;">${(q.type || 'mcq').toUpperCase()}</span></td>
         <td>${q.subject || 'General'}</td>
-        <td><small><strong>${q.chapter || 'General'}</strong><br>${q.topic || 'All'}
-
-</small></td>
+        <td><small><strong>${q.chapter || 'General'}</strong><br>${q.topic || 'All'}</small></td>
         <td>
           <div style="font-weight:600;">${q.question || ''}</div>
-          ${q.optA ? `<small>A) ${q.optA} | B) ${q.optB} | C) ${q.optC} | D) 
-
-${q.optD}</small><br>` : ''}
-          <small style="color:var(--accent); font-weight:bold;">Correct: 
-
-${q.correctOpt || ''}</small>
+          ${q.optA ? `<small>A) ${q.optA} | B) ${q.optB} | C) ${q.optC} | D) ${q.optD}</small><br>` : ''}
+          <small style="color:var(--accent); font-weight:bold;">Correct: ${q.correctOpt || ''}</small>
         </td>
         <td><code>${q.creatorId || 'System'}</code></td>
         <td style="white-space:nowrap;">
-          <button class="btn btn-outline-dark" style="padding:4px 8px; font-
-
-size:0.8rem; margin-right:4px;" onclick="openEditQuestionModal('${q.id}')">✏️ 
-
-Edit</button>
-          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" 
-
-onclick="deleteQuestion('${q.id}')">🗑️ Delete</button>
+          <button class="btn btn-outline-dark" style="padding:4px 8px; font-size:0.8rem; margin-right:4px;" onclick="openEditQuestionModal('${q.id}')">✏️ Edit</button>
+          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteQuestion('${q.id}')">🗑️ Delete</button>
         </td>
       </tr>
     `;
@@ -2439,9 +2005,7 @@ async function saveEditedQuestion() {
     explanation: document.getElementById("editExplanation").value.trim()
   };
 
-  await callAppsScript({ action: "deleteQuestion", questionId: qId, userId: 
-
-currentUser.id });
+  await callAppsScript({ action: "deleteQuestion", questionId: qId, userId: currentUser.id });
   const res = await callAppsScript(updatedQ);
 
   if (res && res.success) {
@@ -2456,21 +2020,15 @@ currentUser.id });
 
 function generatePrintablePaper(count) {
   const std = document.getElementById("manageStdFilter").value || "All Classes";
-  const sub = document.getElementById("manageSubFilter").value || "General 
-
-Assessment";
+  const sub = document.getElementById("manageSubFilter").value || "General Assessment";
   const streamFilter = document.getElementById("manageStreamFilter").value || "ncert";
 
   let pool = [...masterQuestions];
   pool = pool.filter(q => (q.stream || 'ncert') === streamFilter);
   if (std !== "All Classes") pool = pool.filter(q => q.standard === std);
-  if (sub !== "General Assessment") pool = pool.filter(q => q.subject.toLowerCase() 
+  if (sub !== "General Assessment") pool = pool.filter(q => q.subject.toLowerCase() === sub.toLowerCase());
 
-=== sub.toLowerCase());
-
-  if (pool.length === 0) return alert("No questions available for this filter to 
-
-generate a test paper.");
+  if (pool.length === 0) return alert("No questions available for this filter to generate a test paper.");
 
   pool.sort(() => Math.random() - 0.5);
   const selected = pool.slice(0, Math.min(count, pool.length));
@@ -2478,21 +2036,15 @@ generate a test paper.");
   const printArea = document.getElementById("printContainer");
   printArea.innerHTML = `
     <div class="print-header">
-      <h2>HARI MANDIR HIGHER SECONDARY SCHOOL (${streamFilter.toUpperCase()} Stream)
-
-</h2>
+      <h2>HARI MANDIR HIGHER SECONDARY SCHOOL (${streamFilter.toUpperCase()} Stream)</h2>
       <h3>Official Examination Assessment Question Paper</h3>
-      <div style="display:flex; justify-content:space-between; margin-top:10px; font-
-
-weight:bold; font-size:0.95rem;">
+      <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold; font-size:0.95rem;">
         <span>Stream: ${streamFilter.toUpperCase()}</span>
         <span>Class: ${std}</span>
         <span>Subject: ${sub}</span>
         <span>Max Marks: ${selected.length}</span>
       </div>
-      <div style="display:flex; justify-content:space-between; margin-top:10px; 
-
-border-bottom:2px solid #000; padding-bottom:8px; font-size:0.9rem;">
+      <div style="display:flex; justify-content:space-between; margin-top:10px; border-bottom:2px solid #000; padding-bottom:8px; font-size:0.9rem;">
         <span>Student Name: __________________________</span>
         <span>Roll No: ____________</span>
         <span>Date: ____________</span>
@@ -2505,38 +2057,24 @@ border-bottom:2px solid #000; padding-bottom:8px; font-size:0.9rem;">
         let bodyHtml = "";
         if (type === "mcq") {
           bodyHtml = `
-            <div style="display:grid; grid-template-columns:1fr 1fr; margin-top:4px; 
-
-font-size:0.9rem; padding-left:15px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; margin-top:4px; font-size:0.9rem; padding-left:15px;">
               <div>(A) ${q.optA}</div><div>(B) ${q.optB}</div>
               <div>(C) ${q.optC}</div><div>(D) ${q.optD}</div>
             </div>`;
         } else if (type === "tf") {
-          bodyHtml = `<div style="padding-left:15px; font-size:0.9rem; margin-
-
-top:4px;">[ &nbsp; ] True &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ &nbsp; ] 
-
-False</div>`;
+          bodyHtml = `<div style="padding-left:15px; font-size:0.9rem; margin-top:4px;">[ &nbsp; ] True &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ &nbsp; ] False</div>`;
         } else if (type === "fib") {
-          bodyHtml = `<div style="padding-left:15px; font-size:0.9rem; margin-
-
-top:4px;">Answer: ______________________________</div>`;
+          bodyHtml = `<div style="padding-left:15px; font-size:0.9rem; margin-top:4px;">Answer: ______________________________</div>`;
         } else if (type === "match") {
-          const pairs = [q.optA, q.optB, q.optC, q.optD].filter(Boolean).map(p => 
-
-p.split(":"));
+          const pairs = [q.optA, q.optB, q.optC, q.optD].filter(Boolean).map(p => p.split(":"));
           bodyHtml = `
             <div style="padding-left:15px; font-size:0.9rem; margin-top:4px;">
-              ${pairs.map(p => `<div>• ${p[0] || ''} &nbsp; ----------------- &nbsp; 
-
-${p[1] || ''}</div>`).join("")}
+              ${pairs.map(p => `<div>• ${p[0] || ''} &nbsp; ----------------- &nbsp; ${p[1] || ''}</div>`).join("")}
             </div>`;
         }
         return `
           <div style="margin-bottom:14px; page-break-inside:avoid;">
-            <div style="font-weight:600;">${idx + 1}. [${type.toUpperCase()}] 
-
-${q.question}</div>
+            <div style="font-weight:600;">${idx + 1}. [${type.toUpperCase()}] ${q.question}</div>
             ${bodyHtml}
           </div>
         `;
@@ -2544,12 +2082,8 @@ ${q.question}</div>
     </div>
 
     <div style="page-break-before:always; margin-top:30px;">
-      <h3 style="text-align:center; border-bottom:1px solid #000; padding-
-
-bottom:5px;">CONFIDENTIAL TEACHER ANSWER KEY</h3>
-      <table style="width:100%; border-collapse:collapse; margin-top:10px; font-
-
-size:0.85rem;" border="1">
+      <h3 style="text-align:center; border-bottom:1px solid #000; padding-bottom:5px;">CONFIDENTIAL TEACHER ANSWER KEY</h3>
+      <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:0.85rem;" border="1">
         <thead>
           <tr style="background:#eee;">
             <th style="padding:6px; width:8%;">Q.No</th>
@@ -2562,9 +2096,7 @@ size:0.85rem;" border="1">
           ${selected.map((q, idx) => `
             <tr>
               <td style="padding:5px; text-align:center;">${idx + 1}</td>
-              <td style="padding:5px; text-align:center;">${(q.type || 
-
-'mcq').toUpperCase()}</td>
+              <td style="padding:5px; text-align:center;">${(q.type || 'mcq').toUpperCase()}</td>
               <td style="padding:5px; font-weight:bold;">${q.correctOpt}</td>
               <td style="padding:5px;">${q.explanation || 'Verified.'}</td>
             </tr>
@@ -2579,9 +2111,7 @@ size:0.85rem;" border="1">
 
 async function deleteQuestion(id) {
   if (!confirm("Are you sure you want to remove this question?")) return;
-  const data = await callAppsScript({ action: "deleteQuestion", questionId: id, 
-
-userId: currentUser.id });
+  const data = await callAppsScript({ action: "deleteQuestion", questionId: id, userId: currentUser.id });
   if (data && data.success) {
     alert("Question deleted.");
     await loadPortalData();
@@ -2594,14 +2124,10 @@ userId: currentUser.id });
 async function loadUserReports() {
   if (!currentUser) return;
   const tbody = document.getElementById("userScoresTbody");
-  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading 
-
-scores...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading scores...</td></tr>`;
 
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getUserScores&userId=
-
-${encodeURIComponent(currentUser.id)}`);
+    const res = await fetch(`${SCRIPT_URL}?action=getUserScores&userId=${encodeURIComponent(currentUser.id)}`);
     const data = await res.json();
     if (data && data.success) {
       masterUserScores = data.scores || [];
@@ -2609,9 +2135,7 @@ ${encodeURIComponent(currentUser.id)}`);
       filterUserReports();
     }
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-
-
-align:center;">Error: ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Error: ${e.message}</td></tr>`;
   }
 }
 
@@ -2621,15 +2145,11 @@ function renderUserBadges(scores) {
   container.innerHTML = "";
 
   if (!scores || scores.length === 0) {
-    container.innerHTML = `<span style="font-size:0.85rem; color:#777;">Attend exams 
-
-daily to earn achievement badges!</span>`;
+    container.innerHTML = `<span style="font-size:0.85rem; color:#777;">Attend exams daily to earn achievement badges!</span>`;
     return;
   }
 
-  const uniqueDates = [...new Set(scores.map(s => (s.date || '').split("T")
-
-[0]))].sort().reverse();
+  const uniqueDates = [...new Set(scores.map(s => (s.date || '').split("T")[0]))].sort().reverse();
   let currentStreak = 0;
   if (uniqueDates.length > 0) {
     let checkDate = new Date();
@@ -2644,26 +2164,18 @@ daily to earn achievement badges!</span>`;
   if (streakDisplay) streakDisplay.innerText = `${currentStreak} Days`;
 
   const badges = [];
-  if (currentStreak >= 3) badges.push({ icon: "🔥", title: "3-Day Streak", desc: 
-
-"Practiced 3 days in a row!" });
-  if (currentStreak >= 7) badges.push({ icon: "⚡", title: "7-Day Streak", desc: "Super 
-
-consistent learner!" });
+  if (currentStreak >= 3) badges.push({ icon: "🔥", title: "3-Day Streak", desc: "Practiced 3 days in a row!" });
+  if (currentStreak >= 7) badges.push({ icon: "⚡", title: "7-Day Streak", desc: "Super consistent learner!" });
 
   if (badges.length === 0) {
-    container.innerHTML = `<span style="font-size:0.85rem; color:#666;">Keep 
-
-practicing! Badges unlock at 3-Day streak.</span>`;
+    container.innerHTML = `<span style="font-size:0.85rem; color:#666;">Keep practicing! Badges unlock at 3-Day streak.</span>`;
   } else {
     badges.forEach(b => {
       const el = document.createElement("div");
       el.className = "badge-card";
       el.innerHTML = `
         <div style="font-size:1.6rem;">${b.icon}</div>
-        <div style="font-weight:bold; font-size:0.85rem; margin-top:4px;">${b.title}
-
-</div>
+        <div style="font-weight:bold; font-size:0.85rem; margin-top:4px;">${b.title}</div>
         <div style="font-size:0.75rem; color:#666;">${b.desc}</div>
       `;
       container.appendChild(el);
@@ -2694,9 +2206,7 @@ function filterUserReports() {
   tbody.innerHTML = "";
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No scores 
-
-found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No scores found.</td></tr>`;
     document.getElementById("repStatTotal").innerText = "0";
     document.getElementById("repStatAvg").innerText = "0%";
     return;
@@ -2719,31 +2229,23 @@ found.</td></tr>`;
   });
 
   document.getElementById("repStatTotal").innerText = filtered.length;
-  document.getElementById("repStatAvg").innerText = `${Math.round(totalPct / 
-
-filtered.length)}%`;
+  document.getElementById("repStatAvg").innerText = `${Math.round(totalPct / filtered.length)}%`;
 }
 
 async function loadTeacherStudentScores() {
   if (!currentUser) return;
   const tbody = document.getElementById("teacherStudentScoresTbody");
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading assigned 
-
-class scores...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading assigned class scores...</td></tr>`;
 
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getTeacherStudentScores&userId=
-
-${encodeURIComponent(currentUser.id)}`);
+    const res = await fetch(`${SCRIPT_URL}?action=getTeacherStudentScores&userId=${encodeURIComponent(currentUser.id)}`);
     const data = await res.json();
     if (data && data.success) {
       teacherStudentScores = data.scores || [];
       filterTeacherStudentScores();
     }
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="7" style="color:red; text-
-
-align:center;">Error: ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">Error: ${e.message}</td></tr>`;
   }
 }
 
@@ -2756,18 +2258,14 @@ function filterTeacherStudentScores() {
   tbody.innerHTML = "";
 
   const filtered = (teacherStudentScores || []).filter(s => {
-    const mStudent = !search || s.userId.toLowerCase().includes(search) || 
-
-s.userName.toLowerCase().includes(search);
+    const mStudent = !search || s.userId.toLowerCase().includes(search) || s.userName.toLowerCase().includes(search);
     const mStd = !std || s.standard === std;
     const mSub = !sub || s.subject.toLowerCase() === sub;
     return mStudent && mStd && mSub;
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No student 
-
-performance records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No student performance records found.</td></tr>`;
     return;
   }
 
@@ -2789,28 +2287,20 @@ performance records found.</td></tr>`;
 
 async function deleteTeacher(teacherId) {
   if (!confirm(`நிச்சயமாக ஆசிரியர் ${teacherId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return;
-  const payload = { action: "deleteTeacher", principalId: currentUser ? currentUser.id 
-
-: "PRINCIPAL", targetTeacherId: teacherId };
+  const payload = { action: "deleteTeacher", principalId: currentUser ? currentUser.id : "PRINCIPAL", targetTeacherId: teacherId };
   try {
     const data = await callAppsScript(payload);
-    if (data && data.success) { alert(`✅ ஆசிரியர் ${teacherId} வெற்றிகரமாக நீக்கப்பட்டார்!`); 
-
-loadPrincipalDashboard(); }
+    if (data && data.success) { alert(`✅ ஆசிரியர் ${teacherId} வெற்றிகரமாக நீக்கப்பட்டார்!`); loadPrincipalDashboard(); }
     else { alert("பிழை: " + (data ? data.error : "நீக்க முடியவில்லை")); }
   } catch (err) { alert("இணைப்புப் பிழை: " + err.message); }
 }
 
 async function deleteStudent(studentId) {
   if (!confirm(`நிச்சயமாக மாணவர் ${studentId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return;
-  const payload = { action: "deleteStudent", principalId: currentUser ? currentUser.id 
-
-: "PRINCIPAL", targetStudentId: studentId };
+  const payload = { action: "deleteStudent", principalId: currentUser ? currentUser.id : "PRINCIPAL", targetStudentId: studentId };
   try {
     const data = await callAppsScript(payload);
-    if (data && data.success) { alert(`✅ மாணவர் ${studentId} வெற்றிகரமாக நீக்கப்பட்டார்!`); 
-
-loadPrincipalDashboard(); }
+    if (data && data.success) { alert(`✅ மாணவர் ${studentId} வெற்றிகரமாக நீக்கப்பட்டார்!`); loadPrincipalDashboard(); }
     else { alert("பிழை: " + (data ? data.error : "நீக்க முடியவில்லை")); }
   } catch (err) { alert("இணைப்புப் பிழை: " + err.message); }
 }
@@ -2847,40 +2337,24 @@ async function principalCreateTeacher() {
 }
 
 function switchPrincipalSubView(viewName, btn) {
-  document.querySelectorAll(".pr-subtab-btn").forEach(b => b.classList.remove
-
-("active"));
+  document.querySelectorAll(".pr-subtab-btn").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
 
-  document.getElementById("prViewTeachers").classList.toggle("hidden", viewName !== 
-
-'teachers');
-  document.getElementById("prViewStudents").classList.toggle("hidden", viewName !== 
-
-'students');
-  document.getElementById("prViewAnalytics").classList.toggle("hidden", viewName !== 
-
-'analytics');
+  document.getElementById("prViewTeachers").classList.toggle("hidden", viewName !== 'teachers');
+  document.getElementById("prViewStudents").classList.toggle("hidden", viewName !== 'students');
+  document.getElementById("prViewAnalytics").classList.toggle("hidden", viewName !== 'analytics');
 }
 
 async function loadPrincipalDashboard() {
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getPrincipalDashboard&userId=
-
-${encodeURIComponent(currentUser.id)}`);
+    const res = await fetch(`${SCRIPT_URL}?action=getPrincipalDashboard&userId=${encodeURIComponent(currentUser.id)}`);
     const data = await res.json();
     if (data && data.success) {
       principalDashboardData = data;
 
-      document.getElementById("prStatTeacherCount").innerText = (data.teachers || 
-
-[]).length;
-      document.getElementById("prStatStudentCount").innerText = (data.students || 
-
-[]).length;
-      document.getElementById("prStatAssessmentCount").innerText = (data.scores || 
-
-[]).length;
+      document.getElementById("prStatTeacherCount").innerText = (data.teachers || []).length;
+      document.getElementById("prStatStudentCount").innerText = (data.students || []).length;
+      document.getElementById("prStatAssessmentCount").innerText = (data.scores || []).length;
 
       renderPrincipalTeacherTable();
       renderPrincipalStudentTable();
@@ -2896,19 +2370,13 @@ function renderPrincipalTeacherTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  const search = (document.getElementById("prTeacherSearchInput")?.value || 
-
-"").toLowerCase().trim();
+  const search = (document.getElementById("prTeacherSearchInput")?.value || "").toLowerCase().trim();
   const teachers = (principalDashboardData.teachers || []).filter(t => {
-    return !search || t.name.toLowerCase().includes(search) || t.id.toLowerCase
-
-().includes(search);
+    return !search || t.name.toLowerCase().includes(search) || t.id.toLowerCase().includes(search);
   });
 
   if (teachers.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; 
-
-color:#64748b;">No matching teachers found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#64748b;">No matching teachers found.</td></tr>`;
     return;
   }
 
@@ -2918,27 +2386,19 @@ color:#64748b;">No matching teachers found.</td></tr>`;
       : `<span style="color:#94a3b8; font-size:0.8rem;">None assigned</span>`;
 
     const subTags = (t.subjects && t.subjects.length > 0)
-      ? t.subjects.map(s => `<span class="tag-pill" style="background:#e0f2fe; 
-
-color:#0369a1;">${s}</span>`).join(" ")
+      ? t.subjects.map(s => `<span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">${s}</span>`).join(" ")
       : `<span style="color:#94a3b8; font-size:0.8rem;">None assigned</span>`;
 
     tbody.innerHTML += `
       <tr>
         <td><code>${t.id}</code></td>
         <td><strong>${t.name}</strong></td>
-        <td><span class="tag-pill" style="background:#fef3c7; color:#b45309;">
-
-${(t.studentStream || 'ncert').toUpperCase()}</span></td>
+        <td><span class="tag-pill" style="background:#fef3c7; color:#b45309;">${(t.studentStream || 'ncert').toUpperCase()}</span></td>
         <td>${stdTags}</td>
         <td>${subTags}</td>
         <td style="text-align:right;">
-          <button class="btn btn-outline-dark" style="padding:4px 10px; font-
-
-size:0.8rem;" onclick="openEditTeacherModal('${t.id}')">⚙️ Configure</button>
-          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem; 
-
-margin-left:4px;" onclick="deleteTeacher('${t.id}')">🗑️</button>
+          <button class="btn btn-outline-dark" style="padding:4px 10px; font-size:0.8rem;" onclick="openEditTeacherModal('${t.id}')">⚙️ Configure</button>
+          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem; margin-left:4px;" onclick="deleteTeacher('${t.id}')">🗑️</button>
         </td>
       </tr>
     `;
@@ -2946,36 +2406,24 @@ margin-left:4px;" onclick="deleteTeacher('${t.id}')">🗑️</button>
 }
 
 function openEditTeacherModal(teacherId) {
-  const teacher = (principalDashboardData.teachers || []).find(t => t.id === 
-
-teacherId);
+  const teacher = (principalDashboardData.teachers || []).find(t => t.id === teacherId);
   if (!teacher) return;
 
   document.getElementById("editTeacherTargetId").value = teacherId;
-  document.getElementById("editTeacherModalTitle").innerText = `Configure Access: 
-
-${teacher.name}`;
-  document.getElementById("editTeacherModalSub").innerText = `Staff Code: 
-
-${teacher.id}`;
-  document.getElementById("editTeacherStream").value = teacher.studentStream || 
-
-"ncert";
+  document.getElementById("editTeacherModalTitle").innerText = `Configure Access: ${teacher.name}`;
+  document.getElementById("editTeacherModalSub").innerText = `Staff Code: ${teacher.id}`;
+  document.getElementById("editTeacherStream").value = teacher.studentStream || "ncert";
 
   const stdContainer = document.getElementById("editTeacherStdContainer");
   stdContainer.innerHTML = GLOBAL_STANDARDS.map(std => {
     const isChecked = teacher.standards.includes(std);
-    return `<div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip
-
-(this)" data-val="${std}"><span>${isChecked ? '✓' : '+'}</span> Class ${std}</div>`;
+    return `<div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${std}"><span>${isChecked ? '✓' : '+'}</span> Class ${std}</div>`;
   }).join("");
 
   const subContainer = document.getElementById("editTeacherSubContainer");
   subContainer.innerHTML = GLOBAL_SUBJECTS.map(sub => {
     const isChecked = teacher.subjects.includes(sub);
-    return `<div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip
-
-(this)" data-val="${sub}"><span>${isChecked ? '✓' : '+'}</span> ${sub}</div>`;
+    return `<div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${sub}"><span>${isChecked ? '✓' : '+'}</span> ${sub}</div>`;
   }).join("");
 
   openModal("modalEditTeacherScope");
@@ -2989,18 +2437,12 @@ function toggleChip(el) {
 
 async function confirmSaveTeacherPermissions() {
   const teacherId = document.getElementById("editTeacherTargetId").value;
-  const teacher = (principalDashboardData.teachers || []).find(t => t.id === 
-
-teacherId);
+  const teacher = (principalDashboardData.teachers || []).find(t => t.id === teacherId);
   if (!teacher) return;
 
   const streamVal = document.getElementById("editTeacherStream").value;
-  const selectedStds = Array.from(document.querySelectorAll("#editTeacherStdContainer 
-
-.chip-item.active")).map(c => c.getAttribute("data-val"));
-  const selectedSubs = Array.from(document.querySelectorAll("#editTeacherSubContainer 
-
-.chip-item.active")).map(c => c.getAttribute("data-val"));
+  const selectedStds = Array.from(document.querySelectorAll("#editTeacherStdContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
+  const selectedSubs = Array.from(document.querySelectorAll("#editTeacherSubContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
 
   teacher.studentStream = streamVal;
   teacher.standards = selectedStds;
@@ -3030,23 +2472,17 @@ function renderPrincipalStudentTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  const search = (document.getElementById("prStudentSearchInput")?.value || 
-
-"").toLowerCase().trim();
+  const search = (document.getElementById("prStudentSearchInput")?.value || "").toLowerCase().trim();
   const roleFilter = document.getElementById("prStudentRoleFilter")?.value || "all";
 
   const students = (principalDashboardData.students || []).filter(s => {
-    const mSearch = !search || s.name.toLowerCase().includes(search) || 
-
-s.id.toLowerCase().includes(search);
+    const mSearch = !search || s.name.toLowerCase().includes(search) || s.id.toLowerCase().includes(search);
     const mRole = (roleFilter === "all") || (s.role === roleFilter);
     return mSearch && mRole;
   });
 
   if (students.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; 
-
-color:#64748b;">No enrolled students found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#64748b;">No enrolled students found.</td></tr>`;
     return;
   }
 
@@ -3059,20 +2495,12 @@ color:#64748b;">No enrolled students found.</td></tr>`;
       <tr>
         <td><code>${s.id}</code></td>
         <td><strong>${s.name}</strong></td>
-        <td><span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">
-
-${(s.studentStream || 'ncert').toUpperCase()}</span></td>
-        <td><span class="badge" style="background:${s.role === 'aspirant' ? '#f59e0b' 
-
-: '#0284c7'}; color:#fff;">${s.role.toUpperCase()}</span></td>
+        <td><span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">${(s.studentStream || 'ncert').toUpperCase()}</span></td>
+        <td><span class="badge" style="background:${s.role === 'aspirant' ? '#f59e0b' : '#0284c7'}; color:#fff;">${s.role.toUpperCase()}</span></td>
         <td>${stdTags}</td>
         <td style="text-align:right;">
-          <button class="btn btn-outline-dark" style="padding:4px 10px; font-
-
-size:0.8rem;" onclick="openEditStudentModal('${s.id}')">✏️ Edit</button>
-          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem; 
-
-margin-left:4px;" onclick="deleteStudent('${s.id}')">🗑️</button>
+          <button class="btn btn-outline-dark" style="padding:4px 10px; font-size:0.8rem;" onclick="openEditStudentModal('${s.id}')">✏️ Edit</button>
+          <button class="btn btn-danger" style="padding:4px 8px; font-size:0.8rem; margin-left:4px;" onclick="deleteStudent('${s.id}')">🗑️</button>
         </td>
       </tr>
     `;
@@ -3080,28 +2508,18 @@ margin-left:4px;" onclick="deleteStudent('${s.id}')">🗑️</button>
 }
 
 function openEditStudentModal(studentId) {
-  const student = (principalDashboardData.students || []).find(s => s.id === 
-
-studentId);
+  const student = (principalDashboardData.students || []).find(s => s.id === studentId);
   if (!student) return;
 
   document.getElementById("editStudentTargetId").value = studentId;
-  document.getElementById("editStudentModalTitle").innerText = `Enrollment: 
-
-${student.name}`;
-  document.getElementById("editStudentModalSub").innerText = `Roll/ID: ${student.id} 
-
-(${student.role.toUpperCase()})`;
-  document.getElementById("editStudentStream").value = student.studentStream || 
-
-"ncert";
+  document.getElementById("editStudentModalTitle").innerText = `Enrollment: ${student.name}`;
+  document.getElementById("editStudentModalSub").innerText = `Roll/ID: ${student.id} (${student.role.toUpperCase()})`;
+  document.getElementById("editStudentStream").value = student.studentStream || "ncert";
 
   const stdContainer = document.getElementById("editStudentStdContainer");
   stdContainer.innerHTML = GLOBAL_STANDARDS.map(std => {
     const isChecked = student.standards.includes(std);
-    return `<div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip
-
-(this)" data-val="${std}"><span>${isChecked ? '✓' : '+'}</span> Class ${std}</div>`;
+    return `<div class="chip-item ${isChecked ? 'active' : ''}" onclick="toggleChip(this)" data-val="${std}"><span>${isChecked ? '✓' : '+'}</span> Class ${std}</div>`;
   }).join("");
 
   openModal("modalEditStudentScope");
@@ -3109,15 +2527,11 @@ ${student.name}`;
 
 async function confirmSaveStudentPermissions() {
   const studentId = document.getElementById("editStudentTargetId").value;
-  const student = (principalDashboardData.students || []).find(s => s.id === 
-
-studentId);
+  const student = (principalDashboardData.students || []).find(s => s.id === studentId);
   if (!student) return;
 
   const streamVal = document.getElementById("editStudentStream").value;
-  const selectedStds = Array.from(document.querySelectorAll("#editStudentStdContainer 
-
-.chip-item.active")).map(c => c.getAttribute("data-val"));
+  const selectedStds = Array.from(document.querySelectorAll("#editStudentStdContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
   student.studentStream = streamVal;
   student.standards = selectedStds;
 
@@ -3140,18 +2554,10 @@ studentId);
 }
 
 function filterPrincipalScores() {
-  const search = document.getElementById("prFilterStudent") ? document.getElementById
-
-("prFilterStudent").value.toLowerCase().trim() : "";
-  const streamFilter = document.getElementById("prFilterStream") ? 
-
-document.getElementById("prFilterStream").value.toLowerCase().trim() : "";
-  const stdFilter = document.getElementById("prFilterStd") ? document.getElementById
-
-("prFilterStd").value.toLowerCase().trim() : "";
-  const subFilter = document.getElementById("prFilterSub") ? document.getElementById
-
-("prFilterSub").value.toLowerCase().trim() : "";
+  const search = document.getElementById("prFilterStudent") ? document.getElementById("prFilterStudent").value.toLowerCase().trim() : "";
+  const streamFilter = document.getElementById("prFilterStream") ? document.getElementById("prFilterStream").value.toLowerCase().trim() : "";
+  const stdFilter = document.getElementById("prFilterStd") ? document.getElementById("prFilterStd").value.toLowerCase().trim() : "";
+  const subFilter = document.getElementById("prFilterSub") ? document.getElementById("prFilterSub").value.toLowerCase().trim() : "";
 
   const tbody = document.getElementById("principalScoresTbody");
   if (!tbody) return;
@@ -3167,24 +2573,18 @@ document.getElementById("prFilterStream").value.toLowerCase().trim() : "";
     const recordStream = (s.stream || "ncert").toString().toLowerCase().trim();
     const mStream = !streamFilter || recordStream === streamFilter;
 
-    const recordStd = (s.standard || "").toString().toLowerCase().replace(/class/gi, 
-
-"").trim();
+    const recordStd = (s.standard || "").toString().toLowerCase().replace(/class/gi, "").trim();
     const filterStd = stdFilter.replace(/class/gi, "").trim();
     const mStd = !filterStd || recordStd === filterStd;
 
     const recordSub = (s.subject || "").toString().toLowerCase().trim();
-    const mSub = !subFilter || recordSub.includes(subFilter) || subFilter.includes
-
-(recordSub);
+    const mSub = !subFilter || recordSub.includes(subFilter) || subFilter.includes(recordSub);
 
     return mStudent && mStream && mStd && mSub;
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; 
-
-color:#64748b;">No matching score records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#64748b;">No matching score records found.</td></tr>`;
     return;
   }
 
@@ -3192,16 +2592,12 @@ color:#64748b;">No matching score records found.</td></tr>`;
     const scoreVal = Number(s.score) || 0;
     const totalVal = Number(s.total) || 1;
     const pct = Math.round((scoreVal / totalVal) * 100);
-    const badgeColor = pct >= 80 ? 'badge-success' : pct >= 50 ? 'badge-pill' : 
-
-'badge-danger';
+    const badgeColor = pct >= 80 ? 'badge-success' : pct >= 50 ? 'badge-pill' : 'badge-danger';
     const streamBadge = (s.stream || 'ncert').toUpperCase();
 
     tbody.innerHTML += `
       <tr>
-        <td><strong>${s.userName || 'Student'}</strong><br><small 
-
-style="color:#64748b;">(${s.userId || 'ID'})</small></td>
+        <td><strong>${s.userName || 'Student'}</strong><br><small style="color:#64748b;">(${s.userId || 'ID'})</small></td>
         <td><span class="tag-pill">${streamBadge}</span></td>
         <td>Class ${s.standard || '5'}</td>
         <td>${s.subject || 'General'}</td>
@@ -3218,29 +2614,15 @@ function switchCreateMethod(method) {
   const btnAi = document.getElementById("btnMethodAi");
   const btnCsv = document.getElementById("btnMethodCsv");
 
-  if (btnManual) btnManual.className = (method === 'manual') ? 'btn btn-primary flex-
+  if (btnManual) btnManual.className = (method === 'manual') ? 'btn btn-primary flex-1' : 'btn btn-outline-dark flex-1';
+  if (btnAi) btnAi.className = (method === 'ai') ? 'btn btn-secondary flex-1' : 'btn btn-outline-dark flex-1';
+  if (btnCsv) btnCsv.className = (method === 'csv') ? 'btn btn-primary flex-1' : 'btn btn-outline-dark flex-1';
 
-1' : 'btn btn-outline-dark flex-1';
-  if (btnAi) btnAi.className = (method === 'ai') ? 'btn btn-secondary flex-1' : 'btn 
+  document.getElementById("sectionManualCreate").classList.toggle("hidden", method !== 'manual');
+  document.getElementById("sectionAiCreate").classList.toggle("hidden", method !== 'ai');
+  document.getElementById("sectionCsvCreate").classList.toggle("hidden", method !== 'csv');
 
-btn-outline-dark flex-1';
-  if (btnCsv) btnCsv.className = (method === 'csv') ? 'btn btn-primary flex-1' : 'btn 
-
-btn-outline-dark flex-1';
-
-  document.getElementById("sectionManualCreate").classList.toggle("hidden", method !== 
-
-'manual');
-  document.getElementById("sectionAiCreate").classList.toggle("hidden", method !== 
-
-'ai');
-  document.getElementById("sectionCsvCreate").classList.toggle("hidden", method !== 
-
-'csv');
-
-  if (method === 'csv' && typeof updateAiPromptPreview === "function") 
-
-updateAiPromptPreview();
+  if (method === 'csv' && typeof updateAiPromptPreview === "function") updateAiPromptPreview();
 }
 
 function updateAiPromptPreview() {
@@ -3255,47 +2637,26 @@ function updateAiPromptPreview() {
   const stream = streamSelect ? streamSelect.value : "ncert";
   const std = stdSelect && stdSelect.value ? stdSelect.value : "5";
   const sub = subSelect && subSelect.value ? subSelect.value : "Science";
-  const chap = chapInput && chapInput.value.trim() ? chapInput.value.trim() : 
+  const chap = chapInput && chapInput.value.trim() ? chapInput.value.trim() : "[Chapter]";
+  const topic = topicInput && topicInput.value.trim() ? topicInput.value.trim() : "[Topic]";
 
-"[Chapter]";
-  const topic = topicInput && topicInput.value.trim() ? topicInput.value.trim() : 
-
-"[Topic]";
-
-  promptBox.value = `You are an examination question author for HariMani School 
-
-(${stream.toUpperCase()} Stream).
-Generate exactly 100 balanced assessment questions (50 Multiple Choice Questions, 10 
-
-True/False, 15 Fill in the Blanks, and 15 Match the Following) strictly based on the 
-
-textbook content provided below.
+  promptBox.value = `You are an examination question author for HariMani School (${stream.toUpperCase()} Stream).
+Generate exactly 100 balanced assessment questions (50 Multiple Choice Questions, 10 True/False, 15 Fill in the Blanks, and 15 Match the Following) strictly based on the textbook content provided below.
 
 OUTPUT FORMAT REQUIREMENTS:
 - Pure raw CSV text only, no code blocks or markdown backticks.
 - Exactly 13 columns per row enclosed in double quotes ("...").
 - Every question must be on its OWN SEPARATE LINE.
+- For "match" questions: Column 6 (Question) MUST NEVER be simply "Match the following" or "Match". It MUST be an explicit, topic-specific instruction (e.g. "Match each cell organelle with its primary function:", "Match the scientists with their discovery:", "Match the biological macromolecule with its building block:").
 
 HEADER ROW:
-Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanatio
-
-n,Stream
+Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation,Stream
 
 DATA ROW TEMPLATES:
-"mcq",${std},"${sub}","${chap}","${topic}","[Question statement]","[Opt A]","[Opt 
-
-B]","[Opt C]","[Opt D]",1,"[Explanation]","${stream}"
-"tf",${std},"${sub}","${chap}","${topic}","[Factual 
-
-Statement]","","","","",True,"[Explanation]","${stream}"
-"fib",${std},"${sub}","${chap}","${topic}","[Statement with _____ 
-
-blank]","","","","","[Word]","[Explanation]","${stream}"
-"match",${std},"${sub}","${chap}","${topic}","Match the 
-
-pairs:","[Item1:Match1]","[Item2:Match2]","[Item3:Match3]","[Item4:Match4]","MATCH","[
-
-Explanation]","${stream}"
+"mcq",${std},"${sub}","${chap}","${topic}","[Question statement]","[Opt A]","[Opt B]","[Opt C]","[Opt D]",1,"[Explanation]","${stream}"
+"tf",${std},"${sub}","${chap}","${topic}","[Factual Statement]","","","","",True,"[Explanation]","${stream}"
+"fib",${std},"${sub}","${chap}","${topic}","[Statement with _____ blank]","","","","","[Word]","[Explanation]","${stream}"
+"match",${std},"${sub}","${chap}","${topic}","Match the [specific topic/attribute] with their corresponding [target]:","[Item1:Match1]","[Item2:Match2]","[Item3:Match3]","[Item4:Match4]","MATCH","[Explanation]","${stream}"
 
 TEXTBOOK CONTENT:
 """
@@ -3308,9 +2669,7 @@ function copyAiStudioPrompt() {
   if (!promptBox) return;
   navigator.clipboard.writeText(promptBox.value).then(() => {
     const btn = document.getElementById("btnCopyPrompt");
-    if (btn) { btn.innerText = "✅ Copied!"; setTimeout(() => { btn.innerText = "📋 Copy 
-
-Prompt"; }, 2000); }
+    if (btn) { btn.innerText = "✅ Copied!"; setTimeout(() => { btn.innerText = "📋 Copy Prompt"; }, 2000); }
   });
 }
 
@@ -3359,26 +2718,14 @@ function parseCustomCsv(text) {
 
 function processParsedCsvRows(rows) {
   if (!rows || rows.length === 0) return alert("Empty CSV.");
-  const fallbackStd = document.getElementById("authorStdSelect") ? 
-
-document.getElementById("authorStdSelect").value : "5";
-  const fallbackSub = document.getElementById("authorSubSelect") ? 
-
-document.getElementById("authorSubSelect").value : "Science";
-  const fallbackStream = document.getElementById("authorStreamSelect") ? 
-
-document.getElementById("authorStreamSelect").value : "ncert";
-  const fallbackChap = (document.getElementById("authorChapterInput")?.value || 
-
-"").trim() || "General";
-  const fallbackTopic = (document.getElementById("authorTopicInput")?.value || 
-
-"").trim() || "All";
+  const fallbackStd = document.getElementById("authorStdSelect") ? document.getElementById("authorStdSelect").value : "5";
+  const fallbackSub = document.getElementById("authorSubSelect") ? document.getElementById("authorSubSelect").value : "Science";
+  const fallbackStream = document.getElementById("authorStreamSelect") ? document.getElementById("authorStreamSelect").value : "ncert";
+  const fallbackChap = (document.getElementById("authorChapterInput")?.value || "").trim() || "General";
+  const fallbackTopic = (document.getElementById("authorTopicInput")?.value || "").trim() || "All";
 
   const firstRowStr = rows[0].join(" ").toLowerCase();
-  const isHeaderPresent = firstRowStr.includes("question") || firstRowStr.includes
-
-("type");
+  const isHeaderPresent = firstRowStr.includes("question") || firstRowStr.includes("type");
   const startIndex = isHeaderPresent ? 1 : 0;
 
   const existingQuestionsSet = new Set();
@@ -3409,9 +2756,7 @@ document.getElementById("authorStreamSelect").value : "ncert";
     let optB = (r[7] || "").toString().trim();
     let optC = (r[8] || "").toString().trim();
     let optD = (r[9] || "").toString().trim();
-    let correctRaw = (r[10] !== undefined && r[10] !== null) ? r[10].toString().trim() 
-
-: "";
+    let correctRaw = (r[10] !== undefined && r[10] !== null) ? r[10].toString().trim() : "";
     let explanation = (r[11] || "").toString().trim();
     let streamVal = (r[12] || fallbackStream).toString().toLowerCase().trim();
 
@@ -3457,9 +2802,7 @@ document.getElementById("authorStreamSelect").value : "ncert";
 
   const dupBadge = document.getElementById("csvDuplicateCountBadge");
   if (dupBadge) {
-    dupBadge.innerText = `${duplicateCount} Potential Duplicates (Will save with 
-
-warning)`;
+    dupBadge.innerText = `${duplicateCount} Potential Duplicates (Will save with warning)`;
     dupBadge.style.background = duplicateCount > 0 ? "#fee2e2" : "#dcfce7";
     dupBadge.style.color = duplicateCount > 0 ? "#991b1b" : "#166534";
   }
@@ -3470,11 +2813,7 @@ warning)`;
 
     if (q.type === "mcq") {
       optionsContent = `
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; 
-
-margin: 6px 0; font-size: 0.82rem; color: #334155; background: #f8fafc; padding: 6px 
-
-10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin: 6px 0; font-size: 0.82rem; color: #334155; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <div><strong>A)</strong> ${q.optA || '-'}</div>
           <div><strong>B)</strong> ${q.optB || '-'}</div>
           <div><strong>C)</strong> ${q.optC || '-'}</div>
@@ -3484,11 +2823,7 @@ margin: 6px 0; font-size: 0.82rem; color: #334155; background: #f8fafc; padding:
       const pairs = [q.optA, q.optB, q.optC, q.optD].filter(Boolean);
       optionsContent = `
         <div style="display:flex; flex-wrap:wrap; gap: 6px; margin: 6px 0;">
-          ${pairs.map(p => `<span style="background:#f1f5f9; border:1px solid #cbd5e1; 
-
-padding:3px 8px; border-radius:4px; font-size:0.8rem; color:#1e293b;">🔗 ${p}
-
-</span>`).join("")}
+          ${pairs.map(p => `<span style="background:#f1f5f9; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; font-size:0.8rem; color:#1e293b;">🔗 ${p}</span>`).join("")}
         </div>`;
     }
 
@@ -3496,28 +2831,14 @@ padding:3px 8px; border-radius:4px; font-size:0.8rem; color:#1e293b;">🔗 ${p}
     const borderColor = q.isDuplicate ? "#f59e0b" : "#cbd5e1";
 
     return `
-      <div style="padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 
-
-1.5px solid ${borderColor}; background: ${cardBg}; box-shadow: 0 1px 3px rgba
-
-(0,0,0,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: 
-
-baseline; gap: 8px;">
+      <div style="padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1.5px solid ${borderColor}; background: ${cardBg}; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
           <span style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">
-            ${idx + 1}. [${q.stream.toUpperCase()}] [${q.type.toUpperCase()}] 
-
-${q.question}
+            ${idx + 1}. [${q.stream.toUpperCase()}] [${q.type.toUpperCase()}] ${q.question}
           </span>
           <div style="text-align: right;">
-            ${q.isDuplicate ? `<span class="badge" style="background:#fef2f2; 
-
-color:#b91c1c; border:1px solid #fecaca; margin-bottom:4px;">⚠️ Warning: 
-
-${q.dupReason}</span><br>` : ''}
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; white-
-
-space: nowrap;">
+            ${q.isDuplicate ? `<span class="badge" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; margin-bottom:4px;">⚠️ Warning: ${q.dupReason}</span><br>` : ''}
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; white-space: nowrap;">
               Class ${q.standard} • ${q.subject} • ${q.chapter}
             </span>
           </div>
@@ -3525,17 +2846,11 @@ space: nowrap;">
 
         ${optionsContent}
 
-        <div style="margin-top: 6px; font-size: 0.84rem; display: flex; align-items: 
-
-center; gap: 8px; flex-wrap: wrap;">
-          <span style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; 
-
-font-weight: 700; padding: 2px 8px; border-radius: 4px;">
+        <div style="margin-top: 6px; font-size: 0.84rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; font-weight: 700; padding: 2px 8px; border-radius: 4px;">
             ✓ Correct: ${q.correctOpt}
           </span>
-          ${q.explanation ? `<span style="color: #475569; font-style: 
-
-italic;"><strong>Explanation:</strong> ${q.explanation}</span>` : ''}
+          ${q.explanation ? `<span style="color: #475569; font-style: italic;"><strong>Explanation:</strong> ${q.explanation}</span>` : ''}
         </div>
       </div>
     `;
@@ -3543,9 +2858,7 @@ italic;"><strong>Explanation:</strong> ${q.explanation}</span>` : ''}
 
   const uploadBtn = document.getElementById("btnUploadStandaloneCsv");
   if (uploadBtn) {
-    uploadBtn.innerText = `🚀 Upload All (${globalStandaloneCsvList.length} Questions)
-
-`;
+    uploadBtn.innerText = `🚀 Upload All (${globalStandaloneCsvList.length} Questions)`;
   }
 
   document.getElementById("standaloneCsvPreviewArea").classList.remove("hidden");
@@ -3555,9 +2868,7 @@ function handleStandaloneCsv(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) { processParsedCsvRows(parseCustomCsv(e.target.result)); 
-
-};
+  reader.onload = function(e) { processParsedCsvRows(parseCustomCsv(e.target.result)); };
   reader.readAsText(file);
 }
 
@@ -3568,17 +2879,11 @@ function handleDirectCsvPaste() {
 }
 
 async function submitStandaloneCsvToSheet() {
-  if (!globalStandaloneCsvList || globalStandaloneCsvList.length === 0) return alert
-
-("No CSV questions loaded.");
+  if (!globalStandaloneCsvList || globalStandaloneCsvList.length === 0) return alert("No CSV questions loaded.");
 
   const dupCount = globalStandaloneCsvList.filter(q => q.isDuplicate).length;
   if (dupCount > 0) {
-    const proceed = confirm(`⚠️ Warning: ${dupCount} questions appear to be duplicates. 
-
-Do you still want to upload all ${globalStandaloneCsvList.length} questions to Google 
-
-Sheet?`);
+    const proceed = confirm(`⚠️ Warning: ${dupCount} questions appear to be duplicates. Do you still want to upload all ${globalStandaloneCsvList.length} questions to Google Sheet?`);
     if (!proceed) return;
   }
 

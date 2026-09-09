@@ -2736,7 +2736,6 @@ function parseCustomCsv(text) {
 
   return lines;
 }
-
 function processParsedCsvRows(rows) {
   if (!rows || rows.length === 0) return alert("Empty CSV.");
   const fallbackStd = document.getElementById("authorStdSelect") ? document.getElementById("authorStdSelect").value : "5";
@@ -2749,7 +2748,22 @@ function processParsedCsvRows(rows) {
   const isHeaderPresent = firstRowStr.includes("question") || firstRowStr.includes("type");
   const startIndex = isHeaderPresent ? 1 : 0;
 
+  // Build lookup Set of questions already existing in the Google Sheet (masterQuestions)
+  const existingQuestionsSet = new Set();
+  if (Array.isArray(masterQuestions)) {
+    masterQuestions.forEach(q => {
+      if (q && q.question) {
+        // Clean punctuation and whitespace for reliable matching
+        const cleanKey = q.question.toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (cleanKey) existingQuestionsSet.add(cleanKey);
+      }
+    });
+  }
+
+  const seenInBatchSet = new Set();
+  let duplicateCount = 0;
   globalStandaloneCsvList = [];
+
   for (let i = startIndex; i < rows.length; i++) {
     let r = rows[i];
     if (!r || r.length < 6) continue;
@@ -2770,6 +2784,23 @@ function processParsedCsvRows(rows) {
 
     if (!qText) continue;
 
+    // Check duplicate against Google Sheet database or inside current batch
+    const matchKey = qText.toLowerCase().replace(/[^a-z0-9]/g, "");
+    let isDuplicate = false;
+    let dupReason = "";
+
+    if (existingQuestionsSet.has(matchKey)) {
+      isDuplicate = true;
+      dupReason = "Already in Google Sheet";
+      duplicateCount++;
+    } else if (seenInBatchSet.has(matchKey)) {
+      isDuplicate = true;
+      dupReason = "Duplicate in this pasted CSV";
+      duplicateCount++;
+    } else {
+      seenInBatchSet.add(matchKey);
+    }
+
     globalStandaloneCsvList.push({
       type,
       standard: std,
@@ -2783,13 +2814,25 @@ function processParsedCsvRows(rows) {
       optD,
       correctOpt: correctRaw,
       explanation,
-      stream: streamVal
+      stream: streamVal,
+      isDuplicate,
+      dupReason
     });
   }
 
-  document.getElementById("standaloneCsvCount").innerText = globalStandaloneCsvList.length;
-  const previewBox = document.getElementById("standaloneCsvList");
+  // Update counter badges
+  const countBadge = document.getElementById("standaloneCsvCount");
+  if (countBadge) countBadge.innerText = globalStandaloneCsvList.length;
 
+  const dupBadge = document.getElementById("csvDuplicateCountBadge");
+  if (dupBadge) {
+    dupBadge.innerText = `${duplicateCount} Potential Duplicates`;
+    dupBadge.style.background = duplicateCount > 0 ? "#fee2e2" : "#dcfce7";
+    dupBadge.style.color = duplicateCount > 0 ? "#991b1b" : "#166534";
+  }
+
+  // Render cards with visual alerts for duplicates
+  const previewBox = document.getElementById("standaloneCsvList");
   previewBox.innerHTML = globalStandaloneCsvList.map((q, idx) => {
     let optionsContent = "";
 
@@ -2809,15 +2852,21 @@ function processParsedCsvRows(rows) {
         </div>`;
     }
 
+    const cardBg = q.isDuplicate ? "#fffbeb" : "#ffffff";
+    const borderColor = q.isDuplicate ? "#f59e0b" : "#cbd5e1";
+
     return `
-      <div style="padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+      <div style="padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1.5px solid ${borderColor}; background: ${cardBg}; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
           <span style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">
             ${idx + 1}. [${q.stream.toUpperCase()}] [${q.type.toUpperCase()}] ${q.question}
           </span>
-          <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; white-space: nowrap;">
-            Class ${q.standard} • ${q.subject} • ${q.chapter}
-          </span>
+          <div style="text-align: right;">
+            ${q.isDuplicate ? `<span class="badge" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; margin-bottom:4px;">⚠️ ${q.dupReason}</span><br>` : ''}
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; white-space: nowrap;">
+              Class ${q.standard} • ${q.subject} • ${q.chapter}
+            </span>
+          </div>
         </div>
 
         ${optionsContent}
@@ -2831,6 +2880,14 @@ function processParsedCsvRows(rows) {
       </div>
     `;
   }).join("");
+
+  // Add "Skip Duplicates" button if duplicates are detected
+  const uploadBtn = document.getElementById("btnUploadStandaloneCsv");
+  if (uploadBtn && duplicateCount > 0) {
+    uploadBtn.innerText = `🚀 Upload New Only (${globalStandaloneCsvList.length - duplicateCount} Questions)`;
+  } else if (uploadBtn) {
+    uploadBtn.innerText = `🚀 Upload All to Google Sheet`;
+  }
 
   document.getElementById("standaloneCsvPreviewArea").classList.remove("hidden");
 }
@@ -2850,15 +2907,48 @@ function handleDirectCsvPaste() {
 }
 
 async function submitStandaloneCsvToSheet() {
-  if (!globalStandaloneCsvList || globalStandaloneCsvList.length === 0) return alert("No CSV questions loaded.") ;
+  if (!globalStandaloneCsvList || globalStandaloneCsvList.length === 0) return alert("No CSV questions loaded.");
+
+  // Filter out questions flagged as duplicates
+  const freshQuestions = globalStandaloneCsvList.filter(q => !q.isDuplicate);
+
+  if (freshQuestions.length === 0) {
+    return alert("All questions in this batch already exist in the Google Sheet!");
+  }
 
   const payload = {
     action: "importCsvQuestions", 
     userId: (currentUser && currentUser.id) ? currentUser.id : "PRINCIPAL", 
     role: (currentUser && currentUser.role) ? currentUser.role : "principal", 
-    questions: globalStandaloneCsvList 
+    questions: freshQuestions 
   };
 
+  const uploadBtn = document.getElementById("btnUploadStandaloneCsv");
+  if (uploadBtn) {
+    uploadBtn.disabled = true;
+    uploadBtn.innerText = "⏳ Uploading to Google Sheet...";
+  }
+
+  try {
+    const data = await callAppsScript(payload);
+    if (data && data.success) {
+      alert(`✅ Uploaded ${data.count} new questions successfully!`);
+      document.getElementById("standaloneCsvPreviewArea").classList.add("hidden");
+      document.getElementById("rawCsvTextInput").value = "";
+      globalStandaloneCsvList = [];
+      await loadPortalData();
+    } else {
+      alert("Error uploading CSV: " + (data ? data.error : "Unknown error"));
+    }
+  } catch (err) {
+    alert("Connection error: " + err.message);
+  } finally {
+    if (uploadBtn) {
+      uploadBtn.disabled = false;
+      uploadBtn.innerText = "🚀 Upload All to Google Sheet";
+    }
+  }
+}
   const data = await callAppsScript(payload) ;
   if (data && data.success) {
     alert(`✅ Uploaded ${data.count} questions successfully!`) ;

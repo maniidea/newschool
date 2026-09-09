@@ -804,6 +804,7 @@ async function translateTestContent(targetLang) {
   renderCurrentQuestion();
 }
 
+// Automated backend-powered translation helper for your 5000+ Q&A items
 async function translateTextContent(text, targetLang) {
   if (!text || targetLang === 'en') return text;
   
@@ -924,47 +925,32 @@ async function renderCurrentQuestion() {
   const total = activeQuizList.length;
   const qType = (q.type || "mcq").toLowerCase();
 
+  const labels = {
+    mcq: "Multiple Choice Question",
+    tf: "True or False",
+    fib: "Fill in the Blanks",
+    match: "Match the Following"
+  };
+
   const badgeEl = document.getElementById("quizProgressBadge");
-  if (badgeEl) badgeEl.innerText = `Question ${currentQIndex + 1} of ${total} | [${qType.toUpperCase()}]`;
+  if (badgeEl) badgeEl.innerText = `Question ${currentQIndex + 1} of ${total} | [${(labels[qType] || qType).toUpperCase()}]`;
+  
+  const nextBtn = document.getElementById("btnNextQuestion");
+  if (nextBtn) nextBtn.innerText = (currentQIndex === total - 1) ? "Submit Test 🏁" : "Next Question ⏩";
 
   const area = document.getElementById("singleQuestionArea");
   if (!area) return;
 
-  let questionText = q.question || q.prompt || "";
+  // 🌐 Translate question text if Tamil mode is active
+  let questionText = q.question || q.prompt || "Question statement missing";
   if (activeTestLanguage === 'ta') {
     questionText = await translateTextContent(questionText, 'ta');
   }
 
   const safeQuestionText = questionText.replace(/'/g, "\\'");
-  const audioBtnHtml = `<button class="btn btn-outline-dark voice-btn" onclick="speakText('${safeQuestionText}')" title="Read Question">🔊</button>`;
+  const audioBtnHtml = `<button class="btn btn-outline-dark voice-btn" onclick="speakText('${safeQuestionText}')" title="கேள்வியை வாசி">🔊</button>`;
 
-  if (qType === "mcq") {
-    let optA = q.optA || '';
-    let optB = q.optB || '';
-    let optC = q.optC || '';
-    let optD = q.optD || '';
-
-    if (activeTestLanguage === 'ta') {
-      optA = await translateTextContent(optA, 'ta');
-      optB = await translateTextContent(optB, 'ta');
-      optC = await translateTextContent(optC, 'ta');
-      optD = await translateTextContent(optD, 'ta');
-    }
-
-    area.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-        <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
-        ${audioBtnHtml}
-      </div>
-      <div class="options-grid">
-        <button class="opt-btn" onclick="checkMcqAnswer('1', this)">A. ${optA}</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('2', this)">B. ${optB}</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('3', this)">C. ${optC}</button>
-        <button class="opt-btn" onclick="checkMcqAnswer('4', this)">D. ${optD}</button>
-      </div>
-      <div id="explanationBoxArea"></div>
-    `;
-  } else if (qType === "tf") {
+  if (qType === "tf") {
     area.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
@@ -994,11 +980,19 @@ async function renderCurrentQuestion() {
     const leftItems = [];
     const rightItems = [];
 
-    rawPairs.forEach(p => {
+    for (let p of rawPairs) {
       const parts = p.split(":");
-      leftItems.push(parts[0] ? parts[0].trim() : "");
-      rightItems.push(parts[1] ? parts[1].trim() : "");
-    });
+      let left = parts[0] ? parts[0].trim() : "";
+      let right = parts[1] ? parts[1].trim() : "";
+
+      if (activeTestLanguage === 'ta') {
+        left = await translateTextContent(left, 'ta');
+        right = await translateTextContent(right, 'ta');
+      }
+
+      leftItems.push(left);
+      rightItems.push(right);
+    }
 
     const shuffledRights = [...rightItems].sort(() => Math.random() - 0.5);
 
@@ -1023,16 +1017,130 @@ async function renderCurrentQuestion() {
       <div id="explanationBoxArea"></div>
     `;
   } else {
+    // 🌐 Translate MCQ options if Tamil mode is active
+    let optA = q.optA || '';
+    let optB = q.optB || '';
+    let optC = q.optC || '';
+    let optD = q.optD || '';
+
+    if (activeTestLanguage === 'ta') {
+      optA = await translateTextContent(optA, 'ta');
+      optB = await translateTextContent(optB, 'ta');
+      optC = await translateTextContent(optC, 'ta');
+      optD = await translateTextContent(optD, 'ta');
+    }
+
     area.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <h3 style="margin-top:0; font-size:1.15rem; flex:1;">${questionText}</h3>
         ${audioBtnHtml}
+      </div>
+      <div class="options-grid">
+        <button class="opt-btn" onclick="checkMcqAnswer('1', this)">A. ${optA}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('2', this)">B. ${optB}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('3', this)">C. ${optC}</button>
+        <button class="opt-btn" onclick="checkMcqAnswer('4', this)">D. ${optD}</button>
       </div>
       <div id="explanationBoxArea"></div>
     `;
   }
 
   setupTimer();
+
+  // கேள்வியுடன் சேர்த்து ஆப்ஷன்களையும் குரலில் வாசித்தல்
+  let speechText = questionText;
+  if (qType === "mcq") {
+    let optA = await translateTextContent(q.optA || '', activeTestLanguage);
+    let optB = await translateTextContent(q.optB || '', activeTestLanguage);
+    let optC = await translateTextContent(q.optC || '', activeTestLanguage);
+    let optD = await translateTextContent(q.optD || '', activeTestLanguage);
+    speechText += `. Option A: ${optA}. Option B: ${optB}. Option C: ${optC}. Option D: ${optD}.`;
+  } else if (qType === "tf") {
+    speechText += activeTestLanguage === 'ta' ? `. சரி அல்லது தவறு?` : `. True or False?`;
+  } else if (qType === "fib") {
+    speechText += activeTestLanguage === 'ta' ? `. கோடிட்ட இடத்தை நிரப்புக.` : `. Fill in the blank.`;
+  } else if (qType === "match") {
+    speechText += activeTestLanguage === 'ta' ? `. பொருத்துக.` : `. Match the following.`;
+  }
+
+  // கேள்வியையும் ஆப்ஷன்களையும் வாசித்து முடித்ததும் குரல்வழிப் பதிவைத் தொடங்குதல்
+  speakText(speechText, () => {
+    if (currentAssessmentMode === "voice" && !isAnswered) {
+      startVoiceListeningSession(qType);
+    }
+  });
+}
+
+function startVoiceListeningSession(qType) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return;
+
+  recognitionInstance = new SpeechRecognition();
+  recognitionInstance.lang = 'en-US';
+  recognitionInstance.interimResults = true;
+  recognitionInstance.maxAlternatives = 1;
+
+  recognitionInstance.onstart = function() {
+    const transcriptBox = document.getElementById("voiceTranscriptBox");
+    if (transcriptBox) transcriptBox.innerText = "🎙️ கேட்கிறது (Listening)... பேசவும்...";
+  };
+
+  // ⬇️ இந்த இடத்தில் தான் நீங்கள் கொடுத்த onresult பங்கஷனை ஒட்ட வேண்டும் ⬇️
+  recognitionInstance.onresult = function(event) {
+    if (isAnswered) return;
+    
+    const spokenText = event.results[0][0].transcript.trim().toLowerCase();
+    const transcriptBox = document.getElementById("voiceTranscriptBox");
+    if (transcriptBox) {
+      transcriptBox.innerText = `🗣️ நீங்கள் கூறியது: "${spokenText}"`;
+    }
+    console.log("Student spoke:", spokenText);
+
+    const q = activeQuizList[currentQIndex];
+    if (!q) return;
+
+    const qType = (q.type || "mcq").toLowerCase();
+
+    if (qType === "mcq") {
+      if (spokenText.includes("a") || spokenText.includes("1") || spokenText.includes("முதல்")) {
+        checkMcqAnswer('1', document.querySelectorAll(".opt-btn")[0]);
+      } else if (spokenText.includes("b") || spokenText.includes("2")) {
+        checkMcqAnswer('2', document.querySelectorAll(".opt-btn")[1]);
+      } else if (spokenText.includes("c") || spokenText.includes("3")) {
+        checkMcqAnswer('3', document.querySelectorAll(".opt-btn")[2]);
+      } else if (spokenText.includes("d") || spokenText.includes("4")) {
+        checkMcqAnswer('4', document.querySelectorAll(".opt-btn")[3]);
+      }
+    } 
+    else if (qType === "tf") {
+      if (spokenText.includes("true") || spokenText.includes("சரி") || spokenText.includes("a")) {
+        checkTfAnswer('True', document.querySelectorAll(".opt-btn")[0]);
+      } else if (spokenText.includes("false") || spokenText.includes("தவறு") || spokenText.includes("b")) {
+        checkTfAnswer('False', document.querySelectorAll(".opt-btn")[1]);
+      }
+    }
+    else if (qType === "fib") {
+      const input = document.getElementById("fibInput");
+      if (input) {
+        let finalAns = spokenText;
+        const correctAns = (q.correctOpt || "").toString().trim().toLowerCase();
+        
+        if (correctAns === "gas" && (finalAns === "guess" || finalAns === "gas")) {
+          finalAns = "gas";
+        }
+
+        input.value = finalAns;
+        checkFibAnswer();
+      }
+    }
+  };
+
+  recognitionInstance.onerror = function(event) {
+    const transcriptBox = document.getElementById("voiceTranscriptBox");
+    if (transcriptBox) transcriptBox.innerText = "⚠️ குரல் அடையாளம் காணப்படவில்லை. மீண்டும் முயற்சிக்கவும்.";
+  };
+
+  recognitionInstance.start();
 }
 
 function setupTimer() {

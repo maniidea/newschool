@@ -2,29 +2,29 @@ const SCRIPT_URL =
 
 "https://script.google.com/macros/s/AKfycbwRKCTYddMALyLdSrik2dQXOg1GVuscLs8-
 
-8vnkD2LBJNuxGpqIKls2y8IoPEvfpCnQ/exec" ;
+8vnkD2LBJNuxGpqIKls2y8IoPEvfpCnQ/exec";
 
-let currentUser = null ;
-let masterCurriculum = [] ;
-let masterQuestions = [] ;
-let masterUserScores = [] ;
-let teacherStudentScores = [] ;
-let principalDashboardData = { scores: [], teachers: [], students: [] } ;
+let currentUser = null;
+let masterCurriculum = [];
+let masterQuestions = [];
+let masterUserScores = [];
+let teacherStudentScores = [];
+let principalDashboardData = { scores: [], teachers: [], students: [] };
 
-let activeQuizList = [] ;
-let currentQIndex = 0 ;
-let userScore = 0 ;
-let perQuestionTime = 20 ;
-let timeRemaining = 0 ;
-let timerInterval = null ;
-let autoNextTimeout = null ;
-let isAnswered = false ;
-let extractedAiBatch = [] ;
-let globalStandaloneCsvList = [] ;
+let activeQuizList = [];
+let currentQIndex = 0;
+let userScore = 0;
+let perQuestionTime = 20;
+let timeRemaining = 0;
+let timerInterval = null;
+let autoNextTimeout = null;
+let isAnswered = false;
+let extractedAiBatch = [];
+let globalStandaloneCsvList = [];
 
-let examReviewRecord = [] ;
-let wrongQuestionsVault = [] ;
-let bonusRetakesRemaining = 0 ;
+let examReviewRecord = [];
+let wrongQuestionsVault = [];
+let bonusRetakesRemaining = 0;
 
 // Voice & Audio Configuration
 let currentAssessmentMode = "text";
@@ -35,83 +35,83 @@ let activeTestLanguage = "en"; // Declared once here ('en' for English, 'ta' for
 Tamil)
 
 // Audio Sound FX
-const soundCorrect = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg") 
+const soundCorrect = new Audio
 
-;
+("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
 const soundWrong = new Audio
 
-("https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg") ;
+("https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg");
 
 const GLOBAL_STANDARDS = [
   "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12",
   "UG-1st-Year", "UG-2nd-Year", "UG-Final-Year", "PG", "Diploma"
-] ;
+];
 
 const GLOBAL_SUBJECTS = ["Science", "Maths", "Social Science", "English", "Hindi", 
 
-"Tamil", "Botany", "Zoology", "Physics", "Chemistry"] ;
+"Tamil", "Botany", "Zoology", "Physics", "Chemistry"];
 
 function initApp() {
-  const savedUser = localStorage.getItem("hmsUser") ;
+  const savedUser = localStorage.getItem("hmsUser");
   if (savedUser) {
     try { currentUser = JSON.parse(savedUser); } catch(e) { currentUser = null; } 
   }
 
-  populateAllDropdowns() ;
-  updateAuthUI() ;
-  loadPortalData() ;
+  populateAllDropdowns();
+  updateAuthUI();
+  loadPortalData();
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initApp) ;
+  document.addEventListener("DOMContentLoaded", initApp);
 } else {
-  initApp() ;
+  initApp();
 }
 
 function populateAllDropdowns() {
-  const signupStd = document.getElementById("signupStd") ;
+  const signupStd = document.getElementById("signupStd");
   if (signupStd) {
     signupStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}
 
-</option>`).join("") ;
+</option>`).join("");
   }
 
-  const playStd = document.getElementById("playStdSelect") ;
+  const playStd = document.getElementById("playStdSelect");
   if (playStd) {
-    let allowed = GLOBAL_STANDARDS ;
+    let allowed = GLOBAL_STANDARDS;
     if (currentUser) {
       if (currentUser.role === "student") {
         allowed = (currentUser.standards && currentUser.standards.length > 0) ? 
 
-currentUser.standards : ["1"] ;
+currentUser.standards : ["1"];
       } else if (currentUser.role === "aspirant" || currentUser.role === "principal") 
 
 {
-        allowed = GLOBAL_STANDARDS ;
+        allowed = GLOBAL_STANDARDS;
       } else if (currentUser.role === "teacher") {
         allowed = (currentUser.standards && currentUser.standards.length > 0) ? 
 
-currentUser.standards : GLOBAL_STANDARDS ;
+currentUser.standards : GLOBAL_STANDARDS;
       }
     }
     playStd.innerHTML = allowed.map(s => `<option value="${s}">${s}</option>`).join
 
-("") ;
-    syncPlaySubjects() ;
+("");
+    syncPlaySubjects();
   }
 
-  const authStd = document.getElementById("authorStdSelect") ;
+  const authStd = document.getElementById("authorStdSelect");
   if (authStd) {
-    let allowedStds = GLOBAL_STANDARDS ;
+    let allowedStds = GLOBAL_STANDARDS;
     if (currentUser && currentUser.role === "teacher") {
       allowedStds = (currentUser.standards && currentUser.standards.length > 0) ? 
 
-currentUser.standards : GLOBAL_STANDARDS ;
+currentUser.standards : GLOBAL_STANDARDS;
     }
     authStd.innerHTML = allowedStds.map(s => `<option value="${s}">${s}
 
-</option>`).join("") ;
-    syncAuthorSubjects() ;
+</option>`).join("");
+    syncAuthorSubjects();
   }
 
   const ncertStd = document.getElementById("ncertConfigStd");
@@ -132,26 +132,26 @@ value="${s}">வகுப்பு ${s}</option>`).join("");
   ["manageStdFilter", "repStdFilter", "tchRepStdFilter", "prFilterStd"].forEach(id => 
 
 {
-    const el = document.getElementById(id) ;
+    const el = document.getElementById(id);
     if (el) el.innerHTML = '<option value="">All Standards</option>' + 
 
-GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}</option>`).join("") ;
+GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}</option>`).join("");
   });
 
-  const lbFilter = document.getElementById("leaderboardStdFilter") ;
+  const lbFilter = document.getElementById("leaderboardStdFilter");
   if (lbFilter) {
     lbFilter.innerHTML = '<option value="all">அனைத்து வகுப்புகள் (All Classes)</option>' + 
 
-GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("") ;
+GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("");
   }
 
   ["manageSubFilter", "repSubFilter", "tchRepSubFilter", "prFilterSub"].forEach(id => 
 
 {
-    const el = document.getElementById(id) ;
+    const el = document.getElementById(id);
     if (el) el.innerHTML = '<option value="">All Subjects</option>' + 
 
-GLOBAL_SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join("") ;
+GLOBAL_SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join("");
   });
 }
 
@@ -183,24 +183,24 @@ encodeURIComponent(currentUser.id) : ''}`;
 }
 
 function updateAuthUI() {
-  const guestBanner = document.getElementById("guestBanner") ;
-  const playCountInput = document.getElementById("playCountInput") ;
-  const playAllCheckbox = document.getElementById("playAllCheckbox") ;
-  const userBadge = document.getElementById("userBadge") ;
-  const btnOpenLogin = document.getElementById("btnOpenLogin") ;
-  const btnOpenSignup = document.getElementById("btnOpenSignup") ;
-  const btnLogout = document.getElementById("btnLogout") ;
-  const playScopeNotice = document.getElementById("playScopeNotice") ;
-  const tabReplies = document.getElementById("tabMyReplies") ;
+  const guestBanner = document.getElementById("guestBanner");
+  const playCountInput = document.getElementById("playCountInput");
+  const playAllCheckbox = document.getElementById("playAllCheckbox");
+  const userBadge = document.getElementById("userBadge");
+  const btnOpenLogin = document.getElementById("btnOpenLogin");
+  const btnOpenSignup = document.getElementById("btnOpenSignup");
+  const btnLogout = document.getElementById("btnLogout");
+  const playScopeNotice = document.getElementById("playScopeNotice");
+  const tabReplies = document.getElementById("tabMyReplies");
 
   if (currentUser) {
-    if (guestBanner) guestBanner.classList.add("hidden") ;
-    if (playCountInput) playCountInput.max = 100 ;
-    if (playAllCheckbox) playAllCheckbox.disabled = false ;
+    if (guestBanner) guestBanner.classList.add("hidden");
+    if (playCountInput) playCountInput.max = 100;
+    if (playAllCheckbox) playAllCheckbox.disabled = false;
 
-    if (btnOpenLogin) btnOpenLogin.classList.add("hidden") ;
-    if (btnOpenSignup) btnOpenSignup.classList.add("hidden") ;
-    if (btnLogout) btnLogout.classList.remove("hidden") ;
+    if (btnOpenLogin) btnOpenLogin.classList.add("hidden");
+    if (btnOpenSignup) btnOpenSignup.classList.add("hidden");
+    if (btnLogout) btnLogout.classList.remove("hidden");
     
     const streamSelect = document.getElementById("playStreamSelect");
     if (streamSelect && currentUser.studentStream) {
@@ -208,96 +208,96 @@ function updateAuthUI() {
     }
 
     if (userBadge) {
-      userBadge.classList.remove("hidden") ;
+      userBadge.classList.remove("hidden");
       let scope = `Class ${currentUser.standards.join(", ")} 
 
-(${(currentUser.studentStream || 'ncert').toUpperCase()})` ;
-      if (currentUser.role === "principal") scope = "Master School Control" ;
-      else if (currentUser.role === "aspirant") scope = "Aspirant Mode (Classes 5-12)" 
+(${(currentUser.studentStream || 'ncert').toUpperCase()})`;
+      if (currentUser.role === "principal") scope = "Master School Control";
+      else if (currentUser.role === "aspirant") scope = "Aspirant Mode (Classes 5-
 
-;
+12)";
       else if (currentUser.role === "teacher") scope = `Classes: 
 
-[${currentUser.standards.join(",")}], Subs: [${currentUser.subjects.join(",")}]` ;
+[${currentUser.standards.join(",")}], Subs: [${currentUser.subjects.join(",")}]`;
       userBadge.innerText = `${currentUser.name} (${currentUser.role.toUpperCase()}) | 
 
-${scope}` ;
+${scope}`;
     }
 
     if (playScopeNotice) {
       if (currentUser.role === "student") {
         playScopeNotice.innerText = `Attending Class ${currentUser.standards.join(", 
 
-")} Assessments (${(currentUser.studentStream || 'ncert').toUpperCase()} Stream).` ;
+")} Assessments (${(currentUser.studentStream || 'ncert').toUpperCase()} Stream).`;
       } else {
         playScopeNotice.innerText = `Select Student Stream, Category, Standard, 
 
-Subject, and Topic to begin.` ;
+Subject, and Topic to begin.`;
       }
     }
 
     if (currentUser.role === "principal") {
       document.querySelectorAll(".principal-only").forEach(el => el.classList.remove
 
-("hidden")) ;
+("hidden"));
       document.querySelectorAll(".teacher-principal-only").forEach(el => 
 
-el.classList.remove("hidden")) ;
+el.classList.remove("hidden"));
     } else if (currentUser.role === "teacher") {
       document.querySelectorAll(".teacher-only").forEach(el => el.classList.remove
 
-("hidden")) ;
+("hidden"));
       document.querySelectorAll(".teacher-principal-only").forEach(el => 
 
-el.classList.remove("hidden")) ;
+el.classList.remove("hidden"));
     }
     
-    const tabScores = document.getElementById("tabMyScores") ;
-    if (tabScores) tabScores.classList.remove("hidden") ;
+    const tabScores = document.getElementById("tabMyScores");
+    if (tabScores) tabScores.classList.remove("hidden");
 
     if (tabReplies) {
-      tabReplies.classList.toggle("hidden", currentUser.role !== "student") ;
+      tabReplies.classList.toggle("hidden", currentUser.role !== "student");
     }
   } else {
-    if (guestBanner) guestBanner.classList.remove("hidden") ;
+    if (guestBanner) guestBanner.classList.remove("hidden");
     if (playCountInput) {
-      playCountInput.value = Math.min(parseInt(playCountInput.value, 10) || 5, 10) ;
-      playCountInput.max = 10 ;
+      playCountInput.value = Math.min(parseInt(playCountInput.value, 10) || 5, 10);
+      playCountInput.max = 10;
     }
     if (playAllCheckbox) {
-      playAllCheckbox.checked = false ;
-      playAllCheckbox.disabled = true ;
+      playAllCheckbox.checked = false;
+      playAllCheckbox.disabled = true;
     }
 
-    if (btnOpenLogin) btnOpenLogin.classList.remove("hidden") ;
-    if (btnOpenSignup) btnOpenSignup.classList.remove("hidden") ;
-    if (btnLogout) btnLogout.classList.add("hidden") ;
-    if (userBadge) userBadge.classList.add("hidden") ;
-    if (tabReplies) tabReplies.classList.add("hidden") ;
+    if (btnOpenLogin) btnOpenLogin.classList.remove("hidden");
+    if (btnOpenSignup) btnOpenSignup.classList.remove("hidden");
+    if (btnLogout) btnLogout.classList.add("hidden");
+    if (userBadge) userBadge.classList.add("hidden");
+    if (tabReplies) tabReplies.classList.add("hidden");
 
     if (playScopeNotice) {
       playScopeNotice.innerText = `Select Student Stream, Category, Standard, Subject, 
 
-and Topic to begin.` ;
+and Topic to begin.`;
     }
 
     document.querySelectorAll(".teacher-principal-only, .teacher-only, .principal-
 
-only").forEach(el => el.classList.add("hidden")) ;
-    const tabScores = document.getElementById("tabMyScores") ;
-    if (tabScores) tabScores.classList.add("hidden") ;
+only").forEach(el => el.classList.add("hidden"));
+    const tabScores = document.getElementById("tabMyScores");
+    if (tabScores) tabScores.classList.add("hidden");
   }
 
-  populateAllDropdowns() ;
+  populateAllDropdowns();
 }
 
 function toggleSignupCategory(val) {
-  const stdGroup = document.getElementById("signupStdGroup") ;
+  const stdGroup = document.getElementById("signupStdGroup");
   if (stdGroup) {
     if (val === "aspirant") {
-      stdGroup.classList.add("hidden") ;
+      stdGroup.classList.add("hidden");
     } else {
-      stdGroup.classList.remove("hidden") ;
+      stdGroup.classList.remove("hidden");
     }
   }
 }
@@ -412,43 +412,43 @@ uniqueTopics.map(t => `<option value="${t}">${t}</option>`).join("");
 }
 
 function syncAuthorSubjects() {
-  const subSelect = document.getElementById("authorSubSelect") ;
-  if (!subSelect) return ;
+  const subSelect = document.getElementById("authorSubSelect");
+  if (!subSelect) return;
   const allowedSubs = (currentUser && currentUser.subjects && 
 
 currentUser.subjects.length > 0 && !currentUser.subjects.includes("All")) ? 
 
-currentUser.subjects : GLOBAL_SUBJECTS ;
+currentUser.subjects : GLOBAL_SUBJECTS;
   subSelect.innerHTML = allowedSubs.map(s => `<option value="${s}">${s}
 
-</option>`).join("") ;
-  syncAuthorChapters() ;
-  if (typeof updateAiPromptPreview === "function") updateAiPromptPreview() ;
+</option>`).join("");
+  syncAuthorChapters();
+  if (typeof updateAiPromptPreview === "function") updateAiPromptPreview();
 }
 
 function syncAuthorChapters() {
-  const authStd = document.getElementById("authorStdSelect") ;
-  const subSelect = document.getElementById("authorSubSelect") ;
-  const datalist = document.getElementById("chapterSuggestions") ;
-  if (!authStd || !subSelect || !datalist) return ;
+  const authStd = document.getElementById("authorStdSelect");
+  const subSelect = document.getElementById("authorSubSelect");
+  const datalist = document.getElementById("chapterSuggestions");
+  if (!authStd || !subSelect || !datalist) return;
 
-  const std = authStd.value ;
-  const sub = subSelect.value.toLowerCase() ;
+  const std = authStd.value;
+  const sub = subSelect.value.toLowerCase();
   const matched = masterCurriculum.filter(c => c.standard === std && (c.subject || 
 
-'').toLowerCase() === sub) ;
-  datalist.innerHTML = matched.map(c => `<option value="${c.chapter}">`).join("") ;
-  if (typeof updateAiPromptPreview === "function") updateAiPromptPreview() ;
+'').toLowerCase() === sub);
+  datalist.innerHTML = matched.map(c => `<option value="${c.chapter}">`).join("");
+  if (typeof updateAiPromptPreview === "function") updateAiPromptPreview();
 }
 
 function openModal(id) {
-  const el = document.getElementById(id) ;
-  if (el) el.classList.remove("hidden") ;
+  const el = document.getElementById(id);
+  if (el) el.classList.remove("hidden");
 }
 
 function closeModal(id) {
-  const el = document.getElementById(id) ;
-  if (el) el.classList.add("hidden") ;
+  const el = document.getElementById(id);
+  if (el) el.classList.add("hidden");
 }
 
 async function handleSignIn() {
@@ -479,16 +479,16 @@ async function handleSignIn() {
 }
 
 async function handleSignUp() {
-  const userType = document.getElementById("signupUserType").value ;
-  const studentStream = document.getElementById("signupStudentStream").value ;
-  const userId = document.getElementById("signupUserId").value.trim() ;
-  const name = document.getElementById("signupName").value.trim() ;
-  const pass = document.getElementById("signupPassword").value.trim() ;
-  const std = document.getElementById("signupStd").value ;
+  const userType = document.getElementById("signupUserType").value;
+  const studentStream = document.getElementById("signupStudentStream").value;
+  const userId = document.getElementById("signupUserId").value.trim();
+  const name = document.getElementById("signupName").value.trim();
+  const pass = document.getElementById("signupPassword").value.trim();
+  const std = document.getElementById("signupStd").value;
 
   if (!userId || !name || !pass) return alert("Please complete all registration 
 
-fields.") ;
+fields.");
 
   const payload = {
     action: "registerUser", 
@@ -501,29 +501,29 @@ fields.") ;
   };
 
   try {
-    const data = await callAppsScript(payload) ;
+    const data = await callAppsScript(payload);
     if (data && data.success) {
-      currentUser = data.user ;
-      localStorage.setItem("hmsUser", JSON.stringify(currentUser)) ;
-      closeModal("signupModal") ;
-      document.getElementById("signupUserId").value = "" ;
-      document.getElementById("signupName").value = "" ;
-      document.getElementById("signupPassword").value = "" ;
-      await loadPortalData() ;
-      updateAuthUI() ;
-      alert(`Registration complete! Welcome, ${currentUser.name}!`) ;
+      currentUser = data.user;
+      localStorage.setItem("hmsUser", JSON.stringify(currentUser));
+      closeModal("signupModal");
+      document.getElementById("signupUserId").value = "";
+      document.getElementById("signupName").value = "";
+      document.getElementById("signupPassword").value = "";
+      await loadPortalData();
+      updateAuthUI();
+      alert(`Registration complete! Welcome, ${currentUser.name}!`);
     } else {
-      alert("Registration failed: " + (data ? data.error : "Unknown error")) ;
+      alert("Registration failed: " + (data ? data.error : "Unknown error"));
     }
   } catch (err) {
-    alert("Connection error: " + err.message) ;
+    alert("Connection error: " + err.message);
   }
 }
 
 function logout() {
-  localStorage.removeItem("hmsUser") ;
-  currentUser = null ;
-  location.reload() ;
+  localStorage.removeItem("hmsUser");
+  currentUser = null;
+  location.reload();
 }
 
 function load30DaysChallenge() {
@@ -590,22 +590,22 @@ function startChallengeDay(dayNumber) {
 }
 
 function switchTab(tab, eventTarget) {
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active")) ;
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
   
   ["playTab", "createTab", "manageTab", "reportsTab", "teacherScoresTab", 
 
 "principalTab", "leaderboardTab", "feedbackTab", "myRepliesTab", "challenge30Tab", 
 
 "ncertBooksTab"].forEach(id => {
-    const el = document.getElementById(id) ;
-    if (el) el.classList.add("hidden") ;
+    const el = document.getElementById(id);
+    if (el) el.classList.add("hidden");
   });
 
-  if (eventTarget) eventTarget.classList.add("active") ;
+  if (eventTarget) eventTarget.classList.add("active");
 
   if (tab === "play") document.getElementById("playTab").classList.remove("hidden"), 
 
-resetQuizView() ;
+resetQuizView();
   if (tab === "challenge30") document.getElementById
 
 ("challenge30Tab").classList.remove("hidden"), load30DaysChallenge();
@@ -614,80 +614,80 @@ resetQuizView() ;
 ("hidden"), updateAiPromptPreview();
   if (tab === "manage") document.getElementById("manageTab").classList.remove
 
-("hidden"), renderManageTable() ;
+("hidden"), renderManageTable();
   if (tab === "reports") document.getElementById("reportsTab").classList.remove
 
-("hidden"), loadUserReports() ;
+("hidden"), loadUserReports();
   if (tab === "leaderboard") document.getElementById
 
-("leaderboardTab").classList.remove("hidden"), loadLeaderboard() ;
+("leaderboardTab").classList.remove("hidden"), loadLeaderboard();
   if (tab === "teacherScores") document.getElementById
 
-("teacherScoresTab").classList.remove("hidden"), loadTeacherStudentScores() ;
+("teacherScoresTab").classList.remove("hidden"), loadTeacherStudentScores();
   if (tab === "principal") document.getElementById("principalTab").classList.remove
 
-("hidden"), loadPrincipalDashboard() ;
+("hidden"), loadPrincipalDashboard();
   if (tab === "feedback") document.getElementById("feedbackTab").classList.remove
 
-("hidden"), loadFeedbackTab() ;
+("hidden"), loadFeedbackTab();
   if (tab === "ncertBooks") document.getElementById("ncertBooksTab").classList.remove
 
-("hidden"), initNcertBooksTab() ;
+("hidden"), initNcertBooksTab();
   if (tab === "myReplies") document.getElementById("myRepliesTab").classList.remove
 
-("hidden"), loadStudentReplies() ;
+("hidden"), loadStudentReplies();
 }
 
 async function loadFeedbackTab() {
-  if (!currentUser) return ;
-  const tbody = document.getElementById("feedbackTableBody") ;
-  if (!tbody) return ;
+  if (!currentUser) return;
+  const tbody = document.getElementById("feedbackTableBody");
+  if (!tbody) return;
   tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">பின்னூட்டங்கள் 
 
-ஏற்றப்படுகின்றன...</td></tr>` ;
+ஏற்றப்படுகின்றன...</td></tr>`;
 
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getFeedbackList&userId=
 
-${encodeURIComponent(currentUser.id)}`) ;
-    const data = await res.json() ;
+${encodeURIComponent(currentUser.id)}`);
+    const data = await res.json();
     if (data && data.success) {
-      renderFeedbackList(data.feedback || []) ;
+      renderFeedbackList(data.feedback || []);
     } else {
       tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; 
 
-color:red;">பின்னூட்டம் கிடைக்கவில்லை.</td></tr>` ;
+color:red;">பின்னூட்டம் கிடைக்கவில்லை.</td></tr>`;
     }
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">பிழை: 
 
-${err.message}</td></tr>` ;
+${err.message}</td></tr>`;
   }
 }
 
 function initNcertBooksTab() {
-  const viewStdSelect = document.getElementById("ncertViewStdSelect") ;
+  const viewStdSelect = document.getElementById("ncertViewStdSelect");
   if (viewStdSelect && GLOBAL_STANDARDS) {
-    let allowed = GLOBAL_STANDARDS ;
+    let allowed = GLOBAL_STANDARDS;
     if (currentUser && currentUser.role === "student" && currentUser.standards && 
 
 currentUser.standards.length > 0) {
-      allowed = currentUser.standards ;
+      allowed = currentUser.standards;
     }
     viewStdSelect.innerHTML = allowed.map(s => `<option value="${s}">வகுப்பு ${s}
 
-</option>`).join("") ;
+</option>`).join("");
     if (currentUser && currentUser.role === "student" && currentUser.standards && 
 
 currentUser.standards.length > 0) {
-      viewStdSelect.value = currentUser.standards[0] ;
+      viewStdSelect.value = currentUser.standards[0];
     }
   }
   const viewStream = document.getElementById("ncertViewStreamSelect");
   if (viewStream && currentUser && currentUser.studentStream) {
     viewStream.value = currentUser.studentStream;
   }
-  renderNcertBooksViewer() ;
+  renderNcertBooksViewer();
 }
 
 async function saveNcertDriveLink() {
@@ -816,19 +816,19 @@ color:#64748b; padding:20px;">பாடங்கள் எதுவும் க
 }
 
 function renderFeedbackList(list) {
-  const tbody = document.getElementById("feedbackTableBody") ;
-  if (!tbody) return ;
-  tbody.innerHTML = "" ;
+  const tbody = document.getElementById("feedbackTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
 
   if (list.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">மாணவர்கள் இன்னும் 
 
-எந்தச் சந்தேகமும் அனுப்பவில்லை.</td></tr>` ;
+எந்தச் சந்தேகமும் அனுப்பவில்லை.</td></tr>`;
     return;
   }
 
   list.forEach(item => {
-    const hasReply = Boolean(item.reply) ;
+    const hasReply = Boolean(item.reply);
     tbody.innerHTML += `
       <tr>
         <td><strong>${item.userName}</strong><br><small style="color:#64748b;">
@@ -866,14 +866,14 @@ size:0.82rem;" onclick="submitTeacherReply('${item.id}')">அனுப்பு<
           `}
         </td>
       </tr>
-    ` ;
+    `;
   });
 }
 
 async function submitTeacherReply(feedbackId) {
-  const input = document.getElementById(`replyText_${feedbackId}`) ;
-  const text = input ? input.value.trim() : "" ;
-  if (!text) return alert("தயவுசெய்து பதிலை எழுதவும்.") ;
+  const input = document.getElementById(`replyText_${feedbackId}`);
+  const text = input ? input.value.trim() : "";
+  if (!text) return alert("தயவுசெய்து பதிலை எழுதவும்.");
 
   const payload = {
     action: "replyTeacherFeedback", 
@@ -884,12 +884,12 @@ async function submitTeacherReply(feedbackId) {
 ()})` : "Teacher" 
   };
 
-  const res = await callAppsScript(payload) ;
+  const res = await callAppsScript(payload);
   if (res && res.success) {
-    alert("✅ மாணவருக்குப் பதில் அனுப்பப்பட்டது!") ;
-    loadFeedbackTab() ;
+    alert("✅ மாணவருக்குப் பதில் அனுப்பப்பட்டது!");
+    loadFeedbackTab();
   } else {
-    alert("பதில் அனுப்புவதில் பிழை ஏற்பட்டது.") ;
+    alert("பதில் அனுப்புவதில் பிழை ஏற்பட்டது.");
   }
 }
 
@@ -949,22 +949,22 @@ ${err.message}</p>`;
 }
 
 function resetQuizView() {
-  clearInterval(timerInterval) ;
-  clearTimeout(autoNextTimeout) ;
-  document.getElementById("quizSetupCard").classList.remove("hidden") ;
-  document.getElementById("quizActiveCard").classList.add("hidden") ;
-  document.getElementById("quizResultCard").classList.add("hidden") ;
-  const rev = document.getElementById("quizReviewArea") ;
-  if (rev) rev.classList.add("hidden") ;
-  const bAlert = document.getElementById("bonusRewardAlert") ;
-  if (bAlert) bAlert.classList.add("hidden") ;
+  clearInterval(timerInterval);
+  clearTimeout(autoNextTimeout);
+  document.getElementById("quizSetupCard").classList.remove("hidden");
+  document.getElementById("quizActiveCard").classList.add("hidden");
+  document.getElementById("quizResultCard").classList.add("hidden");
+  const rev = document.getElementById("quizReviewArea");
+  if (rev) rev.classList.add("hidden");
+  const bAlert = document.getElementById("bonusRewardAlert");
+  if (bAlert) bAlert.classList.add("hidden");
 }
 
 function toggleSelectAll(isAll) {
-  if (!currentUser) return ;
-  const countInput = document.getElementById("playCountInput") ;
-  countInput.disabled = isAll ;
-  countInput.style.background = isAll ? "#e9ecef" : "#fff" ;
+  if (!currentUser) return;
+  const countInput = document.getElementById("playCountInput");
+  countInput.disabled = isAll;
+  countInput.style.background = isAll ? "#e9ecef" : "#fff";
 }
 
 function speakText(text, onComplete) {
@@ -993,16 +993,11 @@ function speakText(text, onComplete) {
   }
 }
 
-// Active language state for the running assessment ('en' or 'ta')
-// Remove 'let' so it just updates the existing variable instead of redeclaring it
-activeTestLanguage = targetLang;
-// Triggered when the user clicks English or Tamil toggle button during test
 async function translateTestContent(targetLang) {
-  activeTestLanguage = targetLang; // Updates the existing variable safely
+  activeTestLanguage = targetLang;
   renderCurrentQuestion();
 }
 
-// Automated backend-powered translation helper for your 5000+ Q&A items
 async function translateTextContent(text, targetLang) {
   if (!text || targetLang === 'en') return text;
   
@@ -1037,7 +1032,7 @@ async function startQuiz() {
   const subEl = document.getElementById("playSubSelect");
   const chapEl = document.getElementById("playChapterSelect");
   const topicEl = document.getElementById("playTopicSelect");
-  const keywordEl = document.getElementById("playKeywordInput"); // <-- Keyword input
+  const keywordEl = document.getElementById("playKeywordInput");
   const allCb = document.getElementById("playAllCheckbox");
   const modeEl = document.getElementById("playAssessmentMode");
   const countEl = document.getElementById("playCountInput");
@@ -1067,9 +1062,6 @@ async function startQuiz() {
 
 chosenType);
 
-    // If Aspirant / Principal uses a keyword, allow cross-class search if keyword is 
-
-present
     if (keyword && (isAspirant || isPrincipal)) {
       const searchableText = `${q.question || ""} ${q.topic || ""} ${q.chapter || ""} 
 
@@ -1077,7 +1069,6 @@ ${q.subject || ""} ${q.explanation || ""}`.toLowerCase();
       return mStream && mType && searchableText.includes(keyword);
     }
 
-    // Standard student / teacher filtering
     const mStd = q.standard.toString().trim() === std.toString().trim();
     const mSub = normalizeText(q.subject).toLowerCase() === sub;
     const chap = chapEl ? chapEl.value : "All";
@@ -1114,7 +1105,6 @@ questions found matching your filter.`);
 
   renderCurrentQuestion();
 }
-
 
 async function renderCurrentQuestion() {
   clearInterval(timerInterval);
@@ -1161,7 +1151,6 @@ activeQuizList.length) {
   const area = document.getElementById("singleQuestionArea");
   if (!area) return;
 
-  // 🌐 Translate question text if Tamil mode is active
   let questionText = q.question || q.prompt || "Question statement missing";
   if (activeTestLanguage === 'ta') {
     questionText = await translateTextContent(questionText, 'ta');
@@ -1263,7 +1252,6 @@ onclick="checkMatchAnswer()">Check Matches</button>
       <div id="explanationBoxArea"></div>
     `;
   } else {
-    // 🌐 Translate MCQ options if Tamil mode is active
     let optA = q.optA || '';
     let optB = q.optB || '';
     let optC = q.optC || '';
@@ -1303,7 +1291,6 @@ gap:10px;">
 
   setupTimer();
 
-  // கேள்வியுடன் சேர்த்து ஆப்ஷன்களையும் குரலில் வாசித்தல்
   let speechText = questionText;
   if (qType === "mcq") {
     let optA = await translateTextContent(q.optA || '', activeTestLanguage);
@@ -1323,7 +1310,6 @@ blank.`;
     speechText += activeTestLanguage === 'ta' ? `. பொருத்துக.` : `. Match the following.`;
   }
 
-  // கேள்வியையும் ஆப்ஷன்களையும் வாசித்து முடித்ததும் குரல்வழிப் பதிவைத் தொடங்குதல்
   speakText(speechText, () => {
     if (currentAssessmentMode === "voice" && !isAnswered) {
       startVoiceListeningSession(qType);
@@ -1347,7 +1333,6 @@ window.webkitSpeechRecognition;
     if (transcriptBox) transcriptBox.innerText = "🎙️ கேட்கிறது (Listening)... பேசவும்...";
   };
 
-  // ⬇️ இந்த இடத்தில் தான் நீங்கள் கொடுத்த onresult பங்கஷனை ஒட்ட வேண்டும் ⬇️
   recognitionInstance.onresult = function(event) {
     if (isAnswered) return;
     
@@ -1414,33 +1399,33 @@ spokenText.includes("b")) {
 }
 
 function setupTimer() {
-  const timerBadge = document.getElementById("timerContainer") ;
-  const track = document.getElementById("timerBarTrack") ;
-  const fill = document.getElementById("timerBarFill") ;
+  const timerBadge = document.getElementById("timerContainer");
+  const track = document.getElementById("timerBarTrack");
+  const fill = document.getElementById("timerBarFill");
 
   if (perQuestionTime > 0) {
-    timerBadge.classList.remove("hidden") ;
-    track.classList.remove("hidden") ;
-    timeRemaining = perQuestionTime ;
-    document.getElementById("timerText").innerText = `${timeRemaining}s` ;
-    fill.style.width = "100%" ;
+    timerBadge.classList.remove("hidden");
+    track.classList.remove("hidden");
+    timeRemaining = perQuestionTime;
+    document.getElementById("timerText").innerText = `${timeRemaining}s`;
+    fill.style.width = "100%";
 
     timerInterval = setInterval(() => {
       timeRemaining--; 
-      document.getElementById("timerText").innerText = `${timeRemaining}s` ;
-      fill.style.width = `${(timeRemaining / perQuestionTime) * 100}%` ;
+      document.getElementById("timerText").innerText = `${timeRemaining}s`;
+      fill.style.width = `${(timeRemaining / perQuestionTime) * 100}%`;
 
-      if (timeRemaining <= 5) timerBadge.classList.add("danger") ;
-      else timerBadge.classList.remove("danger") ;
+      if (timeRemaining <= 5) timerBadge.classList.add("danger");
+      else timerBadge.classList.remove("danger");
 
       if (timeRemaining <= 0) {
-        clearInterval(timerInterval) ;
-        handleTimeUp() ;
+        clearInterval(timerInterval);
+        handleTimeUp();
       }
-    }, 1000) ;
+    }, 1000);
   } else {
-    timerBadge.classList.add("hidden") ;
-    track.classList.add("hidden") ;
+    timerBadge.classList.add("hidden");
+    track.classList.add("hidden");
   }
 }
 
@@ -1477,9 +1462,8 @@ async function fetchAiDoubtClarification(questionText, baseExplanation) {
   const container = document.getElementById("aiDoubtContent");
   if (!container) return;
 
-  // Check daily limit if user is a student
   if (currentUser && currentUser.role === "student") {
-    const todayStr = new Date().toISOString().split('T')[0]; // e.g., "2026-09-08"
+    const todayStr = new Date().toISOString().split('T')[0];
     const usageKey = `hms_ai_doubts_${currentUser.id}_${todayStr}`;
     
     let usedCount = parseInt(localStorage.getItem(usageKey) || "0", 10);
@@ -1491,7 +1475,6 @@ today. Try again tomorrow!");
       return;
     }
     
-    // Increment usage count
     localStorage.setItem(usageKey, usedCount + 1);
   }
 
@@ -1535,40 +1518,40 @@ style="color:#64748b;">(AI expansion unavailable at the moment)</small></div>`;
 }
 
 function checkMcqAnswer(selected, btn) {
-  if (isAnswered) return ;
-  isAnswered = true ;
-  clearInterval(timerInterval) ;
+  if (isAnswered) return;
+  isAnswered = true;
+  clearInterval(timerInterval);
 
-  const q = activeQuizList[currentQIndex] ;
-  const correct = q.correctOpt.toString().trim() ;
-  const buttons = btn.parentElement.querySelectorAll(".opt-btn") ;
-  buttons.forEach(b => b.disabled = true) ;
+  const q = activeQuizList[currentQIndex];
+  const correct = q.correctOpt.toString().trim();
+  const buttons = btn.parentElement.querySelectorAll(".opt-btn");
+  buttons.forEach(b => b.disabled = true);
 
-  const isCorrect = (selected === correct) ;
+  const isCorrect = (selected === correct);
   if (isCorrect) {
     try { soundCorrect.play(); } catch(e) {} 
-    btn.classList.add("correct") ;
-    userScore++ ;
+    btn.classList.add("correct");
+    userScore++;
   } else {
     try { soundWrong.play(); } catch(e) {} 
-    btn.classList.add("wrong") ;
-    const idx = parseInt(correct, 10) - 1 ;
-    if (buttons[idx]) buttons[idx].classList.add("correct") ;
-    wrongQuestionsVault.push(q) ;
+    btn.classList.add("wrong");
+    const idx = parseInt(correct, 10) - 1;
+    if (buttons[idx]) buttons[idx].classList.add("correct");
+    wrongQuestionsVault.push(q);
   }
 
-  const optMap = { "1": q.optA, "2": q.optB, "3": q.optC, "4": q.optD } ;
+  const optMap = { "1": q.optA, "2": q.optB, "3": q.optC, "4": q.optD };
   examReviewRecord.push({
     question: q,
     userChoice: `Option ${selected} (${optMap[selected] || ''})`, 
     correctChoice: `Option ${correct} (${optMap[correct] || ''})`, 
     isCorrect: isCorrect 
-  }) ;
+  });
 
-  showExplanationBox() ;
+  showExplanationBox();
   if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 
 
-4500) ;
+4500);
 }
 
 function checkTfAnswer(selected, btn) {
@@ -1619,32 +1602,32 @@ q.correctOpt.toString().trim().toLowerCase() : "false";
 }
 
 function checkFibAnswer() {
-  if (isAnswered) return ;
-  const input = document.getElementById("fibInput") ;
-  const userAns = (input ? input.value : "").trim() ;
-  if (!userAns) return alert("Please type your answer.") ;
+  if (isAnswered) return;
+  const input = document.getElementById("fibInput");
+  const userAns = (input ? input.value : "").trim();
+  if (!userAns) return alert("Please type your answer.");
 
-  isAnswered = true ;
-  clearInterval(timerInterval) ;
-  input.disabled = true ;
-  const btnSubmit = document.getElementById("btnSubmitFib") ;
-  if (btnSubmit) btnSubmit.disabled = true ;
+  isAnswered = true;
+  clearInterval(timerInterval);
+  input.disabled = true;
+  const btnSubmit = document.getElementById("btnSubmitFib");
+  if (btnSubmit) btnSubmit.disabled = true;
 
-  const q = activeQuizList[currentQIndex] ;
-  const correct = q.correctOpt.toString().trim().toLowerCase() ;
-  const feed = document.getElementById("fibFeedback") ;
+  const q = activeQuizList[currentQIndex];
+  const correct = q.correctOpt.toString().trim().toLowerCase();
+  const feed = document.getElementById("fibFeedback");
 
-  const isCorrect = (userAns.toLowerCase() === correct) ;
+  const isCorrect = (userAns.toLowerCase() === correct);
   if (isCorrect) {
     try { soundCorrect.play(); } catch(e) {} 
-    feed.style.color = "var(--accent)" ;
-    feed.innerText = "✅ Correct Answer!" ;
-    userScore++ ;
+    feed.style.color = "var(--accent)";
+    feed.innerText = "✅ Correct Answer!";
+    userScore++;
   } else {
     try { soundWrong.play(); } catch(e) {} 
-    feed.style.color = "var(--danger)" ;
-    feed.innerText = `❌ Incorrect! Correct Answer: "${q.correctOpt}"` ;
-    wrongQuestionsVault.push(q) ;
+    feed.style.color = "var(--danger)";
+    feed.innerText = `❌ Incorrect! Correct Answer: "${q.correctOpt}"`;
+    wrongQuestionsVault.push(q);
   }
 
   examReviewRecord.push({
@@ -1652,56 +1635,56 @@ function checkFibAnswer() {
     userChoice: userAns, 
     correctChoice: q.correctOpt, 
     isCorrect: isCorrect 
-  }) ;
+  });
 
-  showExplanationBox() ;
+  showExplanationBox();
   if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 
 
-4500) ;
+4500);
 }
 
 function checkMatchAnswer() {
-  if (isAnswered) return ;
-  const selects = document.querySelectorAll(".match-select") ;
-  let allChosen = true ;
-  selects.forEach(s => { if (!s.value) allChosen = false; }) ;
-  if (!allChosen) return alert("Please pick an option for each row.") ;
+  if (isAnswered) return;
+  const selects = document.querySelectorAll(".match-select");
+  let allChosen = true;
+  selects.forEach(s => { if (!s.value) allChosen = false; });
+  if (!allChosen) return alert("Please pick an option for each row.");
 
-  isAnswered = true ;
-  clearInterval(timerInterval) ;
-  selects.forEach(s => s.disabled = true) ;
-  const btnSubmit = document.getElementById("btnSubmitMatch") ;
-  if (btnSubmit) btnSubmit.disabled = true ;
+  isAnswered = true;
+  clearInterval(timerInterval);
+  selects.forEach(s => s.disabled = true);
+  const btnSubmit = document.getElementById("btnSubmitMatch");
+  if (btnSubmit) btnSubmit.disabled = true;
 
-  const q = activeQuizList[currentQIndex] ;
-  const pairMap = {} ;
+  const q = activeQuizList[currentQIndex];
+  const pairMap = {};
   [q.optA, q.optB, q.optC, q.optD].filter(Boolean).forEach(p => { 
-    const [l, r] = p.split(":") ;
-    if (l && r) pairMap[l.trim().toLowerCase()] = r.trim().toLowerCase() ;
+    const [l, r] = p.split(":");
+    if (l && r) pairMap[l.trim().toLowerCase()] = r.trim().toLowerCase();
   });
 
-  let correctCount = 0 ;
-  const userPairs = [] ;
+  let correctCount = 0;
+  const userPairs = [];
   selects.forEach(s => {
-    const left = (s.getAttribute("data-left") || "").toLowerCase().trim() ;
-    userPairs.push(`${left} -> ${s.value.trim()}`) ;
+    const left = (s.getAttribute("data-left") || "").toLowerCase().trim();
+    userPairs.push(`${left} -> ${s.value.trim()}`);
     if (pairMap[left] && pairMap[left] === s.value.trim().toLowerCase()) { 
-      s.style.borderColor = "var(--accent)" ;
-      s.style.backgroundColor = "var(--success-bg)" ;
-      correctCount++ ;
+      s.style.borderColor = "var(--accent)";
+      s.style.backgroundColor = "var(--success-bg)";
+      correctCount++;
     } else {
-      s.style.borderColor = "var(--danger)" ;
-      s.style.backgroundColor = "var(--danger-bg)" ;
+      s.style.borderColor = "var(--danger)";
+      s.style.backgroundColor = "var(--danger-bg)";
     }
   });
 
-  const isCorrect = (correctCount === selects.length) ;
+  const isCorrect = (correctCount === selects.length);
   if (isCorrect) {
     try { soundCorrect.play(); } catch(e) {} 
-    userScore++ ;
+    userScore++;
   } else {
     try { soundWrong.play(); } catch(e) {} 
-    wrongQuestionsVault.push(q) ;
+    wrongQuestionsVault.push(q);
   }
 
   examReviewRecord.push({
@@ -1709,128 +1692,126 @@ function checkMatchAnswer() {
     userChoice: userPairs.join("; "), 
     correctChoice: [q.optA, q.optB, q.optC, q.optD].filter(Boolean).join("; "), 
     isCorrect: isCorrect 
-  }) ;
+  });
 
-  showExplanationBox() ;
+  showExplanationBox();
   if (perQuestionTime > 0) autoNextTimeout = setTimeout(() => nextQuestion(true), 
 
-5500) ;
+5500);
 }
 
 function handleTimeUp() {
-  if (isAnswered) return ;
-  isAnswered = true ;
+  if (isAnswered) return;
+  isAnswered = true;
 
-  const q = activeQuizList[currentQIndex] ;
-  const qType = (q.type || "mcq").toLowerCase() ;
+  const q = activeQuizList[currentQIndex];
+  const qType = (q.type || "mcq").toLowerCase();
 
   try { soundWrong.play(); } catch(e) {} 
 
   if (qType === "mcq") {
-    const correct = parseInt(q.correctOpt, 10) ;
-    const buttons = document.querySelectorAll("#singleQuestionArea .opt-btn") ;
-    buttons.forEach(b => b.disabled = true) ;
-    if (buttons[correct - 1]) buttons[correct - 1].classList.add("correct") ;
+    const correct = parseInt(q.correctOpt, 10);
+    const buttons = document.querySelectorAll("#singleQuestionArea .opt-btn");
+    buttons.forEach(b => b.disabled = true);
+    if (buttons[correct - 1]) buttons[correct - 1].classList.add("correct");
   } else if (qType === "tf") {
-    const correct = q.correctOpt.toString().trim().toLowerCase() ;
-    const buttons = document.querySelectorAll("#singleQuestionArea .opt-btn") ;
+    const correct = q.correctOpt.toString().trim().toLowerCase();
+    const buttons = document.querySelectorAll("#singleQuestionArea .opt-btn");
     buttons.forEach(b => {
-      b.disabled = true ;
-      if (b.innerText.toLowerCase().includes(correct)) b.classList.add("correct") ;
+      b.disabled = true;
+      if (b.innerText.toLowerCase().includes(correct)) b.classList.add("correct");
     });
   } else if (qType === "fib") {
-    const input = document.getElementById("fibInput") ;
-    if (input) input.disabled = true ;
-    const btnSubmit = document.getElementById("btnSubmitFib") ;
-    if (btnSubmit) btnSubmit.disabled = true ;
-    const feed = document.getElementById("fibFeedback") ;
+    const input = document.getElementById("fibInput");
+    if (input) input.disabled = true;
+    const btnSubmit = document.getElementById("btnSubmitFib");
+    if (btnSubmit) btnSubmit.disabled = true;
+    const feed = document.getElementById("fibFeedback");
     if (feed) {
-      feed.style.color = "var(--danger)" ;
-      feed.innerText = `⏰ Time's up! Correct Answer: "${q.correctOpt}"` ;
+      feed.style.color = "var(--danger)";
+      feed.innerText = `⏰ Time's up! Correct Answer: "${q.correctOpt}"`;
     }
   } else if (qType === "match") {
-    document.querySelectorAll(".match-select").forEach(s => s.disabled = true) ;
-    const btnSubmit = document.getElementById("btnSubmitMatch") ;
-    if (btnSubmit) btnSubmit.disabled = true ;
+    document.querySelectorAll(".match-select").forEach(s => s.disabled = true);
+    const btnSubmit = document.getElementById("btnSubmitMatch");
+    if (btnSubmit) btnSubmit.disabled = true;
   }
 
-  wrongQuestionsVault.push(q) ;
+  wrongQuestionsVault.push(q);
   examReviewRecord.push({
     question: q,
     userChoice: "Time Out", 
     correctChoice: q.correctOpt, 
     isCorrect: false 
-  }) ;
+  });
 
-  showExplanationBox() ;
-  autoNextTimeout = setTimeout(() => nextQuestion(true), 4500) ;
+  showExplanationBox();
+  autoNextTimeout = setTimeout(() => nextQuestion(true), 4500);
 }
 
 function nextQuestion(auto) {
-  clearInterval(timerInterval) ;
-  clearTimeout(autoNextTimeout) ;
+  clearInterval(timerInterval);
+  clearTimeout(autoNextTimeout);
 
   if (currentQIndex < activeQuizList.length - 1) {
-    currentQIndex++ ;
-    renderCurrentQuestion() ;
+    currentQIndex++;
+    renderCurrentQuestion();
   } else {
-    finishQuiz() ;
+    finishQuiz();
   }
 }
 
 async function finishQuiz() {
-  clearInterval(timerInterval) ;
-  clearTimeout(autoNextTimeout) ;
+  clearInterval(timerInterval);
+  clearTimeout(autoNextTimeout);
 
-  document.getElementById("quizActiveCard").classList.add("hidden") ;
-  document.getElementById("quizResultCard").classList.remove("hidden") ;
+  document.getElementById("quizActiveCard").classList.add("hidden");
+  document.getElementById("quizResultCard").classList.remove("hidden");
 
-  const total = activeQuizList.length ;
-  const pct = Math.round((userScore / total) * 100) ;
+  const total = activeQuizList.length;
+  const pct = Math.round((userScore / total) * 100);
   document.getElementById("resultScoreDisplay").innerText = `${userScore} / ${total} 
 
-(${pct}%)` ;
+(${pct}%)`;
 
-  const bonusBox = document.getElementById("bonusRewardAlert") ;
-  const btnWrong = document.getElementById("btnRetakeWrong") ;
-  const btnCert = document.getElementById("btnDownloadCert") ;
+  const bonusBox = document.getElementById("bonusRewardAlert");
+  const btnWrong = document.getElementById("btnRetakeWrong");
+  const btnCert = document.getElementById("btnDownloadCert");
 
-  if (btnWrong) btnWrong.classList.toggle("hidden", wrongQuestionsVault.length === 0) 
+  if (btnWrong) btnWrong.classList.toggle("hidden", wrongQuestionsVault.length === 0);
+  if (btnCert) btnCert.classList.toggle("hidden", pct < 60);
 
-;
-  if (btnCert) btnCert.classList.toggle("hidden", pct < 60) ;
-
-  let msg = "Sign up or sign in to save permanent score history!" ;
+  let msg = "Sign up or sign in to save permanent score history!";
 
   if (currentUser) {
     if (pct === 100) {
       if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, 
 
-origin: { y: 0.6 } }) ;
+origin: { y: 0.6 } });
       msg = "🌟 PERFECT SCORE (100%)! போனஸ் சலுகை: 4 கூடுதல் தேர்வுகள் மற்றும் ஆசிரியர் பின்னூட்டம் 
 
-திறக்கப்பட்டது!" ;
-      bonusRetakesRemaining += 4 ;
-      if (bonusBox) bonusBox.classList.remove("hidden") ;
+திறக்கப்பட்டது!";
+      bonusRetakesRemaining += 4;
+      if (bonusBox) bonusBox.classList.remove("hidden");
     } else if (pct >= 80) {
       if (typeof confetti === "function") confetti({ particleCount: 70, spread: 60, 
 
-origin: { y: 0.6 } }) ;
-      msg = "🎉 சிறப்பான தேர்ச்சி!" ;
-      if (bonusBox) bonusBox.classList.add("hidden") ;
+origin: { y: 0.6 } });
+      msg = "🎉 சிறப்பான தேர்ச்சி!";
+      if (bonusBox) bonusBox.classList.add("hidden");
     } else {
-      msg = "பாடங்களை மீண்டும் படித்து உங்கள் மதிப்பெண்களை உயர்த்தவும்!" ;
-      if (bonusBox) bonusBox.classList.add("hidden") ;
+      msg = "பாடங்களை மீண்டும் படித்து உங்கள் மதிப்பெண்களை உயர்த்தவும்!";
+      if (bonusBox) bonusBox.classList.add("hidden");
     }
 
     const challengeKey = `hms_challenge_${currentUser.id}`;
     let currentDays = parseInt(localStorage.getItem(challengeKey) || "0", 10);
     if (currentDays < 30) localStorage.setItem(challengeKey, currentDays + 1);
   } else {
-    if (bonusBox) bonusBox.classList.add("hidden") ;
+    if (bonusBox) bonusBox.classList.add("hidden");
   }
 
-  document.getElementById("resultFeedback").innerText = msg ;
+  document.getElementById("resultFeedback").innerText = msg;
 
   const streamVal = document.getElementById("playStreamSelect") ? 
 
@@ -1854,37 +1835,37 @@ document.getElementById("playStreamSelect").value : "ncert";
 function retakeWrongOnly() {
   if (!wrongQuestionsVault || wrongQuestionsVault.length === 0) return alert("தவறான 
 
-வினாக்கள் எதுவும் இல்லை!") ;
-  activeQuizList = [...wrongQuestionsVault] ;
-  wrongQuestionsVault = [] ;
-  examReviewRecord = [] ;
-  currentQIndex = 0 ;
-  userScore = 0 ;
+வினாக்கள் எதுவும் இல்லை!");
+  activeQuizList = [...wrongQuestionsVault];
+  wrongQuestionsVault = [];
+  examReviewRecord = [];
+  currentQIndex = 0;
+  userScore = 0;
 
-  document.getElementById("quizResultCard").classList.add("hidden") ;
-  document.getElementById("quizActiveCard").classList.remove("hidden") ;
-  renderCurrentQuestion() ;
+  document.getElementById("quizResultCard").classList.add("hidden");
+  document.getElementById("quizActiveCard").classList.remove("hidden");
+  renderCurrentQuestion();
 }
 
 function downloadCertificate() {
-  const container = document.getElementById("certificatePrintContainer") ;
+  const container = document.getElementById("certificatePrintContainer");
   if (!container) return;
 
-  const total = activeQuizList.length || 1 ;
-  const pct = Math.round((userScore / total) * 100) ;
+  const total = activeQuizList.length || 1;
+  const pct = Math.round((userScore / total) * 100);
   const studentName = (currentUser && currentUser.name) ? currentUser.name : "மதிப்புமிகு 
 
-மாணவர்" ;
+மாணவர்";
   const std = document.getElementById("playStdSelect") ? document.getElementById
 
-("playStdSelect").value : "5" ;
+("playStdSelect").value : "5";
   const sub = document.getElementById("playSubSelect") ? document.getElementById
 
-("playSubSelect").value : "பொது மதிப்பீடு" ;
+("playSubSelect").value : "பொது மதிப்பீடு";
   const streamVal = document.getElementById("playStreamSelect") ? 
 
 document.getElementById("playStreamSelect").value.toUpperCase() : "NCERT";
-  const dateStr = new Date().toLocaleDateString('ta-IN') ;
+  const dateStr = new Date().toLocaleDateString('ta-IN');
 
   container.innerHTML = `
     <div id="certCaptureElement" style="width: 900px; padding: 40px; border: 10px 
@@ -1925,69 +1906,67 @@ end; margin-top: 50px; padding: 0 40px;">
         </div>
       </div>
     </div>
-  ` ;
+  `;
 
-  const captureEl = document.getElementById("certCaptureElement") ;
+  const captureEl = document.getElementById("certCaptureElement");
   const opt = {
     margin: [10, 10, 10, 10],
     filename: `${studentName.replace(/\s+/g, '_')}_Certificate.pdf`,
     image: { type: 'jpeg', quality: 1 },
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' }
-  } ;
+  };
 
-  html2pdf().set(opt).from(captureEl).save().then(() => { container.innerHTML = ""; }) 
+  html2pdf().set(opt).from(captureEl).save().then(() => { container.innerHTML = ""; 
 
-;
+});
 }
 
 async function loadLeaderboard() {
-  const tbody = document.getElementById("leaderboardTbody") ;
+  const tbody = document.getElementById("leaderboardTbody");
   if (!tbody) return;
   tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">தரவரிசைப் பட்டியல் 
 
-ஏற்றப்படுகிறது...</td></tr>` ;
+ஏற்றப்படுகிறது...</td></tr>`;
 
-  const stdFilter = (document.getElementById("leaderboardStdFilter")?.value) || "all" 
-
-;
+  const stdFilter = (document.getElementById("leaderboardStdFilter")?.value) || "all";
   const streamFilter = (document.getElementById("leaderboardStreamFilter")?.value) || 
 
-"all" ;
+"all";
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getLeaderboard&standard=
 
-${encodeURIComponent(stdFilter)}&stream=${encodeURIComponent(streamFilter)}`) ;
-    const data = await res.json() ;
+${encodeURIComponent(stdFilter)}&stream=${encodeURIComponent(streamFilter)}`);
+    const data = await res.json();
     if (data && data.success) {
-      renderLeaderboardTable(data.leaderboard || []) ;
+      renderLeaderboardTable(data.leaderboard || []);
     } else {
       tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; 
 
-color:red;">தரவுகள் கிடைக்கவில்லை.</td></tr>` ;
+color:red;">தரவுகள் கிடைக்கவில்லை.</td></tr>`;
     }
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">பிழை: 
 
-${err.message}</td></tr>` ;
+${err.message}</td></tr>`;
   }
 }
 
 function renderLeaderboardTable(list) {
-  const tbody = document.getElementById("leaderboardTbody") ;
+  const tbody = document.getElementById("leaderboardTbody");
   if (!tbody) return;
-  tbody.innerHTML = "" ;
+  tbody.innerHTML = "";
 
   if (list.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">இவ்வகுப்பில் இன்னும் 
 
-தேர்வுகள் பதிவாகவில்லை.</td></tr>` ;
+தேர்வுகள் பதிவாகவில்லை.</td></tr>`;
     return;
   }
 
-  const medals = ["🥇 1", "🥈 2", "🥉 3"] ;
+  const medals = ["🥇 1", "🥈 2", "🥉 3"];
   list.forEach((item, idx) => {
-    const rankDisplay = medals[idx] || (idx + 1) ;
+    const rankDisplay = medals[idx] || (idx + 1);
     tbody.innerHTML += `
       <tr>
         <td style="font-weight:bold; text-align:center;">${rankDisplay}</td>
@@ -2001,28 +1980,28 @@ function renderLeaderboardTable(list) {
         <td><strong>${item.totalScore} / ${item.totalPossible}</strong></td>
         <td><span class="badge badge-success">${item.percentage}%</span></td>
       </tr>
-    ` ;
+    `;
   });
 }
 
 function toggleExamReview() {
-  const reviewArea = document.getElementById("quizReviewArea") ;
+  const reviewArea = document.getElementById("quizReviewArea");
   if (!reviewArea) return;
 
   if (!reviewArea.classList.contains("hidden")) {
-    reviewArea.classList.add("hidden") ;
+    reviewArea.classList.add("hidden");
     return;
   }
 
-  const list = document.getElementById("reviewQuestionsList") ;
-  list.innerHTML = "" ;
+  const list = document.getElementById("reviewQuestionsList");
+  list.innerHTML = "";
 
   examReviewRecord.forEach((rec, idx) => {
-    const q = rec.question ;
-    const card = document.createElement("div") ;
+    const q = rec.question;
+    const card = document.createElement("div");
     card.className = `review-item-card ${rec.isCorrect ? 'correct-border' : 'wrong-
 
-border'}` ;
+border'}`;
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; 
 
@@ -2054,19 +2033,19 @@ weight:600;">${rec.correctChoice}</span>
       <div class="explanation-card" style="margin-top:8px;">
         <strong>📖 விளக்கம்:</strong> ${q.explanation || 'சரிபார்க்கப்பட்டது.'}
       </div>
-    ` ;
-    list.appendChild(card) ;
+    `;
+    list.appendChild(card);
   });
 
-  reviewArea.classList.remove("hidden") ;
-  reviewArea.scrollIntoView({ behavior: 'smooth' }) ;
+  reviewArea.classList.remove("hidden");
+  reviewArea.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function submitTeacherFeedback() {
-  if (!currentUser) return alert("Please login to send teacher feedback.") ;
-  const msgInput = document.getElementById("teacherFeedbackMessage") ;
-  const msg = msgInput.value.trim() ;
-  if (!msg) return alert("தயவுசெய்து உங்கள் கருத்து அல்லது சந்தேகத்தை எழுதவும்.") ;
+  if (!currentUser) return alert("Please login to send teacher feedback.");
+  const msgInput = document.getElementById("teacherFeedbackMessage");
+  const msg = msgInput.value.trim();
+  if (!msg) return alert("தயவுசெய்து உங்கள் கருத்து அல்லது சந்தேகத்தை எழுதவும்.");
 
   const payload = {
     action: "sendTeacherFeedback", 
@@ -2079,68 +2058,68 @@ async function submitTeacherFeedback() {
     message: msg 
   };
 
-  const res = await callAppsScript(payload) ;
+  const res = await callAppsScript(payload);
   if (res && res.success) {
-    alert("✅ உங்கள் சந்தேகம்/கருத்து ஆசிரியருக்கு வெற்றிகரமாக அனுப்பப்பட்டது!") ;
-    msgInput.value = "" ;
+    alert("✅ உங்கள் சந்தேகம்/கருத்து ஆசிரியருக்கு வெற்றிகரமாக அனுப்பப்பட்டது!");
+    msgInput.value = "";
   } else {
-    alert("கருத்தை அனுப்புவதில் பிழை ஏற்பட்டது.") ;
+    alert("கருத்தை அனுப்புவதில் பிழை ஏற்பட்டது.");
   }
 }
 
 function toggleManualTypeInputs(type) {
   document.getElementById("wrapperMcqFields").classList.toggle("hidden", type !== 
 
-"mcq") ;
-  document.getElementById("wrapperTfFields").classList.toggle("hidden", type !== "tf") 
+"mcq");
+  document.getElementById("wrapperTfFields").classList.toggle("hidden", type !== 
 
-;
+"tf");
   document.getElementById("wrapperFibFields").classList.toggle("hidden", type !== 
 
-"fib") ;
+"fib");
   document.getElementById("wrapperMatchFields").classList.toggle("hidden", type !== 
 
-"match") ;
+"match");
 }
 
 async function publishManualQuestion() {
-  if (!currentUser) return alert("Please sign in as Teacher or Principal.") ;
+  if (!currentUser) return alert("Please sign in as Teacher or Principal.");
 
-  const stream = document.getElementById("authorStreamSelect").value ;
-  const type = document.getElementById("manualQType").value ;
-  const std = document.getElementById("authorStdSelect").value ;
-  const sub = document.getElementById("authorSubSelect").value ;
-  const chap = document.getElementById("authorChapterInput").value.trim() || "General" 
+  const stream = document.getElementById("authorStreamSelect").value;
+  const type = document.getElementById("manualQType").value;
+  const std = document.getElementById("authorStdSelect").value;
+  const sub = document.getElementById("authorSubSelect").value;
+  const chap = document.getElementById("authorChapterInput").value.trim() || 
 
-;
-  const topic = document.getElementById("authorTopicInput").value.trim() || "All" ;
-  const qText = document.getElementById("manualQuestionText").value.trim() ;
+"General";
+  const topic = document.getElementById("authorTopicInput").value.trim() || "All";
+  const qText = document.getElementById("manualQuestionText").value.trim();
   const explanation = (document.getElementById("manualExplanation")?.value || 
 
-"").trim() ;
+"").trim();
 
-  if (!qText) return alert("Please enter the question statement.") ;
+  if (!qText) return alert("Please enter the question statement.");
 
-  let optA = "", optB = "", optC = "", optD = "", correctOpt = "" ;
+  let optA = "", optB = "", optC = "", optD = "", correctOpt = "";
 
   if (type === "mcq") {
-    optA = document.getElementById("manualOptA").value.trim() ;
-    optB = document.getElementById("manualOptB").value.trim() ;
-    optC = document.getElementById("manualOptC").value.trim() ;
-    optD = document.getElementById("manualOptD").value.trim() ;
-    correctOpt = document.getElementById("manualCorrectOptMcq").value ;
-    if (!optA || !optB || !optC || !optD) return alert("Please fill all 4 options.") ;
+    optA = document.getElementById("manualOptA").value.trim();
+    optB = document.getElementById("manualOptB").value.trim();
+    optC = document.getElementById("manualOptC").value.trim();
+    optD = document.getElementById("manualOptD").value.trim();
+    correctOpt = document.getElementById("manualCorrectOptMcq").value;
+    if (!optA || !optB || !optC || !optD) return alert("Please fill all 4 options.");
   } else if (type === "tf") {
-    correctOpt = document.getElementById("manualCorrectOptTf").value ;
+    correctOpt = document.getElementById("manualCorrectOptTf").value;
   } else if (type === "fib") {
-    correctOpt = document.getElementById("manualCorrectOptFib").value.trim() ;
-    if (!correctOpt) return alert("Please enter the correct blank answer.") ;
+    correctOpt = document.getElementById("manualCorrectOptFib").value.trim();
+    if (!correctOpt) return alert("Please enter the correct blank answer.");
   } else if (type === "match") {
-    optA = document.getElementById("matchPair1").value.trim() ;
-    optB = document.getElementById("matchPair2").value.trim() ;
-    optC = document.getElementById("matchPair3").value.trim() ;
-    optD = document.getElementById("matchPair4").value.trim() ;
-    correctOpt = "MATCH" ;
+    optA = document.getElementById("matchPair1").value.trim();
+    optB = document.getElementById("matchPair2").value.trim();
+    optC = document.getElementById("matchPair3").value.trim();
+    optD = document.getElementById("matchPair4").value.trim();
+    correctOpt = "MATCH";
   }
 
   const payload = {
@@ -2159,33 +2138,33 @@ async function publishManualQuestion() {
     explanation: explanation 
   };
 
-  const data = await callAppsScript(payload) ;
+  const data = await callAppsScript(payload);
   if (data && data.success) {
-    alert("✅ Question successfully saved!") ;
-    document.getElementById("manualQuestionText").value = "" ;
+    alert("✅ Question successfully saved!");
+    document.getElementById("manualQuestionText").value = "";
     if (document.getElementById("manualExplanation")) document.getElementById
 
-("manualExplanation").value = "" ;
-    await loadPortalData() ;
+("manualExplanation").value = "";
+    await loadPortalData();
   }
 }
 
 async function extractTextFromPDF(file) {
   if (typeof pdfjsLib === "undefined") throw new Error("PDF.js library is not 
 
-loaded.") ;
-  const arrayBuffer = await file.arrayBuffer() ;
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise ;
-  let fullText = "" ;
+loaded.");
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = "";
 
   for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i) ;
-    const textContent = await page.getTextContent() ;
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
     fullText += ` [Page ${i}] ` + textContent.items.map(item => item.str).join(" ") + 
 
-"\n" ;
+"\n";
   }
-  return fullText ;
+  return fullText;
 }
 
 async function callAppsScript(payload) {
@@ -2194,62 +2173,62 @@ async function callAppsScript(payload) {
     headers: { "Content-Type": "text/plain;charset=utf-8" }, 
     body: JSON.stringify(payload) 
   });
-  return await res.json() ;
+  return await res.json();
 }
 
 async function generateViaAI() {
-  const fileInput = document.getElementById("aiFileInput") ;
-  const file = fileInput.files[0] ;
-  if (!file) return alert("Please select a PDF or Image file first.") ;
+  const fileInput = document.getElementById("aiFileInput");
+  const file = fileInput.files[0];
+  if (!file) return alert("Please select a PDF or Image file first.");
 
-  const countInput = document.getElementById("aiQuestionCount") ;
-  let requestedTotal = parseInt(countInput.value, 10) || 10 ;
-  if (requestedTotal > 20) requestedTotal = 20 ;
+  const countInput = document.getElementById("aiQuestionCount");
+  let requestedTotal = parseInt(countInput.value, 10) || 10;
+  if (requestedTotal > 20) requestedTotal = 20;
 
-  const btnExtract = document.getElementById("btnExtractAi") ;
-  const progressArea = document.getElementById("aiBatchProgressArea") ;
-  const statusText = document.getElementById("aiBatchStatusText") ;
-  const progressPct = document.getElementById("aiBatchProgressPct") ;
-  const progressBar = document.getElementById("aiBatchProgressBar") ;
-  const previewArea = document.getElementById("aiPreviewArea") ;
+  const btnExtract = document.getElementById("btnExtractAi");
+  const progressArea = document.getElementById("aiBatchProgressArea");
+  const statusText = document.getElementById("aiBatchStatusText");
+  const progressPct = document.getElementById("aiBatchProgressPct");
+  const progressBar = document.getElementById("aiBatchProgressBar");
+  const previewArea = document.getElementById("aiPreviewArea");
 
-  btnExtract.disabled = true ;
-  progressArea.classList.remove("hidden") ;
-  previewArea.classList.add("hidden") ;
-  extractedAiBatch = [] ;
+  btnExtract.disabled = true;
+  progressArea.classList.remove("hidden");
+  previewArea.classList.add("hidden");
+  extractedAiBatch = [];
 
   const context = {
     stream: document.getElementById("authorStreamSelect").value,
-    standard: document.getElementById("authorStdSelect").value ,
-    subject: document.getElementById("authorSubSelect").value ,
-    chapter: document.getElementById("authorChapterInput").value.trim() || "Unit 1" ,
+    standard: document.getElementById("authorStdSelect").value,
+    subject: document.getElementById("authorSubSelect").value,
+    chapter: document.getElementById("authorChapterInput").value.trim() || "Unit 1",
     topic: document.getElementById("authorTopicInput").value.trim() || "General" 
   };
 
   try {
-    let payloadData = "" ;
-    let isText = false ;
+    let payloadData = "";
+    let isText = false;
 
     if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
-      statusText.innerText = "Extracting text from PDF..." ;
-      payloadData = await extractTextFromPDF(file) ;
-      isText = true ;
+      statusText.innerText = "Extracting text from PDF...";
+      payloadData = await extractTextFromPDF(file);
+      isText = true;
     } else {
-      statusText.innerText = "Reading image data..." ;
+      statusText.innerText = "Reading image data...";
       payloadData = await new Promise((resolve, reject) => {
-        const reader = new FileReader() ;
-        reader.onload = () => resolve(reader.result) ;
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
-        reader.readAsDataURL(file) ;
+        reader.readAsDataURL(file);
       });
-      isText = false ;
+      isText = false;
     }
 
     statusText.innerText = `Generating ${requestedTotal} multi-category questions via 
 
-AI...` ;
-    progressPct.innerText = "50%" ;
-    progressBar.style.width = "50%" ;
+AI...`;
+    progressPct.innerText = "50%";
+    progressBar.style.width = "50%";
 
     const data = await callAppsScript({
       action: "parseDocument", 
@@ -2259,40 +2238,40 @@ AI...` ;
       contextInfo: context 
     });
 
-    progressBar.style.width = "100%" ;
-    progressPct.innerText = "100%" ;
-    btnExtract.disabled = false ;
+    progressBar.style.width = "100%";
+    progressPct.innerText = "100%";
+    btnExtract.disabled = false;
 
     if (data && data.success && Array.isArray(data.questions) && data.questions.length 
 
 > 0) {
       statusText.innerText = `Generated ${data.questions.length} questions 
 
-successfully!` ;
-      extractedAiBatch = data.questions ;
-      document.getElementById("aiTotalCountBadge").innerText = extractedAiBatch.length 
+successfully!`;
+      extractedAiBatch = data.questions;
+      document.getElementById("aiTotalCountBadge").innerText = 
 
-;
-      renderAiPreview(extractedAiBatch) ;
-      previewArea.classList.remove("hidden") ;
+extractedAiBatch.length;
+      renderAiPreview(extractedAiBatch);
+      previewArea.classList.remove("hidden");
     } else {
-      progressArea.classList.add("hidden") ;
-      alert("Error generating questions:\n" + (data ? data.error : "Unknown error")) ;
+      progressArea.classList.add("hidden");
+      alert("Error generating questions:\n" + (data ? data.error : "Unknown error"));
     }
   } catch (err) {
-    btnExtract.disabled = false ;
-    progressArea.classList.add("hidden") ;
-    alert("Extraction error: " + err.message) ;
+    btnExtract.disabled = false;
+    progressArea.classList.add("hidden");
+    alert("Extraction error: " + err.message);
   }
 }
 
 function renderAiPreview(questions) {
-  const container = document.getElementById("aiPreviewList") ;
-  container.innerHTML = "" ;
+  const container = document.getElementById("aiPreviewList");
+  container.innerHTML = "";
   questions.forEach((q, idx) => {
-    const item = document.createElement("div") ;
-    item.style.padding = "8px 0" ;
-    item.style.borderBottom = "1px solid #e9ecef" ;
+    const item = document.createElement("div");
+    item.style.padding = "8px 0";
+    item.style.borderBottom = "1px solid #e9ecef";
     item.innerHTML = `
       <div style="font-weight:600;">${idx + 1}. [${(q.type || 'mcq').toUpperCase()}] 
 
@@ -2306,8 +2285,8 @@ ${q.correctOpt}</div>
       <div style="font-size:0.82rem; color:#084298; margin-
 
 top:3px;"><strong>Explanation:</strong> ${q.explanation || 'N/A'}</div>
-    ` ;
-    container.appendChild(item) ;
+    `;
+    container.appendChild(item);
   });
 }
 
@@ -2325,12 +2304,12 @@ async function publishAiBatch() {
     questions: extractedAiBatch 
   };
 
-  const data = await callAppsScript(payload) ;
+  const data = await callAppsScript(payload);
   if (data && data.success) {
-    alert(`✅ Published ${data.count} questions to Question Bank!`) ;
-    document.getElementById("aiPreviewArea").classList.add("hidden") ;
-    document.getElementById("aiBatchProgressArea").classList.add("hidden") ;
-    await loadPortalData() ;
+    alert(`✅ Published ${data.count} questions to Question Bank!`);
+    document.getElementById("aiPreviewArea").classList.add("hidden");
+    document.getElementById("aiBatchProgressArea").classList.add("hidden");
+    await loadPortalData();
   }
 }
 
@@ -2355,7 +2334,6 @@ document.getElementById("manageStreamFilter").value : "";
   const isPrincipal = currentUser && (currentUser.role === "principal");
   const myId = currentUser ? currentUser.id.toLowerCase() : "";
 
-  // Filter master questions safely
   const filtered = masterQuestions.filter(q => {
     const isOwner = (q.creatorId && q.creatorId.toLowerCase() === myId);
     if (!isPrincipal && !isOwner) return false;
@@ -2377,7 +2355,6 @@ color:#64748b;">No questions found matching your search.</td></tr>`;
     return;
   }
 
-  // Performance Cap: Render maximum 100 rows at a time to prevent browser freezing
   const displayLimit = 100;
   const paginatedList = filtered.slice(0, displayLimit);
 
@@ -2432,7 +2409,6 @@ onclick="deleteQuestion('${q.id}')">🗑️ Delete</button>
   tbody.innerHTML = htmlContent;
 }
 
-
 function openEditQuestionModal(qId) {
   const q = masterQuestions.find(item => item.id === qId);
   if (!q) return alert("Question not found.");
@@ -2452,7 +2428,7 @@ function openEditQuestionModal(qId) {
 async function saveEditedQuestion() {
   const qId = document.getElementById("editQId").value;
   const updatedQ = {
-    action: "saveSingleQuestion", // Overwrites or appends updated record
+    action: "saveSingleQuestion", 
     userId: currentUser.id,
     role: currentUser.role,
     questionId: qId,
@@ -2465,7 +2441,6 @@ async function saveEditedQuestion() {
     explanation: document.getElementById("editExplanation").value.trim()
   };
 
-  // First delete the old question row, then save the updated one
   await callAppsScript({ action: "deleteQuestion", questionId: qId, userId: 
 
 currentUser.id });
@@ -2481,29 +2456,28 @@ currentUser.id });
   }
 }
 
-
 function generatePrintablePaper(count) {
-  const std = document.getElementById("manageStdFilter").value || "All Classes" ;
-  const sub = document.getElementById("manageSubFilter").value || "General Assessment" 
+  const std = document.getElementById("manageStdFilter").value || "All Classes";
+  const sub = document.getElementById("manageSubFilter").value || "General 
 
-;
+Assessment";
   const streamFilter = document.getElementById("manageStreamFilter").value || "ncert";
 
-  let pool = [...masterQuestions] ;
+  let pool = [...masterQuestions];
   pool = pool.filter(q => (q.stream || 'ncert') === streamFilter);
-  if (std !== "All Classes") pool = pool.filter(q => q.standard === std) ;
+  if (std !== "All Classes") pool = pool.filter(q => q.standard === std);
   if (sub !== "General Assessment") pool = pool.filter(q => q.subject.toLowerCase() 
 
-=== sub.toLowerCase()) ;
+=== sub.toLowerCase());
 
   if (pool.length === 0) return alert("No questions available for this filter to 
 
-generate a test paper.") ;
+generate a test paper.");
 
-  pool.sort(() => Math.random() - 0.5) ;
-  const selected = pool.slice(0, Math.min(count, pool.length)) ;
+  pool.sort(() => Math.random() - 0.5);
+  const selected = pool.slice(0, Math.min(count, pool.length));
 
-  const printArea = document.getElementById("printContainer") ;
+  const printArea = document.getElementById("printContainer");
   printArea.innerHTML = `
     <div class="print-header">
       <h2>HARI MANDIR HIGHER SECONDARY SCHOOL (${streamFilter.toUpperCase()} Stream)
@@ -2600,101 +2574,101 @@ size:0.85rem;" border="1">
         </tbody>
       </table>
     </div>
-  ` ;
+  `;
 
-  window.print() ;
+  window.print();
 }
 
 async function deleteQuestion(id) {
-  if (!confirm("Are you sure you want to remove this question?")) return ;
+  if (!confirm("Are you sure you want to remove this question?")) return;
   const data = await callAppsScript({ action: "deleteQuestion", questionId: id, 
 
-userId: currentUser.id }) ;
+userId: currentUser.id });
   if (data && data.success) {
-    alert("Question deleted.") ;
-    await loadPortalData() ;
-    renderManageTable() ;
+    alert("Question deleted.");
+    await loadPortalData();
+    renderManageTable();
   } else {
-    alert(data ? data.error : "Failed to delete question") ;
+    alert(data ? data.error : "Failed to delete question");
   }
 }
 
 async function loadUserReports() {
-  if (!currentUser) return ;
-  const tbody = document.getElementById("userScoresTbody") ;
+  if (!currentUser) return;
+  const tbody = document.getElementById("userScoresTbody");
   tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Loading 
 
-scores...</td></tr>` ;
+scores...</td></tr>`;
 
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getUserScores&userId=
 
-${encodeURIComponent(currentUser.id)}`) ;
-    const data = await res.json() ;
+${encodeURIComponent(currentUser.id)}`);
+    const data = await res.json();
     if (data && data.success) {
-      masterUserScores = data.scores || [] ;
-      renderUserBadges(masterUserScores) ;
-      filterUserReports() ;
+      masterUserScores = data.scores || [];
+      renderUserBadges(masterUserScores);
+      filterUserReports();
     }
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-
 
-align:center;">Error: ${e.message}</td></tr>` ;
+align:center;">Error: ${e.message}</td></tr>`;
   }
 }
 
 function renderUserBadges(scores) {
-  const container = document.getElementById("badgesContainer") ;
+  const container = document.getElementById("badgesContainer");
   if (!container) return;
-  container.innerHTML = "" ;
+  container.innerHTML = "";
 
   if (!scores || scores.length === 0) {
     container.innerHTML = `<span style="font-size:0.85rem; color:#777;">Attend exams 
 
-daily to earn achievement badges!</span>` ;
+daily to earn achievement badges!</span>`;
     return;
   }
 
   const uniqueDates = [...new Set(scores.map(s => (s.date || '').split("T")
 
-[0]))].sort().reverse() ;
-  let currentStreak = 0 ;
+[0]))].sort().reverse();
+  let currentStreak = 0;
   if (uniqueDates.length > 0) {
-    let checkDate = new Date() ;
+    let checkDate = new Date();
     for (let d of uniqueDates) {
-      const dt = new Date(d) ;
-      const diffDays = Math.floor((checkDate - dt) / (1000 * 60 * 60 * 24)) ;
+      const dt = new Date(d);
+      const diffDays = Math.floor((checkDate - dt) / (1000 * 60 * 60 * 24));
       if (diffDays <= 1) { currentStreak++; checkDate = dt; } else { break; }
     }
   }
 
-  const streakDisplay = document.getElementById("repStatStreak") ;
-  if (streakDisplay) streakDisplay.innerText = `${currentStreak} Days` ;
+  const streakDisplay = document.getElementById("repStatStreak");
+  if (streakDisplay) streakDisplay.innerText = `${currentStreak} Days`;
 
-  const badges = [] ;
+  const badges = [];
   if (currentStreak >= 3) badges.push({ icon: "🔥", title: "3-Day Streak", desc: 
 
-"Practiced 3 days in a row!" }) ;
+"Practiced 3 days in a row!" });
   if (currentStreak >= 7) badges.push({ icon: "⚡", title: "7-Day Streak", desc: "Super 
 
-consistent learner!" }) ;
+consistent learner!" });
 
   if (badges.length === 0) {
     container.innerHTML = `<span style="font-size:0.85rem; color:#666;">Keep 
 
-practicing! Badges unlock at 3-Day streak.</span>` ;
+practicing! Badges unlock at 3-Day streak.</span>`;
   } else {
     badges.forEach(b => {
-      const el = document.createElement("div") ;
-      el.className = "badge-card" ;
+      const el = document.createElement("div");
+      el.className = "badge-card";
       el.innerHTML = `
         <div style="font-size:1.6rem;">${b.icon}</div>
         <div style="font-weight:bold; font-size:0.85rem; margin-top:4px;">${b.title}
 
 </div>
         <div style="font-size:0.75rem; color:#666;">${b.desc}</div>
-      ` ;
-      container.appendChild(el) ;
+      `;
+      container.appendChild(el);
     });
   }
 }
@@ -2753,54 +2727,54 @@ filtered.length)}%`;
 }
 
 async function loadTeacherStudentScores() {
-  if (!currentUser) return ;
-  const tbody = document.getElementById("teacherStudentScoresTbody") ;
+  if (!currentUser) return;
+  const tbody = document.getElementById("teacherStudentScoresTbody");
   tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading assigned 
 
-class scores...</td></tr>` ;
+class scores...</td></tr>`;
 
   try {
     const res = await fetch(`${SCRIPT_URL}?action=getTeacherStudentScores&userId=
 
-${encodeURIComponent(currentUser.id)}`) ;
-    const data = await res.json() ;
+${encodeURIComponent(currentUser.id)}`);
+    const data = await res.json();
     if (data && data.success) {
-      teacherStudentScores = data.scores || [] ;
-      filterTeacherStudentScores() ;
+      teacherStudentScores = data.scores || [];
+      filterTeacherStudentScores();
     }
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="7" style="color:red; text-
 
-align:center;">Error: ${e.message}</td></tr>` ;
+align:center;">Error: ${e.message}</td></tr>`;
   }
 }
 
 function filterTeacherStudentScores() {
-  const search = document.getElementById("tchRepSearchStudent").value.toLowerCase() ;
-  const std = document.getElementById("tchRepStdFilter").value ;
-  const sub = document.getElementById("tchRepSubFilter").value.toLowerCase() ;
+  const search = document.getElementById("tchRepSearchStudent").value.toLowerCase();
+  const std = document.getElementById("tchRepStdFilter").value;
+  const sub = document.getElementById("tchRepSubFilter").value.toLowerCase();
 
-  const tbody = document.getElementById("teacherStudentScoresTbody") ;
-  tbody.innerHTML = "" ;
+  const tbody = document.getElementById("teacherStudentScoresTbody");
+  tbody.innerHTML = "";
 
   const filtered = (teacherStudentScores || []).filter(s => {
     const mStudent = !search || s.userId.toLowerCase().includes(search) || 
 
-s.userName.toLowerCase().includes(search) ;
-    const mStd = !std || s.standard === std ;
-    const mSub = !sub || s.subject.toLowerCase() === sub ;
-    return mStudent && mStd && mSub ;
+s.userName.toLowerCase().includes(search);
+    const mStd = !std || s.standard === std;
+    const mSub = !sub || s.subject.toLowerCase() === sub;
+    return mStudent && mStd && mSub;
   });
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No student 
 
-performance records found.</td></tr>` ;
+performance records found.</td></tr>`;
     return;
   }
 
   filtered.forEach(s => {
-    const pct = Math.round((Number(s.score) / Number(s.total)) * 100) ;
+    const pct = Math.round((Number(s.score) / Number(s.total)) * 100);
     tbody.innerHTML += `
       <tr>
         <td><strong>${s.userId}</strong></td>
@@ -2811,17 +2785,17 @@ performance records found.</td></tr>` ;
         <td><strong>${s.score} / ${s.total} (${pct}%)</strong></td>
         <td>${s.date}</td>
       </tr>
-    ` ;
+    `;
   });
 }
 
 async function deleteTeacher(teacherId) {
-  if (!confirm(`நிச்சயமாக ஆசிரியர் ${teacherId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return ;
+  if (!confirm(`நிச்சயமாக ஆசிரியர் ${teacherId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return;
   const payload = { action: "deleteTeacher", principalId: currentUser ? currentUser.id 
 
 : "PRINCIPAL", targetTeacherId: teacherId };
   try {
-    const data = await callAppsScript(payload) ;
+    const data = await callAppsScript(payload);
     if (data && data.success) { alert(`✅ ஆசிரியர் ${teacherId} வெற்றிகரமாக நீக்கப்பட்டார்!`); 
 
 loadPrincipalDashboard(); }
@@ -2830,12 +2804,12 @@ loadPrincipalDashboard(); }
 }
 
 async function deleteStudent(studentId) {
-  if (!confirm(`நிச்சயமாக மாணவர் ${studentId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return ;
+  if (!confirm(`நிச்சயமாக மாணவர் ${studentId}-ஐ நீக்க விரும்புகிறீர்களா?`)) return;
   const payload = { action: "deleteStudent", principalId: currentUser ? currentUser.id 
 
 : "PRINCIPAL", targetStudentId: studentId };
   try {
-    const data = await callAppsScript(payload) ;
+    const data = await callAppsScript(payload);
     if (data && data.success) { alert(`✅ மாணவர் ${studentId} வெற்றிகரமாக நீக்கப்பட்டார்!`); 
 
 loadPrincipalDashboard(); }
@@ -2844,12 +2818,12 @@ loadPrincipalDashboard(); }
 }
 
 async function principalCreateTeacher() {
-  const id = document.getElementById("newTeacherId").value.trim() ;
-  const name = document.getElementById("newTeacherName").value.trim() ;
+  const id = document.getElementById("newTeacherId").value.trim();
+  const name = document.getElementById("newTeacherName").value.trim();
   const stream = document.getElementById("newTeacherStream").value;
-  const pass = document.getElementById("newTeacherPass").value.trim() ;
+  const pass = document.getElementById("newTeacherPass").value.trim();
 
-  if (!id || !name || !pass) return alert("Enter Teacher ID, Name, and Password.") ;
+  if (!id || !name || !pass) return alert("Enter Teacher ID, Name, and Password.");
 
   const payload = {
     action: "createTeacher", 
@@ -2862,15 +2836,15 @@ async function principalCreateTeacher() {
     subjects: ["Science"] 
   };
 
-  const data = await callAppsScript(payload) ;
+  const data = await callAppsScript(payload);
   if (data && data.success) {
-    alert(`Teacher ${name} created successfully!`) ;
-    document.getElementById("newTeacherId").value = "" ;
-    document.getElementById("newTeacherName").value = "" ;
-    document.getElementById("newTeacherPass").value = "" ;
-    loadPrincipalDashboard() ;
+    alert(`Teacher ${name} created successfully!`);
+    document.getElementById("newTeacherId").value = "";
+    document.getElementById("newTeacherName").value = "";
+    document.getElementById("newTeacherPass").value = "";
+    loadPrincipalDashboard();
   } else {
-    alert("Error: " + (data ? data.error : "Could not create teacher")) ;
+    alert("Error: " + (data ? data.error : "Could not create teacher"));
   }
 }
 
@@ -3242,33 +3216,33 @@ style="color:#64748b;">(${s.userId || 'ID'})</small></td>
 }
 
 function switchCreateMethod(method) {
-  const btnManual = document.getElementById("btnMethodManual") ;
-  const btnAi = document.getElementById("btnMethodAi") ;
-  const btnCsv = document.getElementById("btnMethodCsv") ;
+  const btnManual = document.getElementById("btnMethodManual");
+  const btnAi = document.getElementById("btnMethodAi");
+  const btnCsv = document.getElementById("btnMethodCsv");
 
   if (btnManual) btnManual.className = (method === 'manual') ? 'btn btn-primary flex-
 
-1' : 'btn btn-outline-dark flex-1' ;
+1' : 'btn btn-outline-dark flex-1';
   if (btnAi) btnAi.className = (method === 'ai') ? 'btn btn-secondary flex-1' : 'btn 
 
-btn-outline-dark flex-1' ;
+btn-outline-dark flex-1';
   if (btnCsv) btnCsv.className = (method === 'csv') ? 'btn btn-primary flex-1' : 'btn 
 
-btn-outline-dark flex-1' ;
+btn-outline-dark flex-1';
 
   document.getElementById("sectionManualCreate").classList.toggle("hidden", method !== 
 
-'manual') ;
+'manual');
   document.getElementById("sectionAiCreate").classList.toggle("hidden", method !== 
 
-'ai') ;
+'ai');
   document.getElementById("sectionCsvCreate").classList.toggle("hidden", method !== 
 
-'csv') ;
+'csv');
 
   if (method === 'csv' && typeof updateAiPromptPreview === "function") 
 
-updateAiPromptPreview() ;
+updateAiPromptPreview();
 }
 
 function updateAiPromptPreview() {
@@ -3330,6 +3304,7 @@ TEXTBOOK CONTENT:
 [PASTE TEXTBOOK CONTENT HERE]
 """`;
 }
+
 function copyAiStudioPrompt() {
   const promptBox = document.getElementById("aiStudioPromptTextarea");
   if (!promptBox) return;
@@ -3344,12 +3319,7 @@ Prompt"; }, 2000); }
 function parseCustomCsv(text) {
   if (!text) return [];
   
-  // 1. Normalize line breaks
   let cleanText = text.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-
-  // 2. Fix inline merged rows: split when a row ends with "ncert" / "metric" / 
-
-"stateboard" followed by a new row type
   cleanText = cleanText.replace(/"\s+("mcq"|"tf"|"fib"|"match")/gi, '"\n$1');
 
   const lines = [];
@@ -3413,7 +3383,20 @@ document.getElementById("authorStreamSelect").value : "ncert";
 ("type");
   const startIndex = isHeaderPresent ? 1 : 0;
 
+  const existingQuestionsSet = new Set();
+  if (Array.isArray(masterQuestions)) {
+    masterQuestions.forEach(q => {
+      if (q && q.question) {
+        const cleanKey = q.question.toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (cleanKey) existingQuestionsSet.add(cleanKey);
+      }
+    });
+  }
+
+  const seenInBatchSet = new Set();
+  let duplicateCount = 0;
   globalStandaloneCsvList = [];
+
   for (let i = startIndex; i < rows.length; i++) {
     let r = rows[i];
     if (!r || r.length < 6) continue;
@@ -3436,6 +3419,22 @@ document.getElementById("authorStreamSelect").value : "ncert";
 
     if (!qText) continue;
 
+    const matchKey = qText.toLowerCase().replace(/[^a-z0-9]/g, "");
+    let isDuplicate = false;
+    let dupReason = "";
+
+    if (existingQuestionsSet.has(matchKey)) {
+      isDuplicate = true;
+      dupReason = "Already in Google Sheet";
+      duplicateCount++;
+    } else if (seenInBatchSet.has(matchKey)) {
+      isDuplicate = true;
+      dupReason = "Duplicate in this pasted CSV";
+      duplicateCount++;
+    } else {
+      seenInBatchSet.add(matchKey);
+    }
+
     globalStandaloneCsvList.push({
       type,
       standard: std,
@@ -3449,15 +3448,23 @@ document.getElementById("authorStreamSelect").value : "ncert";
       optD,
       correctOpt: correctRaw,
       explanation,
-      stream: streamVal
+      stream: streamVal,
+      isDuplicate,
+      dupReason
     });
   }
 
-  document.getElementById("standaloneCsvCount").innerText = 
+  const countBadge = document.getElementById("standaloneCsvCount");
+  if (countBadge) countBadge.innerText = globalStandaloneCsvList.length;
 
-globalStandaloneCsvList.length;
+  const dupBadge = document.getElementById("csvDuplicateCountBadge");
+  if (dupBadge) {
+    dupBadge.innerText = `${duplicateCount} Potential Duplicates`;
+    dupBadge.style.background = duplicateCount > 0 ? "#fee2e2" : "#dcfce7";
+    dupBadge.style.color = duplicateCount > 0 ? "#991b1b" : "#166534";
+  }
+
   const previewBox = document.getElementById("standaloneCsvList");
-
   previewBox.innerHTML = globalStandaloneCsvList.map((q, idx) => {
     let optionsContent = "";
 
@@ -3485,10 +3492,15 @@ padding:3px 8px; border-radius:4px; font-size:0.8rem; color:#1e293b;">🔗 ${p}
         </div>`;
     }
 
+    const cardBg = q.isDuplicate ? "#fffbeb" : "#ffffff";
+    const borderColor = q.isDuplicate ? "#f59e0b" : "#cbd5e1";
+
     return `
       <div style="padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 
 
-1.5px solid #cbd5e1; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+1.5px solid ${borderColor}; background: ${cardBg}; box-shadow: 0 1px 3px rgba
+
+(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: 
 
 baseline; gap: 8px;">
@@ -3497,11 +3509,18 @@ baseline; gap: 8px;">
 
 ${q.question}
           </span>
-          <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; white-
+          <div style="text-align: right;">
+            ${q.isDuplicate ? `<span class="badge" style="background:#fef2f2; 
+
+color:#b91c1c; border:1px solid #fecaca; margin-bottom:4px;">⚠️ ${q.dupReason}
+
+</span><br>` : ''}
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; white-
 
 space: nowrap;">
-            Class ${q.standard} • ${q.subject} • ${q.chapter}
-          </span>
+              Class ${q.standard} • ${q.subject} • ${q.chapter}
+            </span>
+          </div>
         </div>
 
         ${optionsContent}
@@ -3522,47 +3541,56 @@ italic;"><strong>Explanation:</strong> ${q.explanation}</span>` : ''}
     `;
   }).join("");
 
+  const uploadBtn = document.getElementById("btnUploadStandaloneCsv");
+  if (uploadBtn && duplicateCount > 0) {
+    uploadBtn.innerText = `🚀 Upload New Only (${globalStandaloneCsvList.length - 
+
+duplicateCount} Questions)`;
+  } else if (uploadBtn) {
+    uploadBtn.innerText = `🚀 Upload All to Google Sheet`;
+  }
+
   document.getElementById("standaloneCsvPreviewArea").classList.remove("hidden");
 }
 
 function handleStandaloneCsv(event) {
-  const file = event.target.files[0] ;
+  const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader() ;
-  reader.onload = function(e) { processParsedCsvRows(parseCustomCsv(e.target.result)) 
+  const reader = new FileReader();
+  reader.onload = function(e) { processParsedCsvRows(parseCustomCsv(e.target.result)); 
 
-; };
-  reader.readAsText(file) ;
+};
+  reader.readAsText(file);
 }
 
 function handleDirectCsvPaste() {
-  const text = document.getElementById("rawCsvTextInput").value.trim() ;
-  if (!text) return alert("Please paste CSV text.") ;
-  processParsedCsvRows(parseCustomCsv(text)) ;
+  const text = document.getElementById("rawCsvTextInput").value.trim();
+  if (!text) return alert("Please paste CSV text.");
+  processParsedCsvRows(parseCustomCsv(text));
 }
 
 async function submitStandaloneCsvToSheet() {
   if (!globalStandaloneCsvList || globalStandaloneCsvList.length === 0) return alert
 
-("No CSV questions loaded.") ;
+("No CSV questions loaded.");
+
+  const freshQuestions = globalStandaloneCsvList.filter(q => !q.isDuplicate);
+
+  if (freshQuestions.length === 0) {
+    return alert("All questions in this batch already exist in the Google Sheet!");
+  }
 
   const payload = {
     action: "importCsvQuestions", 
     userId: (currentUser && currentUser.id) ? currentUser.id : "PRINCIPAL", 
     role: (currentUser && currentUser.role) ? currentUser.role : "principal", 
-    questions: globalStandaloneCsvList 
+    questions: freshQuestions 
   };
 
-  const data = await callAppsScript(payload) ;
-  if (data && data.success) {
-    alert(`✅ Uploaded ${data.count} questions successfully!`) ;
-    document.getElementById("standaloneCsvPreviewArea").classList.add("hidden") ;
-    globalStandaloneCsvList = [] ;
-    await loadPortalData() ;
-  } else {
-    alert("Error uploading CSV.") ;
-  }
-}...";
+  const uploadBtn = document.getElementById("btnUploadStandaloneCsv");
+  if (uploadBtn) {
+    uploadBtn.disabled = true;
+    uploadBtn.innerText = "⏳ Uploading to Google Sheet...";
   }
 
   try {
@@ -3583,15 +3611,5 @@ async function submitStandaloneCsvToSheet() {
       uploadBtn.disabled = false;
       uploadBtn.innerText = "🚀 Upload All to Google Sheet";
     }
-  }
-}
-  const data = await callAppsScript(payload) ;
-  if (data && data.success) {
-    alert(`✅ Uploaded ${data.count} questions successfully!`) ;
-    document.getElementById("standaloneCsvPreviewArea").classList.add("hidden") ;
-    globalStandaloneCsvList = [] ;
-    await loadPortalData() ;
-  } else {
-    alert("Error uploading CSV.") ;
   }
 }

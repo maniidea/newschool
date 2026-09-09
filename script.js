@@ -2692,32 +2692,48 @@ function copyAiStudioPrompt() {
 }
 
 function parseCustomCsv(text) {
-  if (!text) return [] ;
+  if (!text) return [];
+  
+  // 1. Normalize line breaks
   let cleanText = text.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const lines = [] ;
-  let row = [] ;
-  let inQuotes = false ;
-  let currentField = '' ;
+
+  // 2. Fix inline merged rows: split when a row ends with "ncert" / "metric" / "stateboard" followed by a new row type
+  cleanText = cleanText.replace(/"\s+("mcq"|"tf"|"fib"|"match")/gi, '"\n$1');
+
+  const lines = [];
+  let row = [];
+  let inQuotes = false;
+  let currentField = '';
 
   for (let i = 0; i < cleanText.length; i++) {
-    const char = cleanText[i] ;
-    const nextChar = cleanText[i + 1] ;
+    const char = cleanText[i];
+    const nextChar = cleanText[i + 1];
+
     if (char === '"') {
-      if (inQuotes && nextChar === '"') { currentField += '"'; i++; } else { inQuotes = !inQuotes; }
+      if (inQuotes && nextChar === '"') {
+        currentField += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
     } else if (char === ',' && !inQuotes) {
-      row.push(currentField.trim()); currentField = '';
+      row.push(currentField.trim());
+      currentField = '';
     } else if (char === '\n' && !inQuotes) {
       row.push(currentField.trim());
       if (row.some(f => f.length > 0)) lines.push(row);
-      row = []; currentField = '';
+      row = [];
+      currentField = '';
     } else {
       currentField += char;
     }
   }
+
   if (currentField || row.length > 0) {
     row.push(currentField.trim());
     if (row.some(f => f.length > 0)) lines.push(row);
   }
+
   return lines;
 }
 

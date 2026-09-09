@@ -2649,26 +2649,39 @@ function updateAiPromptPreview() {
   const streamSelect = document.getElementById("authorStreamSelect");
   const stdSelect = document.getElementById("authorStdSelect");
   const subSelect = document.getElementById("authorSubSelect");
+  const chapInput = document.getElementById("authorChapterInput");
+  const topicInput = document.getElementById("authorTopicInput");
   const promptBox = document.getElementById("aiStudioPromptTextarea");
   if (!promptBox) return;
 
   const stream = streamSelect ? streamSelect.value : "ncert";
   const std = stdSelect && stdSelect.value ? stdSelect.value : "5";
   const sub = subSelect && subSelect.value ? subSelect.value : "Science";
+  const chap = chapInput && chapInput.value.trim() ? chapInput.value.trim() : "[Chapter]";
+  const topic = topicInput && topicInput.value.trim() ? topicInput.value.trim() : "[Topic]";
 
   promptBox.value = `You are an examination question author for HariMani School (${stream.toUpperCase()} Stream).
-Generate exactly 100 balanced assessment questions (50 MCQ, 10 True/False, 15 Fill in the Blanks, 15 Match the Following) based on the textbook.
+Generate exactly 100 balanced assessment questions (50 Multiple Choice Questions, 10 True/False, 15 Fill in the Blanks, and 15 Match the Following) strictly based on the textbook content provided below.
+
+OUTPUT FORMAT REQUIREMENTS:
+- Pure raw CSV text only, no code blocks or markdown backticks.
+- Exactly 13 columns per row enclosed in double quotes ("...").
+- Every question must be on its OWN SEPARATE LINE.
 
 HEADER ROW:
 Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation,Stream
 
 DATA ROW TEMPLATES:
-"mcq",${std},"${sub}","[Chapter]","[Topic]","[Question]","[A]","[B]","[C]","[D]",1,"[Exp]","${stream}"
-"tf",${std},"${sub}","[Chapter]","[Topic]","[Factual Statement]","","","","",True,"[Exp]","${stream}"
-"fib",${std},"${sub}","[Chapter]","[Topic]","[Statement _____]","","","","","[Word]","[Exp]","${stream}"
-"match",${std},"${sub}","[Chapter]","[Topic]","Match pairs:","[L1:R1]","[L2:R2]","[L3:R3]","[L4:R4]","MATCH","[Exp]","${stream}"`;
-}
+"mcq",${std},"${sub}","${chap}","${topic}","[Question statement]","[Opt A]","[Opt B]","[Opt C]","[Opt D]",1,"[Explanation]","${stream}"
+"tf",${std},"${sub}","${chap}","${topic}","[Factual Statement]","","","","",True,"[Explanation]","${stream}"
+"fib",${std},"${sub}","${chap}","${topic}","[Statement with _____ blank]","","","","","[Word]","[Explanation]","${stream}"
+"match",${std},"${sub}","${chap}","${topic}","Match the pairs:","[Item1:Match1]","[Item2:Match2]","[Item3:Match3]","[Item4:Match4]","MATCH","[Explanation]","${stream}"
 
+TEXTBOOK CONTENT:
+"""
+[PASTE TEXTBOOK CONTENT HERE]
+"""`;
+}
 function copyAiStudioPrompt() {
   const promptBox = document.getElementById("aiStudioPromptTextarea");
   if (!promptBox) return;
@@ -2710,54 +2723,66 @@ function parseCustomCsv(text) {
 
 function processParsedCsvRows(rows) {
   if (!rows || rows.length === 0) return alert("Empty CSV.");
-  const fallbackStd = document.getElementById("authorStdSelect") ? document.getElementById("authorStdSelect").value : "5" ;
-  const fallbackSub = document.getElementById("authorSubSelect") ? document.getElementById("authorSubSelect").value : "Science" ;
+  const fallbackStd = document.getElementById("authorStdSelect") ? document.getElementById("authorStdSelect").value : "5";
+  const fallbackSub = document.getElementById("authorSubSelect") ? document.getElementById("authorSubSelect").value : "Science";
   const fallbackStream = document.getElementById("authorStreamSelect") ? document.getElementById("authorStreamSelect").value : "ncert";
+  const fallbackChap = (document.getElementById("authorChapterInput")?.value || "").trim() || "General";
+  const fallbackTopic = (document.getElementById("authorTopicInput")?.value || "").trim() || "All";
 
-  const firstRowStr = rows[0].join(" ").toLowerCase() ;
-  const isHeaderPresent = firstRowStr.includes("question") || firstRowStr.includes("type") ;
-  const startIndex = isHeaderPresent ? 1 : 0 ;
+  const firstRowStr = rows[0].join(" ").toLowerCase();
+  const isHeaderPresent = firstRowStr.includes("question") || firstRowStr.includes("type");
+  const startIndex = isHeaderPresent ? 1 : 0;
 
-  globalStandaloneCsvList = [] ;
+  globalStandaloneCsvList = [];
   for (let i = startIndex; i < rows.length; i++) {
-    let r = rows[i] ;
-    if (!r || r.length < 5) continue; 
+    let r = rows[i];
+    if (!r || r.length < 6) continue;
 
-    let type = (r[0] || "mcq").toLowerCase().trim() ;
-    let std = r[1] || fallbackStd ;
-    let sub = r[2] || fallbackSub ;
-    let chap = r[3] || "General" ;
-    let topic = r[4] || "All" ;
-    let qText = r[5] ;
-    let optA = r[6] || "" ;
-    let optB = r[7] || "" ;
-    let optC = r[8] || "" ;
-    let optD = r[9] || "" ;
-    let correctRaw = r[10] || "" ;
-    let explanation = r[11] || "" ;
-    let streamVal = r[12] || fallbackStream ;
+    let type = (r[0] || "mcq").toLowerCase().trim();
+    let std = (r[1] || fallbackStd).toString().replace(/class/gi, "").trim();
+    let sub = (r[2] || fallbackSub).toString().trim();
+    let chap = (r[3] || fallbackChap).toString().trim();
+    let topic = (r[4] || fallbackTopic).toString().trim();
+    let qText = (r[5] || "").toString().trim();
+    let optA = (r[6] || "").toString().trim();
+    let optB = (r[7] || "").toString().trim();
+    let optC = (r[8] || "").toString().trim();
+    let optD = (r[9] || "").toString().trim();
+    let correctRaw = (r[10] !== undefined && r[10] !== null) ? r[10].toString().trim() : "";
+    let explanation = (r[11] || "").toString().trim();
+    let streamVal = (r[12] || fallbackStream).toString().toLowerCase().trim();
 
     if (!qText) continue;
 
     globalStandaloneCsvList.push({
-      type, standard: std.toString().replace(/class/gi, "").trim(), subject: sub, 
-      chapter: chap, topic, question: qText.trim(), optA: optA.trim(), optB: optB.trim(), 
-      optC: optC.trim(), optD: optD.trim(), correctOpt: correctRaw.toString().trim(), 
-      explanation: explanation.trim(), stream: streamVal.toLowerCase().trim()
+      type,
+      standard: std,
+      subject: sub,
+      chapter: chap,
+      topic: topic,
+      question: qText,
+      optA,
+      optB,
+      optC,
+      optD,
+      correctOpt: correctRaw,
+      explanation,
+      stream: streamVal
     });
   }
 
-  document.getElementById("standaloneCsvCount").innerText = globalStandaloneCsvList.length ;
-  const previewBox = document.getElementById("standaloneCsvList") ;
+  document.getElementById("standaloneCsvCount").innerText = globalStandaloneCsvList.length;
+  const previewBox = document.getElementById("standaloneCsvList");
   previewBox.innerHTML = globalStandaloneCsvList.map((q, idx) => `
     <div style="padding: 8px; margin-bottom:6px; border-radius:4px; border: 1px solid #e2e8f0; background:#fff; font-size: 0.85rem;">
       <strong>${idx + 1}. [${q.stream.toUpperCase()}] [${q.type.toUpperCase()}] ${q.question}</strong><br>
-      <span style="color:#059669; font-weight:600;">Correct: ${q.correctOpt} [Class ${q.standard} • ${q.subject}]</span>
+      <span style="color:#059669; font-weight:600;">Correct: ${q.correctOpt} [Class ${q.standard} • ${q.subject} • ${q.chapter}]</span>
     </div>
-  `).join("") ;
+  `).join("");
 
-  document.getElementById("standaloneCsvPreviewArea").classList.remove("hidden") ;
+  document.getElementById("standaloneCsvPreviewArea").classList.remove("hidden");
 }
+
 
 function handleStandaloneCsv(event) {
   const file = event.target.files[0] ;

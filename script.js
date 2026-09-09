@@ -2789,16 +2789,51 @@ function processParsedCsvRows(rows) {
 
   document.getElementById("standaloneCsvCount").innerText = globalStandaloneCsvList.length;
   const previewBox = document.getElementById("standaloneCsvList");
-  previewBox.innerHTML = globalStandaloneCsvList.map((q, idx) => `
-    <div style="padding: 8px; margin-bottom:6px; border-radius:4px; border: 1px solid #e2e8f0; background:#fff; font-size: 0.85rem;">
-      <strong>${idx + 1}. [${q.stream.toUpperCase()}] [${q.type.toUpperCase()}] ${q.question}</strong><br>
-      <span style="color:#059669; font-weight:600;">Correct: ${q.correctOpt} [Class ${q.standard} • ${q.subject} • ${q.chapter}]</span>
-    </div>
-  `).join("");
+
+  previewBox.innerHTML = globalStandaloneCsvList.map((q, idx) => {
+    let optionsContent = "";
+
+    if (q.type === "mcq") {
+      optionsContent = `
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin: 6px 0; font-size: 0.82rem; color: #334155; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div><strong>A)</strong> ${q.optA || '-'}</div>
+          <div><strong>B)</strong> ${q.optB || '-'}</div>
+          <div><strong>C)</strong> ${q.optC || '-'}</div>
+          <div><strong>D)</strong> ${q.optD || '-'}</div>
+        </div>`;
+    } else if (q.type === "match") {
+      const pairs = [q.optA, q.optB, q.optC, q.optD].filter(Boolean);
+      optionsContent = `
+        <div style="display:flex; flex-wrap:wrap; gap: 6px; margin: 6px 0;">
+          ${pairs.map(p => `<span style="background:#f1f5f9; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; font-size:0.8rem; color:#1e293b;">🔗 ${p}</span>`).join("")}
+        </div>`;
+    }
+
+    return `
+      <div style="padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+          <span style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">
+            ${idx + 1}. [${q.stream.toUpperCase()}] [${q.type.toUpperCase()}] ${q.question}
+          </span>
+          <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; white-space: nowrap;">
+            Class ${q.standard} • ${q.subject} • ${q.chapter}
+          </span>
+        </div>
+
+        ${optionsContent}
+
+        <div style="margin-top: 6px; font-size: 0.84rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; font-weight: 700; padding: 2px 8px; border-radius: 4px;">
+            ✓ Correct: ${q.correctOpt}
+          </span>
+          ${q.explanation ? `<span style="color: #475569; font-style: italic;"><strong>Explanation:</strong> ${q.explanation}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join("");
 
   document.getElementById("standaloneCsvPreviewArea").classList.remove("hidden");
 }
-
 
 function handleStandaloneCsv(event) {
   const file = event.target.files[0] ;

@@ -257,12 +257,47 @@ function populateAllDropdowns() {
   });
 }
 
-let masterBookLinks = [];
+let globalLoaderSafetyTimer = null;
+
+function setGlobalLoadingState(isLoading, title, subText, progressPct) {
+  const overlay = document.getElementById("portalGlobalLoader");
+  const titleEl = document.getElementById("loaderTitle");
+  const subEl = document.getElementById("loaderSub");
+  const fillEl = document.getElementById("loaderProgressBar");
+
+  if (!overlay) return;
+
+  if (isLoading) {
+    overlay.style.display = "flex";
+    overlay.classList.remove("fade-out");
+    if (title && titleEl) titleEl.innerText = title;
+    if (subText && subEl) subEl.innerText = subText;
+    if (progressPct !== undefined && fillEl) fillEl.style.width = `${progressPct}%`;
+
+    // Fail-safe: Always hide after 5 seconds regardless of network latency
+    clearTimeout(globalLoaderSafetyTimer);
+    globalLoaderSafetyTimer = setTimeout(() => {
+      overlay.classList.add("fade-out");
+      setTimeout(() => { overlay.style.display = "none"; }, 350);
+    }, 5000);
+  } else {
+    clearTimeout(globalLoaderSafetyTimer);
+    if (fillEl) fillEl.style.width = "100%";
+    setTimeout(() => {
+      overlay.classList.add("fade-out");
+      setTimeout(() => { overlay.style.display = "none"; }, 350);
+    }, 300);
+  }
+}
 
 async function loadPortalData() {
+  setGlobalLoadingState(true, "பள்ளித் தரவுகள் ஏற்றப்படுகின்றன...", "Google Sheet-ல் இருந்து வினா வங்கி பெறப்படுகிறது...", 35);
+
   try {
     const url = `${SCRIPT_URL}?action=getInitialData${currentUser ? '&userId=' + encodeURIComponent(currentUser.id) : ''}`;
     const res = await fetch(url);
+
+    setGlobalLoadingState(true, "வினாக்கள் தயார் செய்யப்படுகின்றன...", "வகுப்புகள் மற்றும் பாடங்கள் கட்டமைக்கப்படுகின்றன...", 75);
     const data = await res.json();
 
     if (data && data.success) {
@@ -273,15 +308,18 @@ async function loadPortalData() {
         currentUser = data.user;
         localStorage.setItem("hmsUser", JSON.stringify(currentUser));
       }
-      populateAllDropdowns();
-      renderNcertBooksViewer();
-      if (typeof updateAiPromptPreview === "function") updateAiPromptPreview();
     }
   } catch (err) {
     console.warn("Offline/Network Notice:", err);
+  } finally {
+    try { populateAllDropdowns(); } catch (e) { console.warn(e); }
+    try { renderNcertBooksViewer(); } catch (e) { console.warn(e); }
+    try { if (typeof updateAiPromptPreview === "function") updateAiPromptPreview(); } catch (e) { console.warn(e); }
+
+    // Guarantees dismiss
+    setGlobalLoadingState(false);
   }
 }
-
 function updateAuthUI() {
   const guestBanner = document.getElementById("guestBanner");
   const playCountInput = document.getElementById("playCountInput");
@@ -1289,11 +1327,24 @@ async function startQuiz() {
   currentQIndex = 0;
   userScore = 0;
 
-  document.getElementById("quizSetupCard").classList.add("hidden");
-  document.getElementById("quizResultCard").classList.add("hidden");
-  document.getElementById("quizActiveCard").classList.remove("hidden");
+  // Button loading animation state
+  const startBtn = document.querySelector("#quizSetupCard button.btn-primary");
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.innerHTML = "⏳ வினாக்கள் தயாராகின்றன (Preparing Assessment)...";
+  }
 
-  renderCurrentQuestion();
+  // Smooth transition delay before starting the quiz
+  setTimeout(() => {
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.innerHTML = "🚀 Start Assessment";
+    }
+    document.getElementById("quizSetupCard").classList.add("hidden");
+    document.getElementById("quizResultCard").classList.add("hidden");
+    document.getElementById("quizActiveCard").classList.remove("hidden");
+    renderCurrentQuestion();
+  }, 700);
 }
 
 async function renderCurrentQuestion() {

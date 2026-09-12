@@ -38,79 +38,73 @@
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('manage', this)">🗂️ Question Bank & Print Paper</button>
     <button class="tab-btn teacher-only hidden" onclick="switchTab('teacherScores', this)">📈 Student Scores (Assigned)</button>
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('feedback', this)">💬 மாணவர் பின்னூட்டம் (Feedback)</button>
-    <button class="tab-btn" onclick="switchTab('ncertBooks', this)">📚 நூல்கள் (NCERT / Metric / State Board)</button>
+    <button class="tab-btn" onclick="switchTab('ncertBooks', this)">📚 நூல்கள் (NCERT / StateBoard & Metric)</button>
     <button class="tab-btn principal-only hidden" onclick="switchTab('principal', this)">👑 Principal Master Board</button>
     <button class="tab-btn" onclick="switchTab('dailyPuzzle', this)">🧩 Daily Puzzle</button>
   </div>
 
-
-<!-- GLOBAL PORTAL DATA LOADER OVERLAY -->
-<div id="portalGlobalLoader" class="global-loader-overlay">
-  <div class="loader-card">
-    <div class="loader-pulse-ring">
-      <div class="loader-spinner"></div>
-      <div class="loader-icon">🏫</div>
-    </div>
-    <h3 id="loaderTitle">பள்ளித் தரவுகள் இணைக்கப்படுகின்றன...</h3>
-    <p id="loaderSub">Connecting to Google Sheet & loading question bank, curriculum, and records...</p>
-    <div class="loader-progress-track">
-      <div id="loaderProgressBar" class="loader-progress-fill"></div>
-    </div>
-    <small id="loaderHint">தயவுசெய்து காத்திருக்கவும்... வினாக்கள் தயார் செய்யப்படுகின்றன.</small>
-  </div>
-</div>
-
-
-
- <!-- TAB: DAILY PUZZLE ARENA -->
-<div id="dailyPuzzleTab" class="hidden no-print">
-  
-  <!-- DAILY PUZZLE WINNERS BANNER (ONLY INSIDE DAILY PUZZLE TAB) -->
-  <div id="dailyWinnersBanner" class="card no-print" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 18px 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-      <div>
-        <h3 style="margin:0; color:#facc15; font-size:1.25rem;">🌟 இன்றைய தினசரி புதிர் வெற்றியாளர்கள் (Today's Champions)</h3>
-        <p style="margin:4px 0 0 0; font-size:0.85rem; color:#cbd5e1;" id="dailyWinnersDateText">வேகமாகவும் சரியாகவும் விடையளித்த முதல் 3 வெற்றியாளர்கள்</p>
+  <!-- GLOBAL PORTAL DATA LOADER OVERLAY -->
+  <div id="portalGlobalLoader" class="global-loader-overlay">
+    <div class="loader-card">
+      <div class="loader-pulse-ring">
+        <div class="loader-spinner"></div>
+        <div class="loader-icon">🏫</div>
       </div>
-      <button class="btn btn-outline" style="font-size:0.8rem; padding:6px 12px; border-radius:8px;" onclick="loadDailyWinners()">🔄 Refresh</button>
-    </div>
-    
-    <div id="dailyWinnersContainer" style="display:flex; gap:15px; margin-top:15px; flex-wrap:wrap;">
-      <div style="font-size:0.9rem; color:#94a3b8;">வெற்றியாளர்கள் பட்டியல் ஏற்றப்படுகிறது...</div>
+      <h3 id="loaderTitle">பள்ளித் தரவுகள் இணைக்கப்படுகின்றன...</h3>
+      <p id="loaderSub">Connecting to Google Sheet & loading question bank, curriculum, and records...</p>
+      <div class="loader-progress-track">
+        <div id="loaderProgressBar" class="loader-progress-fill"></div>
+      </div>
+      <small id="loaderHint">தயவுசெய்து காத்திருக்கவும்... வினாக்கள் தயார் செய்யப்படுகின்றன.</small>
     </div>
   </div>
 
-  <div class="card professional-card">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-      <div>
-        <h3 style="margin:0; color:var(--accent);">🧩 தினசரி புதிர் அரங்கம் (Daily Puzzle Arena)</h3>
-        <p class="notice" style="margin-top:4px;">பாடத்தைத் தேர்வு செய்து இன்றைய தினசரி 30 வினாக்கள் கொண்ட புதிரை எழுதுங்கள்</p>
+  <!-- TAB: DAILY PUZZLE ARENA -->
+  <div id="dailyPuzzleTab" class="hidden no-print">
+    <!-- DAILY PUZZLE WINNERS BANNER (ONLY INSIDE DAILY PUZZLE TAB) -->
+    <div id="dailyWinnersBanner" class="card no-print" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 18px 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3 style="margin:0; color:#facc15; font-size:1.25rem;">🌟 இன்றைய தினசரி புதிர் வெற்றியாளர்கள் (Today's Champions)</h3>
+          <p style="margin:4px 0 0 0; font-size:0.85rem; color:#cbd5e1;" id="dailyWinnersDateText">வேகமாகவும் சரியாகவும் விடையளித்த முதல் 3 வெற்றியாளர்கள்</p>
+        </div>
+        <button class="btn btn-outline" style="font-size:0.8rem; padding:6px 12px; border-radius:8px;" onclick="loadDailyWinners()">🔄 Refresh</button>
       </div>
-      <div id="dailyPuzzleStreakBadge" class="badge-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">
-        🔥 தொடர் சாதனை: 0 நாட்கள்
-      </div>
-    </div>
-
-    <!-- SUBJECT SELECT ONLY -->
-    <div class="margin-top" style="background:#f8fafc; padding:15px; border-radius:10px; border:1px solid #cbd5e1; max-width: 450px;">
-      <div class="form-group" style="margin:0;">
-        <label><strong>பாடம் தேர்வு செய்க (Select Subject):</strong></label>
-        <select id="dailyPuzzleSubjectSelect" onchange="loadCustomDailyPuzzle()"></select>
+      
+      <div id="dailyWinnersContainer" style="display:flex; gap:15px; margin-top:15px; flex-wrap:wrap;">
+        <div style="font-size:0.9rem; color:#94a3b8;">வெற்றியாளர்கள் பட்டியல் ஏற்றப்படுகிறது...</div>
       </div>
     </div>
 
-    <div id="dailyPuzzleCardArea" style="margin-top:20px; background:#fff; border:1.5px solid var(--border); border-radius:12px; padding:20px;">
-      <div style="text-align:center; padding:20px; color:#64748b;">புதிர் வினா தயாராகிறது...</div>
+    <div class="card professional-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h3 style="margin:0; color:var(--accent);">🧩 தினசரி புதிர் அரங்கம் (Daily Puzzle Arena)</h3>
+          <p class="notice" style="margin-top:4px;">பாடத்தைத் தேர்வு செய்து இன்றைய தினசரி 30 வினாக்கள் கொண்ட புதிரை எழுதுங்கள்</p>
+        </div>
+        <div id="dailyPuzzleStreakBadge" class="badge-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">
+          🔥 தொடர் சாதனை: 0 நாட்கள்
+        </div>
+      </div>
+
+      <div class="margin-top" style="background:#f8fafc; padding:15px; border-radius:10px; border:1px solid #cbd5e1; max-width: 450px;">
+        <div class="form-group" style="margin:0;">
+          <label><strong>பாடம் தேர்வு செய்க (Select Subject):</strong></label>
+          <select id="dailyPuzzleSubjectSelect" onchange="loadCustomDailyPuzzle()"></select>
+        </div>
+      </div>
+
+      <div id="dailyPuzzleCardArea" style="margin-top:20px; background:#fff; border:1.5px solid var(--border); border-radius:12px; padding:20px;">
+        <div style="text-align:center; padding:20px; color:#64748b;">புதிர் வினா தயாராகிறது...</div>
+      </div>
     </div>
   </div>
-</div>
 
- 
-  <!-- TAB: BOOKS REPOSITORY (NCERT, METRIC, STATE BOARD) -->
+  <!-- TAB: BOOKS REPOSITORY -->
   <div id="ncertBooksTab" class="hidden no-print">
     <div class="card professional-card">
       <div class="card-header-flex">
-        <h3>📚 NCERT, Metric & State Board பாடப் புத்தகங்கள் மற்றும் டிரைவ் கோப்புகள்</h3>
+        <h3>📚 NCERT & State Board (Metric) பாடப் புத்தகங்கள் மற்றும் டிரைவ் கோப்புகள்</h3>
       </div>
       <p class="notice">மாணவப் பிரிவு (Student Stream) மற்றும் வகுப்பு வாரியாக பாடப்புத்தகங்கள் மற்றும் குறிப்புகள் அடங்கிய கோப்புறைகள்.</p>
       
@@ -121,9 +115,8 @@
           <div class="form-group">
             <label>மாணவப் பிரிவு (Stream):</label>
             <select id="configBookStream">
-              <option value="ncert">NCERT Book</option>
-              <option value="metric">Metric Book</option>
-              <option value="stateboard">State Board Book</option>
+              <option value="ncert">NCERT Student</option>
+              <option value="stateboard">StateBoard Student (including Metric)</option>
             </select>
           </div>
           <div class="form-group">
@@ -147,9 +140,8 @@
         <div class="form-group">
           <label>மாணவப் பிரிவு (Stream):</label>
           <select id="ncertViewStreamSelect" onchange="renderNcertBooksViewer()">
-            <option value="ncert">NCERT Book</option>
-            <option value="metric">Metric Book</option>
-            <option value="stateboard">State Board Book</option>
+            <option value="ncert">NCERT Student</option>
+            <option value="stateboard">StateBoard Student (including Metric)</option>
           </select>
         </div>
         <div class="form-group">
@@ -229,7 +221,7 @@
       <button class="modal-close" onclick="closeModal('aboutModal')">&times;</button>
       <h3>🏫 எங்களைப் பற்றி (About Us)</h3>
       <p class="notice" style="margin-top: 10px; line-height: 1.6;">
-        <strong>ஹரிமணி பள்ளி வலைத்தளம் (HariMani School Portal)</strong> NCERT, Metric மற்றும் State Board மாணவர்களுக்கான நவீன கற்றல் மற்றும் மதிப்பீட்டு மேடை ஆகும்.
+        <strong>ஹரிமணி பள்ளி வலைத்தளம் (HariMani School Portal)</strong> NCERT மற்றும் State Board (Metric) மாணவர்களுக்கான நவீன கற்றல் மற்றும் மதிப்பீட்டு மேடை ஆகும்.
       </p>
     </div>
   </div>
@@ -256,7 +248,7 @@
     <div id="quizSetupCard" class="card professional-card">
       <div class="card-header-title">
         <h3>🎯 Assessment Arena</h3>
-        <span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">NCERT / Metric / State Board</span>
+        <span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">NCERT / StateBoard & Metric</span>
       </div>
       <p class="notice" id="playScopeNotice">Select Student Stream, Category, Class, Subject, and Chapter to begin.</p>
       
@@ -265,8 +257,7 @@
           <label>Student Stream:</label>
           <select id="playStreamSelect" onchange="syncPlayStreamDropdowns()">
             <option value="ncert">NCERT Student</option>
-            <option value="metric">Metric Student</option>
-            <option value="stateboard">State Board Student</option>
+            <option value="stateboard">StateBoard Student (including Metric)</option>
           </select>
         </div>
         <div class="form-group">
@@ -406,8 +397,7 @@
           <select id="leaderboardStreamFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px;">
             <option value="all">அனைத்து பிரிவுகளும் (All Streams)</option>
             <option value="ncert">NCERT Student</option>
-            <option value="metric">Metric Student</option>
-            <option value="stateboard">State Board Student</option>
+            <option value="stateboard">StateBoard Student (including Metric)</option>
           </select>
           <select id="leaderboardStdFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px;"></select>
         </div>
@@ -445,8 +435,7 @@
           <label>Student Stream:</label>
           <select id="authorStreamSelect">
             <option value="ncert">NCERT Student</option>
-            <option value="metric">Metric Student</option>
-            <option value="stateboard">State Board Student</option>
+            <option value="stateboard">StateBoard Student (including Metric)</option>
           </select>
         </div>
         <div class="form-group">
@@ -633,8 +622,7 @@
           <select id="manageStreamFilter" onchange="renderManageTable()">
             <option value="">All Streams</option>
             <option value="ncert">NCERT Student</option>
-            <option value="metric">Metric Student</option>
-            <option value="stateboard">State Board Student</option>
+            <option value="stateboard">StateBoard Student (including Metric)</option>
           </select>
         </div>
         <div class="form-group" style="margin:0;"><label>Filter Standard:</label><select id="manageStdFilter" onchange="renderManageTable()"></select></div>
@@ -886,8 +874,7 @@
           <select id="prFilterStream" onchange="filterPrincipalScores()">
             <option value="">All Streams</option>
             <option value="ncert">NCERT Student</option>
-            <option value="metric">Metric Student</option>
-            <option value="stateboard">State Board Student</option>
+            <option value="stateboard">StateBoard Student (including Metric)</option>
           </select>
         </div>
         <div class="form-group" style="margin:0;">
@@ -936,8 +923,7 @@
       <label>Student Stream:</label>
       <select id="newTeacherStream">
         <option value="ncert">NCERT Student</option>
-        <option value="metric">Metric Student</option>
-        <option value="stateboard">State Board Student</option>
+        <option value="stateboard">StateBoard Student (including Metric)</option>
       </select>
     </div>
     <div class="form-group">
@@ -961,8 +947,7 @@
       <label>Assigned Stream:</label>
       <select id="editTeacherStream">
         <option value="ncert">NCERT Student</option>
-        <option value="metric">Metric Student</option>
-        <option value="stateboard">State Board Student</option>
+        <option value="stateboard">StateBoard Student (including Metric)</option>
       </select>
     </div>
 
@@ -991,8 +976,7 @@
       <label>Student Stream:</label>
       <select id="editStudentStream">
         <option value="ncert">NCERT Student</option>
-        <option value="metric">Metric Student</option>
-        <option value="stateboard">State Board Student</option>
+        <option value="stateboard">StateBoard Student (including Metric)</option>
       </select>
     </div>
 
@@ -1039,8 +1023,7 @@
       <label>Student Category / Stream:</label>
       <select id="signupStudentStream">
         <option value="ncert">NCERT Student (NCERT Curriculum & Books)</option>
-        <option value="metric">Metric Student (Metric System Curriculum & Books)</option>
-        <option value="stateboard">State Board Student (State Board Curriculum & Books)</option>
+        <option value="stateboard">StateBoard Student (including Metric Curriculum & Books)</option>
       </select>
     </div>
     <div class="form-group">
@@ -1074,7 +1057,7 @@
 
 </body>
 <footer class="no-print" style="text-align: center; padding: 25px 20px; margin-top: 50px; border-top: 1px solid #e2e8f0; background: #ffffff; color: #64748b; font-size: 0.85rem;">
-  <p style="margin: 0 0 10px 0; font-weight: 500;">🏫 HariMani School - Enterprise LMS & Assessment Portal (NCERT, Metric & State Board)</p>
+  <p style="margin: 0 0 10px 0; font-weight: 500;">🏫 HariMani School - Enterprise LMS & Assessment Portal (NCERT & State Board / Metric)</p>
   <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
     <a href="#" onclick="openModal('aboutModal'); return false;" style="color: var(--primary); text-decoration: none;">About Us</a>
     <span>•</span>

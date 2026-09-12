@@ -43,6 +43,25 @@
     <button class="tab-btn" onclick="switchTab('dailyPuzzle', this)">🧩 Daily Puzzle</button>
   </div>
 
+
+<!-- GLOBAL PORTAL DATA LOADER OVERLAY -->
+<div id="portalGlobalLoader" class="global-loader-overlay">
+  <div class="loader-card">
+    <div class="loader-pulse-ring">
+      <div class="loader-spinner"></div>
+      <div class="loader-icon">🏫</div>
+    </div>
+    <h3 id="loaderTitle">பள்ளித் தரவுகள் இணைக்கப்படுகின்றன...</h3>
+    <p id="loaderSub">Connecting to Google Sheet & loading question bank, curriculum, and records...</p>
+    <div class="loader-progress-track">
+      <div id="loaderProgressBar" class="loader-progress-fill"></div>
+    </div>
+    <small id="loaderHint">தயவுசெய்து காத்திருக்கவும்... வினாக்கள் தயார் செய்யப்படுகின்றன.</small>
+  </div>
+</div>
+
+
+
  <!-- TAB: DAILY PUZZLE ARENA -->
 <div id="dailyPuzzleTab" class="hidden no-print">
   

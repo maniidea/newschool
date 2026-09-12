@@ -40,8 +40,53 @@
     <button class="tab-btn teacher-principal-only hidden" onclick="switchTab('feedback', this)">💬 மாணவர் பின்னூட்டம் (Feedback)</button>
     <button class="tab-btn" onclick="switchTab('ncertBooks', this)">📚 நூல்கள் (NCERT / Metric / State Board)</button>
     <button class="tab-btn principal-only hidden" onclick="switchTab('principal', this)">👑 Principal Master Board</button>
+    <button class="tab-btn" onclick="switchTab('dailyPuzzle', this)">🧩 Daily Puzzle</button>
   </div>
 
+ <!-- TAB: DAILY PUZZLE ARENA -->
+<div id="dailyPuzzleTab" class="hidden no-print">
+  
+  <!-- DAILY PUZZLE WINNERS BANNER (ONLY INSIDE DAILY PUZZLE TAB) -->
+  <div id="dailyWinnersBanner" class="card no-print" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 18px 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div>
+        <h3 style="margin:0; color:#facc15; font-size:1.25rem;">🌟 இன்றைய தினசரி புதிர் வெற்றியாளர்கள் (Today's Champions)</h3>
+        <p style="margin:4px 0 0 0; font-size:0.85rem; color:#cbd5e1;" id="dailyWinnersDateText">வேகமாகவும் சரியாகவும் விடையளித்த முதல் 3 வெற்றியாளர்கள்</p>
+      </div>
+      <button class="btn btn-outline" style="font-size:0.8rem; padding:6px 12px; border-radius:8px;" onclick="loadDailyWinners()">🔄 Refresh</button>
+    </div>
+    
+    <div id="dailyWinnersContainer" style="display:flex; gap:15px; margin-top:15px; flex-wrap:wrap;">
+      <div style="font-size:0.9rem; color:#94a3b8;">வெற்றியாளர்கள் பட்டியல் ஏற்றப்படுகிறது...</div>
+    </div>
+  </div>
+
+  <div class="card professional-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h3 style="margin:0; color:var(--accent);">🧩 தினசரி புதிர் அரங்கம் (Daily Puzzle Arena)</h3>
+        <p class="notice" style="margin-top:4px;">பாடத்தைத் தேர்வு செய்து இன்றைய தினசரி 30 வினாக்கள் கொண்ட புதிரை எழுதுங்கள்</p>
+      </div>
+      <div id="dailyPuzzleStreakBadge" class="badge-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">
+        🔥 தொடர் சாதனை: 0 நாட்கள்
+      </div>
+    </div>
+
+    <!-- SUBJECT SELECT ONLY -->
+    <div class="margin-top" style="background:#f8fafc; padding:15px; border-radius:10px; border:1px solid #cbd5e1; max-width: 450px;">
+      <div class="form-group" style="margin:0;">
+        <label><strong>பாடம் தேர்வு செய்க (Select Subject):</strong></label>
+        <select id="dailyPuzzleSubjectSelect" onchange="loadCustomDailyPuzzle()"></select>
+      </div>
+    </div>
+
+    <div id="dailyPuzzleCardArea" style="margin-top:20px; background:#fff; border:1.5px solid var(--border); border-radius:12px; padding:20px;">
+      <div style="text-align:center; padding:20px; color:#64748b;">புதிர் வினா தயாராகிறது...</div>
+    </div>
+  </div>
+</div>
+
+ 
   <!-- TAB: BOOKS REPOSITORY (NCERT, METRIC, STATE BOARD) -->
   <div id="ncertBooksTab" class="hidden no-print">
     <div class="card professional-card">
@@ -98,9 +143,7 @@
         </div>
       </div>
 
-      <div id="ncertBooksGridContainer" class="grid-3 margin-top" style="margin-top:20px;">
-        <!-- பாடப் புத்தகங்கள் காட்டப்படும் -->
-      </div>
+      <div id="ncertBooksGridContainer" class="grid-3 margin-top" style="margin-top:20px;"></div>
     </div>
   </div>
 

@@ -48,6 +48,150 @@ function initApp() {
   populateAllDropdowns();
   updateAuthUI();
   loadPortalData();
+  loadDailyWinners();
+}
+
+async function loadDailyWinners() {
+  const container = document.getElementById("dailyWinnersContainer");
+  const dateText = document.getElementById("dailyWinnersDateText");
+  if (!container) return;
+
+  try {
+    // பாடம் மற்றும் வகுப்பு வடிகட்டிகள் இல்லாமல் புதிரில் வென்றவர்களை நேரடியாகப் பெறுதல்
+    const url = `${SCRIPT_URL}?action=getDailyPuzzleWinners`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data && data.success) {
+      if (dateText && data.date) {
+        dateText.innerText = `தேதி: ${data.date} • அதிக மதிப்பெண் பெற்று விரைவாக முடித்த முதல் 3 வெற்றியாளர்கள்`;
+      }
+      renderDailyWinners(data.winners || []);
+    } else {
+      container.innerHTML = `<div style="font-size:0.85rem; color:#cbd5e1;">இன்றைய புதிரில் இன்னும் யாரும் பங்குபெறவில்லை. நீங்களே முதல் வெற்றியாளராகுங்கள்!</div>`;
+    }
+  } catch (err) {
+    console.warn("Error loading daily winners:", err);
+    container.innerHTML = `<div style="font-size:0.85rem; color:#cbd5e1;">புதிர் வெற்றியாளர் விவரங்களை ஏற்றுவதில் பிழை ஏற்பட்டது.</div>`;
+  }
+}
+
+function renderDailyWinners(winners) {
+  const container = document.getElementById("dailyWinnersContainer");
+  if (!container) return;
+
+  if (winners.length === 0) {
+    container.innerHTML = `
+      <div style="background: rgba(255,255,255,0.08); padding: 12px 18px; border-radius: 8px; width: 100%; font-size: 0.9rem; color: #cbd5e1;">
+        🚀 இன்றைய தினசரி புதிரை இன்னும் யாரும் முடிக்கவில்லை. இப்போதே தேர்வை எழுதி முதல் வெற்றியாளராகுங்கள்!
+      </div>
+    `;
+    return;
+  }
+
+  const medals = [
+    { rank: "1-ஆம் இடம்", icon: "🥇", bg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)" },
+    { rank: "2-ஆம் இடம்", icon: "🥈", bg: "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)" },
+    { rank: "3-ஆம் இடம்", icon: "🥉", bg: "linear-gradient(135deg, #fdba74 0%, #c2410c 100%)" }
+  ];
+
+  container.innerHTML = winners.map((w, idx) => {
+    const m = medals[idx] || medals[2];
+    const timeDisplay = w.timeTaken && w.timeTaken < 9000 ? `⏱️ ${w.timeTaken} வினாடிகள்` : "";
+    return `
+      <div style="flex: 1; min-width: 220px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+        <div style="font-size: 2rem; background: ${m.bg}; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+          ${m.icon}
+        </div>
+        <div style="overflow: hidden;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #fde047; text-transform: uppercase;">${m.rank}</div>
+          <div style="font-size: 0.95rem; font-weight: 700; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${w.userName}</div>
+          <div style="font-size: 0.8rem; color: #cbd5e1;">
+            ${w.subject} • <strong>${w.score}/${w.total} (${w.percentage}%)</strong>
+          </div>
+          ${timeDisplay ? `<div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">${timeDisplay}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderDailyWinners(winners) {
+  const container = document.getElementById("dailyWinnersContainer");
+  if (!container) return;
+
+  if (winners.length === 0) {
+    container.innerHTML = `
+      <div style="background: rgba(255,255,255,0.08); padding: 12px 18px; border-radius: 8px; width: 100%; font-size: 0.9rem; color: #cbd5e1;">
+        🚀 இன்றைய தினசரி புதிரை இன்னும் யாரும் முடிக்கவில்லை. இப்போதே தேர்வை எழுதி முதல் வெற்றியாளராகுங்கள்!
+      </div>
+    `;
+    return;
+  }
+
+  const medals = [
+    { rank: "1-ஆம் இடம்", icon: "🥇", bg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)" },
+    { rank: "2-ஆம் இடம்", icon: "🥈", bg: "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)" },
+    { rank: "3-ஆம் இடம்", icon: "🥉", bg: "linear-gradient(135deg, #fdba74 0%, #c2410c 100%)" }
+  ];
+
+  container.innerHTML = winners.map((w, idx) => {
+    const m = medals[idx] || medals[2];
+    const timeDisplay = w.timeTaken && w.timeTaken < 9000 ? `⏱️ ${w.timeTaken} வினாடிகள்` : "";
+    return `
+      <div style="flex: 1; min-width: 220px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+        <div style="font-size: 2rem; background: ${m.bg}; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+          ${m.icon}
+        </div>
+        <div style="overflow: hidden;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #fde047; text-transform: uppercase;">${m.rank}</div>
+          <div style="font-size: 0.95rem; font-weight: 700; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${w.userName}</div>
+          <div style="font-size: 0.8rem; color: #cbd5e1;">
+            ${w.subject} • <strong>${w.score}/${w.total} (${w.percentage}%)</strong>
+          </div>
+          ${timeDisplay ? `<div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">${timeDisplay}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderDailyWinners(winners) {
+  const container = document.getElementById("dailyWinnersContainer");
+  if (!container) return;
+
+  if (winners.length === 0) {
+    container.innerHTML = `
+      <div style="background: rgba(255,255,255,0.08); padding: 12px 18px; border-radius: 8px; width: 100%; font-size: 0.9rem; color: #cbd5e1;">
+        🚀 இன்றைய தினசரி புதிரை இன்னும் யாரும் முடிக்கவில்லை. இப்போதே தேர்வை எழுதி முதல் வெற்றியாளராகுங்கள்!
+      </div>
+    `;
+    return;
+  }
+
+  const medals = [
+    { rank: "1-ஆம் இடம்", icon: "🥇", bg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)", color: "#78350f" },
+    { rank: "2-ஆம் இடம்", icon: "🥈", bg: "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)", color: "#1e293b" },
+    { rank: "3-ஆம் இடம்", icon: "🥉", bg: "linear-gradient(135deg, #fdba74 0%, #c2410c 100%)", color: "#431407" }
+  ];
+
+  container.innerHTML = winners.map((w, idx) => {
+    const m = medals[idx] || medals[2];
+    return `
+      <div style="flex: 1; min-width: 220px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+        <div style="font-size: 2rem; background: ${m.bg}; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+          ${m.icon}
+        </div>
+        <div style="overflow: hidden;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #fde047; text-transform: uppercase;">${m.rank}</div>
+          <div style="font-size: 0.95rem; font-weight: 700; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${w.userName}</div>
+          <div style="font-size: 0.8rem; color: #cbd5e1;">
+            வகுப்பு ${w.standard} (${(w.stream || 'ncert').toUpperCase()}) • <strong>${w.score}/${w.total} (${w.percentage}%)</strong>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 if (document.readyState === "loading") {
@@ -492,7 +636,22 @@ function startChallengeDay(dayNumber) {
 function switchTab(tab, eventTarget) {
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
   
-  ["playTab", "createTab", "manageTab", "reportsTab", "teacherScoresTab", "principalTab", "leaderboardTab", "feedbackTab", "myRepliesTab", "challenge30Tab", "ncertBooksTab"].forEach(id => {
+  const allTabs = [
+    "playTab", 
+    "dailyPuzzleTab", 
+    "createTab", 
+    "manageTab", 
+    "reportsTab", 
+    "teacherScoresTab", 
+    "principalTab", 
+    "leaderboardTab", 
+    "feedbackTab", 
+    "myRepliesTab", 
+    "challenge30Tab", 
+    "ncertBooksTab"
+  ];
+
+  allTabs.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
@@ -510,6 +669,249 @@ function switchTab(tab, eventTarget) {
   if (tab === "feedback") document.getElementById("feedbackTab").classList.remove("hidden"), loadFeedbackTab();
   if (tab === "ncertBooks") document.getElementById("ncertBooksTab").classList.remove("hidden"), initNcertBooksTab();
   if (tab === "myReplies") document.getElementById("myRepliesTab").classList.remove("hidden"), loadStudentReplies();
+  if (tab === "dailyPuzzle") {
+    const el = document.getElementById("dailyPuzzleTab");
+    if (el) el.classList.remove("hidden");
+    if (typeof initDailyPuzzleArena === "function") {
+      initDailyPuzzleArena();
+    }
+  }
+}
+
+// -------------------------------------------------------------
+// DAILY PUZZLE 30-QUESTION ENGINE (SUBJECT-ONLY, ANY CLASS)
+// -------------------------------------------------------------
+let dailyPuzzleList = [];
+let dailyPuzzleIndex = 0;
+let dailyPuzzleScore = 0;
+let dailyPuzzleStartTime = 0;
+const DAILY_PUZZLE_TARGET = 30; // 30 questions per session
+
+function initDailyPuzzleArena() {
+  const subSelect = document.getElementById("dailyPuzzleSubjectSelect");
+  if (!subSelect) return;
+
+  const streakKey = currentUser ? `hms_puzzle_streak_${currentUser.id}` : "hms_puzzle_streak_guest";
+  const streak = parseInt(localStorage.getItem(streakKey) || "0", 10);
+  const streakEl = document.getElementById("dailyPuzzleStreakBadge");
+  if (streakEl) streakEl.innerText = `🔥 தொடர் சாதனை: ${streak} நாட்கள்`;
+
+  // Collect all unique subjects available across any class in Questions Sheet
+  const availableSubjects = new Set();
+  masterQuestions.forEach(q => {
+    if (q.subject && q.subject.trim()) {
+      availableSubjects.add(q.subject.trim());
+    }
+  });
+
+  const subs = Array.from(availableSubjects);
+  if (subs.length === 0) {
+    subSelect.innerHTML = `<option value="">பாடங்கள் இல்லை</option>`;
+    document.getElementById("dailyPuzzleCardArea").innerHTML = `
+      <div style="text-align:center; padding:20px; color:#dc2626;">
+        Questions தாளில் வினாக்கள் எதுவும் கிடைக்கவில்லை.
+      </div>`;
+    return;
+  }
+
+  subSelect.innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join("");
+  loadCustomDailyPuzzle();
+}
+
+function loadCustomDailyPuzzle() {
+  const container = document.getElementById("dailyPuzzleCardArea");
+  const sub = document.getElementById("dailyPuzzleSubjectSelect")?.value;
+  if (!container || !sub) return;
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const attemptedKey = currentUser 
+    ? `hms_puzzle_done_${currentUser.id}_${todayStr}_${sub}` 
+    : `hms_puzzle_done_guest_${todayStr}_${sub}`;
+
+  if (localStorage.getItem(attemptedKey)) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:25px 15px;">
+        <div style="font-size:3rem;">🎉</div>
+        <h3 style="color:var(--success); margin:10px 0 5px 0;">இன்றைய 30 வினாக்கள் புதிரை முடித்துவிட்டீர்கள்!</h3>
+        <p style="color:#64748b; font-size:0.95rem;"><strong>${sub}</strong> பாடப் புதிரை இன்று எழுதிவிட்டீர்கள். வேறு பாடத்தைத் தேர்வு செய்து எழுதலாம் அல்லது நாளை மீண்டும் எழுதலாம்.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Pull matching questions across ANY class
+  let matched = masterQuestions.filter(q => 
+    q.subject && q.subject.toLowerCase().trim() === sub.toLowerCase().trim()
+  );
+
+  if (matched.length === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:#64748b;">இப்பாடத்திற்கு வினாக்கள் கிடைக்கவில்லை.</div>`;
+    return;
+  }
+
+  // Deterministic daily shuffle so all students receive the identical 30 questions today
+  const seed = todayStr.split("-").reduce((acc, part) => acc + parseInt(part, 10), 0);
+  matched = [...matched].sort((a, b) => {
+    const hashA = (a.id.length * seed) % 97;
+    const hashB = (b.id.length * seed) % 97;
+    return hashA - hashB;
+  });
+
+  dailyPuzzleList = matched.slice(0, Math.min(DAILY_PUZZLE_TARGET, matched.length));
+  dailyPuzzleIndex = 0;
+  dailyPuzzleScore = 0;
+  dailyPuzzleStartTime = Date.now();
+
+  renderDailyPuzzleStep();
+}
+
+function renderDailyPuzzleStep() {
+  const container = document.getElementById("dailyPuzzleCardArea");
+  const sub = document.getElementById("dailyPuzzleSubjectSelect")?.value;
+  if (!container || dailyPuzzleList.length === 0) return;
+
+  if (dailyPuzzleIndex >= dailyPuzzleList.length) {
+    finishDailyPuzzleTest();
+    return;
+  }
+
+  const q = dailyPuzzleList[dailyPuzzleIndex];
+  const qType = (q.type || "mcq").toLowerCase();
+  const total = dailyPuzzleList.length;
+
+  let optionsHtml = "";
+  if (qType === "tf") {
+    optionsHtml = `
+      <div class="options-grid" style="grid-template-columns:1fr 1fr; margin-top:15px;">
+        <button class="opt-btn text-center" onclick="submitDailyPuzzleChoice('True', this)">✅ True / சரி</button>
+        <button class="opt-btn text-center" onclick="submitDailyPuzzleChoice('False', this)">❌ False / தவறு</button>
+      </div>
+    `;
+  } else if (qType === "fib") {
+    optionsHtml = `
+      <div style="margin-top:15px; display:flex; gap:10px;">
+        <input type="text" id="puzzleFibInput" placeholder="விடையை உள்ளிடவும்..." style="font-size:1rem; padding:10px; flex:1;">
+        <button class="btn btn-primary" onclick="submitDailyPuzzleChoice(document.getElementById('puzzleFibInput').value.trim(), this)">அடுத்த வினா ⏩</button>
+      </div>
+    `;
+  } else {
+    optionsHtml = `
+      <div class="options-grid" style="margin-top:15px;">
+        <button class="opt-btn" onclick="submitDailyPuzzleChoice('1', this)">A. ${q.optA || ''}</button>
+        <button class="opt-btn" onclick="submitDailyPuzzleChoice('2', this)">B. ${q.optB || ''}</button>
+        <button class="opt-btn" onclick="submitDailyPuzzleChoice('3', this)">C. ${q.optC || ''}</button>
+        <button class="opt-btn" onclick="submitDailyPuzzleChoice('4', this)">D. ${q.optD || ''}</button>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:15px;">
+      <span class="badge" style="background:#003366; color:#fff;">${sub} புதிர்</span>
+      <span class="badge-pill" style="font-weight:700;">வினா ${dailyPuzzleIndex + 1} / ${total} (வகுப்பு ${q.standard || 'All'})</span>
+    </div>
+    <div style="font-size:1.15rem; font-weight:600; color:#0f172a; line-height:1.5;">
+      ${q.question}
+    </div>
+    ${optionsHtml}
+    <div id="puzzleFeedbackBox" style="margin-top:15px;"></div>
+  `;
+}
+
+function submitDailyPuzzleChoice(userAnswer, triggerBtn) {
+  if (!userAnswer || dailyPuzzleIndex >= dailyPuzzleList.length) return;
+
+  const q = dailyPuzzleList[dailyPuzzleIndex];
+  const qType = (q.type || "mcq").toLowerCase();
+
+  let isCorrect = false;
+  if (qType === "tf") {
+    const rawCorrect = (q.correctOpt || "false").toString().trim().toLowerCase();
+    const normalizedCorrect = (rawCorrect === "true" || rawCorrect === "1") ? "true" : "false";
+    isCorrect = (userAnswer.toLowerCase() === normalizedCorrect);
+  } else if (qType === "fib") {
+    isCorrect = (userAnswer.toLowerCase() === (q.correctOpt || "").toString().trim().toLowerCase());
+  } else {
+    isCorrect = (userAnswer.toString().trim() === (q.correctOpt || "").toString().trim());
+  }
+
+  // Lock inputs on current question card
+  document.querySelectorAll("#dailyPuzzleCardArea button, #dailyPuzzleCardArea input").forEach(el => el.disabled = true);
+
+  const feedback = document.getElementById("puzzleFeedbackBox");
+  if (isCorrect) {
+    try { soundCorrect.play(); } catch(e) {}
+    dailyPuzzleScore++;
+    feedback.innerHTML = `<span style="color:#15803d; font-weight:bold;">✅ சரி! அடுத்த வினாவிற்குச் செல்கிறது...</span>`;
+  } else {
+    try { soundWrong.play(); } catch(e) {}
+    feedback.innerHTML = `<span style="color:#b91c1c; font-weight:bold;">❌ தவறு! சரியான விடை: ${q.correctOpt}</span>`;
+  }
+
+  setTimeout(() => {
+    dailyPuzzleIndex++;
+    renderDailyPuzzleStep();
+  }, 1200);
+}
+
+async function finishDailyPuzzleTest() {
+  const container = document.getElementById("dailyPuzzleCardArea");
+  const sub = document.getElementById("dailyPuzzleSubjectSelect")?.value;
+  const total = dailyPuzzleList.length;
+  const totalTimeSec = Math.round((Date.now() - dailyPuzzleStartTime) / 1000);
+  const pct = Math.round((dailyPuzzleScore / total) * 100);
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const attemptedKey = currentUser 
+    ? `hms_puzzle_done_${currentUser.id}_${todayStr}_${sub}` 
+    : `hms_puzzle_done_guest_${todayStr}_${sub}`;
+  localStorage.setItem(attemptedKey, "true");
+
+  const streakKey = currentUser ? `hms_puzzle_streak_${currentUser.id}` : "hms_puzzle_streak_guest";
+  let currentStreak = parseInt(localStorage.getItem(streakKey) || "0", 10);
+  if (pct >= 50) {
+    currentStreak += 1;
+    localStorage.setItem(streakKey, currentStreak);
+    if (typeof confetti === "function") confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+  }
+
+  container.innerHTML = `
+    <div style="text-align:center; padding:20px 10px;">
+      <h2>🎉 தினசரி புதிர் தேர்வு முடிந்தது!</h2>
+      <div style="font-size:2.2rem; font-weight:bold; color:var(--primary); margin:12px 0;">
+        ${dailyPuzzleScore} / ${total} (${pct}%)
+      </div>
+      <p style="color:#475569; font-size:1rem;">
+        எடுத்துக்கொண்ட நேரம்: <strong>${totalTimeSec} வினாடிகள்</strong> | உங்கள் தொடர் சாதனை: <strong>${currentStreak} நாட்கள்</strong>
+      </p>
+      <div style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="loadDailyWinners()">🏆 வெற்றியாளர் பட்டியலைப் பார்க்க</button>
+      </div>
+    </div>
+  `;
+
+  // Destination Database: Scores Sheet
+  const payload = {
+    action: "saveScore",
+    userId: currentUser ? currentUser.id : "GUEST",
+    userName: currentUser ? currentUser.name : "Guest Student",
+    standard: "All",
+    subject: `[DailyPuzzle] ${sub}`,
+    chapter: "Daily 30 Puzzle Challenge",
+    topic: `Time: ${totalTimeSec}s`,
+    score: dailyPuzzleScore,
+    total: total,
+    stream: currentUser ? currentUser.studentStream : "ncert"
+  };
+
+  try {
+    await callAppsScript(payload);
+    if (typeof loadDailyWinners === "function") {
+      setTimeout(loadDailyWinners, 1500);
+    }
+  } catch(e) {
+    console.warn("Could not save daily puzzle score:", e);
+  }
 }
 
 async function loadFeedbackTab() {
@@ -1081,7 +1483,6 @@ function startVoiceListeningSession(qType) {
     if (transcriptBox) {
       transcriptBox.innerText = `🗣️ நீங்கள் கூறியது: "${spokenText}"`;
     }
-    console.log("Student spoke:", spokenText);
 
     const q = activeQuizList[currentQIndex];
     if (!q) return;
@@ -1184,24 +1585,15 @@ async function fetchAiDoubtClarification(questionText, baseExplanation) {
   const container = document.getElementById("aiDoubtContent");
   if (!container) return;
 
-  if (currentUser && currentUser.role === "student") {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const usageKey = `hms_ai_doubts_${currentUser.id}_${todayStr}`;
-    
-    let usedCount = parseInt(localStorage.getItem(usageKey) || "0", 10);
-    
-    if (usedCount >= 3) {
-      alert("⚠️ You have reached your daily limit of 3 AI doubt clarifications for today. Try again tomorrow!");
-      return;
-    }
-    
-    localStorage.setItem(usageKey, usedCount + 1);
-  }
-
   const decodedQ = decodeURIComponent(questionText);
   const decodedExp = decodeURIComponent(baseExplanation);
 
-  container.innerHTML = "⏳ AI is analyzing your doubt and generating a detailed step-by-step explanation...";
+  container.innerHTML = `
+    <div style="display:flex; align-items:center; gap:8px; color:#0369a1; padding:10px 0; font-weight:600;">
+      <span>⏳</span>
+      <span>ஆசிரியர் AI விரிவான விளக்கத்தை உருவாக்குகிறது (Teacher AI is generating a detailed step-by-step breakdown)...</span>
+    </div>
+  `;
 
   try {
     const payload = {
@@ -1218,18 +1610,20 @@ async function fetchAiDoubtClarification(questionText, baseExplanation) {
     });
     
     const data = await res.json();
-    if (data && data.success) {
+    if (data && data.success && data.explanation) {
       container.innerHTML = `
-        <div style="margin-top:8px; color:#0f172a; line-height:1.5;">
-          <strong>🔍 AI Detailed Breakdown:</strong><br>
+        <div style="margin-top:10px; padding:15px; background:#ffffff; border-radius:8px; border:1.5px solid #bbf7d0; box-shadow:0 2px 4px rgba(0,0,0,0.04); color:#0f172a; line-height:1.6;">
+          <div style="color:#15803d; font-weight:700; font-size:1.05rem; margin-bottom:10px; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
+            🧑‍🏫 ஆசிரியர் விரிவான விளக்கம் (Teacher In-Depth Explanation):
+          </div>
           ${data.explanation}
         </div>
       `;
     } else {
-      container.innerHTML = `<div style="color:#166534;">${decodedExp}<br><small style="color:#64748b;">(AI expansion unavailable at the moment)</small></div>`;
+      container.innerHTML = `<div style="color:#166534; padding:8px 0;">${decodedExp}</div>`;
     }
   } catch (err) {
-    container.innerHTML = `<div style="color:#166534;">${decodedExp}</div>`;
+    container.innerHTML = `<div style="color:#166534; padding:8px 0;">${decodedExp}</div>`;
   }
 }
 
@@ -1524,6 +1918,7 @@ async function finishQuiz() {
   };
 
   try { await callAppsScript(payload); } catch (e) { console.warn("Score save:", e); } 
+  setTimeout(loadDailyWinners, 1500);
 }
 
 function retakeWrongOnly() {

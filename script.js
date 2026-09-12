@@ -39,6 +39,18 @@ const GLOBAL_STANDARDS = [
 
 const GLOBAL_SUBJECTS = ["Science", "Maths", "Social Science", "English", "Hindi", "Tamil", "Botany", "Zoology", "Physics", "Chemistry"];
 
+function normalizeStream(stream) {
+  if (!stream) return "ncert";
+  const s = stream.toString().toLowerCase().trim();
+  if (s.includes("metric") || s.includes("state")) return "stateboard";
+  return "ncert";
+}
+
+function getStreamLabel(stream) {
+  const norm = normalizeStream(stream);
+  return norm === "stateboard" ? "STATEBOARD (METRIC)" : "NCERT";
+}
+
 function initApp() {
   const savedUser = localStorage.getItem("hmsUser");
   if (savedUser) {
@@ -57,16 +69,15 @@ async function loadDailyWinners() {
   if (!container) return;
 
   try {
-    // பாடம் மற்றும் வகுப்பு வடிகட்டிகள் இல்லாமல் புதிரில் வென்றவர்களை நேரடியாகப் பெறுதல்
-    const url = `${SCRIPT_URL}?action=getDailyPuzzleWinners`;
+    const url = `${SCRIPT_URL}?action=getDailyPuzzleWinners&_t=${Date.now()}`;
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data && data.success) {
+    if (data && data.success && Array.isArray(data.winners)) {
       if (dateText && data.date) {
         dateText.innerText = `தேதி: ${data.date} • அதிக மதிப்பெண் பெற்று விரைவாக முடித்த முதல் 3 வெற்றியாளர்கள்`;
       }
-      renderDailyWinners(data.winners || []);
+      renderDailyWinners(data.winners);
     } else {
       container.innerHTML = `<div style="font-size:0.85rem; color:#cbd5e1;">இன்றைய புதிரில் இன்னும் யாரும் பங்குபெறவில்லை. நீங்களே முதல் வெற்றியாளராகுங்கள்!</div>`;
     }
@@ -80,7 +91,7 @@ function renderDailyWinners(winners) {
   const container = document.getElementById("dailyWinnersContainer");
   if (!container) return;
 
-  if (winners.length === 0) {
+  if (!winners || winners.length === 0) {
     container.innerHTML = `
       <div style="background: rgba(255,255,255,0.08); padding: 12px 18px; border-radius: 8px; width: 100%; font-size: 0.9rem; color: #cbd5e1;">
         🚀 இன்றைய தினசரி புதிரை இன்னும் யாரும் முடிக்கவில்லை. இப்போதே தேர்வை எழுதி முதல் வெற்றியாளராகுங்கள்!
@@ -97,7 +108,9 @@ function renderDailyWinners(winners) {
 
   container.innerHTML = winners.map((w, idx) => {
     const m = medals[idx] || medals[2];
-    const timeDisplay = w.timeTaken && w.timeTaken < 9000 ? `⏱️ ${w.timeTaken} வினாடிகள்` : "";
+    const timeDisplay = (w.timeTaken && w.timeTaken < 9000) ? `⏱️ ${w.timeTaken} வினாடிகள்` : "";
+    const subjectName = w.subject || "General";
+
     return `
       <div style="flex: 1; min-width: 220px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
         <div style="font-size: 2rem; background: ${m.bg}; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
@@ -106,88 +119,10 @@ function renderDailyWinners(winners) {
         <div style="overflow: hidden;">
           <div style="font-size: 0.75rem; font-weight: 700; color: #fde047; text-transform: uppercase;">${m.rank}</div>
           <div style="font-size: 0.95rem; font-weight: 700; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${w.userName}</div>
-          <div style="font-size: 0.8rem; color: #cbd5e1;">
-            ${w.subject} • <strong>${w.score}/${w.total} (${w.percentage}%)</strong>
+          <div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 2px;">
+            ${subjectName} • <strong>${w.score}/${w.total} (${w.percentage}%)</strong>
           </div>
           ${timeDisplay ? `<div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">${timeDisplay}</div>` : ""}
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function renderDailyWinners(winners) {
-  const container = document.getElementById("dailyWinnersContainer");
-  if (!container) return;
-
-  if (winners.length === 0) {
-    container.innerHTML = `
-      <div style="background: rgba(255,255,255,0.08); padding: 12px 18px; border-radius: 8px; width: 100%; font-size: 0.9rem; color: #cbd5e1;">
-        🚀 இன்றைய தினசரி புதிரை இன்னும் யாரும் முடிக்கவில்லை. இப்போதே தேர்வை எழுதி முதல் வெற்றியாளராகுங்கள்!
-      </div>
-    `;
-    return;
-  }
-
-  const medals = [
-    { rank: "1-ஆம் இடம்", icon: "🥇", bg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)" },
-    { rank: "2-ஆம் இடம்", icon: "🥈", bg: "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)" },
-    { rank: "3-ஆம் இடம்", icon: "🥉", bg: "linear-gradient(135deg, #fdba74 0%, #c2410c 100%)" }
-  ];
-
-  container.innerHTML = winners.map((w, idx) => {
-    const m = medals[idx] || medals[2];
-    const timeDisplay = w.timeTaken && w.timeTaken < 9000 ? `⏱️ ${w.timeTaken} வினாடிகள்` : "";
-    return `
-      <div style="flex: 1; min-width: 220px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-        <div style="font-size: 2rem; background: ${m.bg}; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-          ${m.icon}
-        </div>
-        <div style="overflow: hidden;">
-          <div style="font-size: 0.75rem; font-weight: 700; color: #fde047; text-transform: uppercase;">${m.rank}</div>
-          <div style="font-size: 0.95rem; font-weight: 700; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${w.userName}</div>
-          <div style="font-size: 0.8rem; color: #cbd5e1;">
-            ${w.subject} • <strong>${w.score}/${w.total} (${w.percentage}%)</strong>
-          </div>
-          ${timeDisplay ? `<div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">${timeDisplay}</div>` : ""}
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function renderDailyWinners(winners) {
-  const container = document.getElementById("dailyWinnersContainer");
-  if (!container) return;
-
-  if (winners.length === 0) {
-    container.innerHTML = `
-      <div style="background: rgba(255,255,255,0.08); padding: 12px 18px; border-radius: 8px; width: 100%; font-size: 0.9rem; color: #cbd5e1;">
-        🚀 இன்றைய தினசரி புதிரை இன்னும் யாரும் முடிக்கவில்லை. இப்போதே தேர்வை எழுதி முதல் வெற்றியாளராகுங்கள்!
-      </div>
-    `;
-    return;
-  }
-
-  const medals = [
-    { rank: "1-ஆம் இடம்", icon: "🥇", bg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)", color: "#78350f" },
-    { rank: "2-ஆம் இடம்", icon: "🥈", bg: "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)", color: "#1e293b" },
-    { rank: "3-ஆம் இடம்", icon: "🥉", bg: "linear-gradient(135deg, #fdba74 0%, #c2410c 100%)", color: "#431407" }
-  ];
-
-  container.innerHTML = winners.map((w, idx) => {
-    const m = medals[idx] || medals[2];
-    return `
-      <div style="flex: 1; min-width: 220px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-        <div style="font-size: 2rem; background: ${m.bg}; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-          ${m.icon}
-        </div>
-        <div style="overflow: hidden;">
-          <div style="font-size: 0.75rem; font-weight: 700; color: #fde047; text-transform: uppercase;">${m.rank}</div>
-          <div style="font-size: 0.95rem; font-weight: 700; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${w.userName}</div>
-          <div style="font-size: 0.8rem; color: #cbd5e1;">
-            வகுப்பு ${w.standard} (${(w.stream || 'ncert').toUpperCase()}) • <strong>${w.score}/${w.total} (${w.percentage}%)</strong>
-          </div>
         </div>
       </div>
     `;
@@ -301,25 +236,26 @@ async function loadPortalData() {
     const data = await res.json();
 
     if (data && data.success) {
-      if (data.curriculum) masterCurriculum = data.curriculum;
-      if (data.questions) masterQuestions = data.questions;
-      if (data.bookLinks) masterBookLinks = data.bookLinks;
+      if (data.curriculum) masterCurriculum = data.curriculum;     
+      if (data.questions) masterQuestions = data.questions;     
+      if (data.bookLinks) masterBookLinks = data.bookLinks;     
       if (data.user) {
-        currentUser = data.user;
-        localStorage.setItem("hmsUser", JSON.stringify(currentUser));
+        currentUser = data.user;     
+        localStorage.setItem("hmsUser", JSON.stringify(currentUser));     
       }
     }
   } catch (err) {
-    console.warn("Offline/Network Notice:", err);
+    console.warn("Offline/Network Notice:", err);     
   } finally {
-    try { populateAllDropdowns(); } catch (e) { console.warn(e); }
-    try { renderNcertBooksViewer(); } catch (e) { console.warn(e); }
-    try { if (typeof updateAiPromptPreview === "function") updateAiPromptPreview(); } catch (e) { console.warn(e); }
+    try { populateAllDropdowns(); } catch (e) { console.warn(e); }     
+    try { renderNcertBooksViewer(); } catch (e) { console.warn(e); }     
+    try { if (typeof updateAiPromptPreview === "function") updateAiPromptPreview(); } catch (e) { console.warn(e); }     
 
     // Guarantees dismiss
     setGlobalLoadingState(false);
   }
 }
+
 function updateAuthUI() {
   const guestBanner = document.getElementById("guestBanner");
   const playCountInput = document.getElementById("playCountInput");
@@ -342,12 +278,12 @@ function updateAuthUI() {
     
     const streamSelect = document.getElementById("playStreamSelect");
     if (streamSelect && currentUser.studentStream) {
-      streamSelect.value = currentUser.studentStream;
+      streamSelect.value = normalizeStream(currentUser.studentStream);
     }
 
     if (userBadge) {
       userBadge.classList.remove("hidden");
-      let scope = `Class ${currentUser.standards.join(", ")} (${(currentUser.studentStream || 'ncert').toUpperCase()})`;
+      let scope = `Class ${currentUser.standards.join(", ")} (${getStreamLabel(currentUser.studentStream)})`;
       if (currentUser.role === "principal") scope = "Master School Control";
       else if (currentUser.role === "aspirant") scope = "Aspirant Mode (Classes 5-12)";
       else if (currentUser.role === "teacher") scope = `Classes: [${currentUser.standards.join(",")}], Subs: [${currentUser.subjects.join(",")}]`;
@@ -356,7 +292,7 @@ function updateAuthUI() {
 
     if (playScopeNotice) {
       if (currentUser.role === "student") {
-        playScopeNotice.innerText = `Attending Class ${currentUser.standards.join(", ")} Assessments (${(currentUser.studentStream || 'ncert').toUpperCase()} Stream).`;
+        playScopeNotice.innerText = `Attending Class ${currentUser.standards.join(", ")} Assessments (${getStreamLabel(currentUser.studentStream)}).`;
       } else {
         playScopeNotice.innerText = `Select Student Stream, Category, Standard, Subject, and Topic to begin.`;
       }
@@ -432,11 +368,11 @@ function syncPlaySubjects() {
   if (!playStd || !subSelect) return;
 
   const std = playStd.value || "5";
-  const selectedStream = streamSelect ? streamSelect.value : "ncert";
+  const selectedStream = normalizeStream(streamSelect ? streamSelect.value : "ncert");
   const subMap = new Map();
 
   masterQuestions
-    .filter(q => q.standard === std && (!q.stream || q.stream === selectedStream))
+    .filter(q => q.standard === std && normalizeStream(q.stream) === selectedStream)
     .forEach(q => {
       if (q.subject) {
         const cleanName = normalizeText(q.subject);
@@ -462,11 +398,11 @@ function syncPlayChapters() {
 
   const std = playStd.value || "5";
   const sub = normalizeText(subSelect.value || "Science").toLowerCase();
-  const selectedStream = streamSelect ? streamSelect.value : "ncert";
+  const selectedStream = normalizeStream(streamSelect ? streamSelect.value : "ncert");
   const chapterMap = new Map();
 
   masterQuestions
-    .filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && (!q.stream || q.stream === selectedStream))
+    .filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && normalizeStream(q.stream) === selectedStream)
     .forEach(q => {
       if (q.chapter) {
         const cleanName = normalizeText(q.chapter);
@@ -493,9 +429,9 @@ function syncPlayTopics() {
   const std = playStd.value || "5";
   const sub = normalizeText(subSelect.value || "Science").toLowerCase();
   const chap = chapSelect.value || "All";
-  const selectedStream = streamSelect ? streamSelect.value : "ncert";
+  const selectedStream = normalizeStream(streamSelect ? streamSelect.value : "ncert");
 
-  let filtered = masterQuestions.filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && (!q.stream || q.stream === selectedStream));
+  let filtered = masterQuestions.filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && normalizeStream(q.stream) === selectedStream);
   if (chap !== "All") {
     filtered = filtered.filter(q => normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
   }
@@ -557,6 +493,7 @@ async function handleSignIn() {
     const data = await callAppsScript(payload);
     if (data && data.success) {
       currentUser = data.user;
+      currentUser.studentStream = normalizeStream(currentUser.studentStream);
       localStorage.setItem("hmsUser", JSON.stringify(currentUser));
       closeModal("loginModal");
       
@@ -576,7 +513,7 @@ async function handleSignIn() {
 
 async function handleSignUp() {
   const userType = document.getElementById("signupUserType").value;
-  const studentStream = document.getElementById("signupStudentStream").value;
+  const studentStream = normalizeStream(document.getElementById("signupStudentStream").value);
   const userId = document.getElementById("signupUserId").value.trim();
   const name = document.getElementById("signupName").value.trim();
   const pass = document.getElementById("signupPassword").value.trim();
@@ -598,6 +535,7 @@ async function handleSignUp() {
     const data = await callAppsScript(payload);
     if (data && data.success) {
       currentUser = data.user;
+      currentUser.studentStream = normalizeStream(currentUser.studentStream);
       localStorage.setItem("hmsUser", JSON.stringify(currentUser));
       closeModal("signupModal");
       document.getElementById("signupUserId").value = "";
@@ -723,7 +661,7 @@ let dailyPuzzleList = [];
 let dailyPuzzleIndex = 0;
 let dailyPuzzleScore = 0;
 let dailyPuzzleStartTime = 0;
-const DAILY_PUZZLE_TARGET = 30; // 30 questions per session
+const DAILY_PUZZLE_TARGET = 30;
 
 function initDailyPuzzleArena() {
   const subSelect = document.getElementById("dailyPuzzleSubjectSelect");
@@ -734,7 +672,6 @@ function initDailyPuzzleArena() {
   const streakEl = document.getElementById("dailyPuzzleStreakBadge");
   if (streakEl) streakEl.innerText = `🔥 தொடர் சாதனை: ${streak} நாட்கள்`;
 
-  // Collect all unique subjects available across any class in Questions Sheet
   const availableSubjects = new Set();
   masterQuestions.forEach(q => {
     if (q.subject && q.subject.trim()) {
@@ -777,7 +714,6 @@ function loadCustomDailyPuzzle() {
     return;
   }
 
-  // Pull matching questions across ANY class
   let matched = masterQuestions.filter(q => 
     q.subject && q.subject.toLowerCase().trim() === sub.toLowerCase().trim()
   );
@@ -787,7 +723,6 @@ function loadCustomDailyPuzzle() {
     return;
   }
 
-  // Deterministic daily shuffle so all students receive the identical 30 questions today
   const seed = todayStr.split("-").reduce((acc, part) => acc + parseInt(part, 10), 0);
   matched = [...matched].sort((a, b) => {
     const hashA = (a.id.length * seed) % 97;
@@ -873,7 +808,6 @@ function submitDailyPuzzleChoice(userAnswer, triggerBtn) {
     isCorrect = (userAnswer.toString().trim() === (q.correctOpt || "").toString().trim());
   }
 
-  // Lock inputs on current question card
   document.querySelectorAll("#dailyPuzzleCardArea button, #dailyPuzzleCardArea input").forEach(el => el.disabled = true);
 
   const feedback = document.getElementById("puzzleFeedbackBox");
@@ -928,7 +862,6 @@ async function finishDailyPuzzleTest() {
     </div>
   `;
 
-  // Destination Database: Scores Sheet
   const payload = {
     action: "saveScore",
     userId: currentUser ? currentUser.id : "GUEST",
@@ -939,7 +872,7 @@ async function finishDailyPuzzleTest() {
     topic: `Time: ${totalTimeSec}s`,
     score: dailyPuzzleScore,
     total: total,
-    stream: currentUser ? currentUser.studentStream : "ncert"
+    stream: normalizeStream(currentUser ? currentUser.studentStream : "ncert")
   };
 
   try {
@@ -985,13 +918,13 @@ function initNcertBooksTab() {
   }
   const viewStream = document.getElementById("ncertViewStreamSelect");
   if (viewStream && currentUser && currentUser.studentStream) {
-    viewStream.value = currentUser.studentStream;
+    viewStream.value = normalizeStream(currentUser.studentStream);
   }
   renderNcertBooksViewer();
 }
 
 async function saveNcertDriveLink() {
-  const stream = document.getElementById("configBookStream").value;
+  const stream = normalizeStream(document.getElementById("configBookStream").value);
   const std = (document.getElementById("ncertConfigStd").value || "").replace(/[^0-9a-zA-Z\-]/g, "");
   const sub = document.getElementById("ncertConfigSub").value;
   const url = document.getElementById("ncertDriveUrlInput").value.trim();
@@ -1016,7 +949,7 @@ async function saveNcertDriveLink() {
   try {
     const res = await callAppsScript(payload);
     if (res && res.success) {
-      alert(`✅ [${stream.toUpperCase()}] வகுப்பு ${std} - ${sub} பாடத்திற்கான டிரைவ் இணைப்பு கூகுள் ஷீட்டில் சேமிக்கப்பட்டது!`);
+      alert(`✅ [${getStreamLabel(stream)}] வகுப்பு ${std} - ${sub} பாடத்திற்கான டிரைவ் இணைப்பு கூகுள் ஷீட்டில் சேமிக்கப்பட்டது!`);
       document.getElementById("ncertDriveUrlInput").value = "";
       await loadPortalData();
     } else {
@@ -1039,11 +972,7 @@ function renderNcertBooksViewer() {
   const container = document.getElementById("ncertBooksGridContainer");
   if (!container || !stdSelect) return;
 
-  let rawStream = streamSelect ? streamSelect.value : "ncert";
-  let stream = "ncert";
-  if (rawStream.toLowerCase().includes("metric")) stream = "metric";
-  else if (rawStream.toLowerCase().includes("state")) stream = "stateboard";
-
+  const stream = normalizeStream(streamSelect ? streamSelect.value : "ncert");
   const rawStd = stdSelect.value || "5";
   const std = rawStd.replace(/[^0-9a-zA-Z\-]/g, "").trim();
   const search = searchInput ? searchInput.value.toLowerCase() : "";
@@ -1055,7 +984,7 @@ function renderNcertBooksViewer() {
     if (search && !sub.toLowerCase().includes(search)) return;
 
     const record = masterBookLinks.find(item => {
-      const itemStream = (item.stream || "").toString().trim().toLowerCase();
+      const itemStream = normalizeStream(item.stream);
       const itemStd = (item.standard || "").toString().replace(/[^0-9a-zA-Z\-]/g, "").trim();
       const itemSub = (item.subject || "").toString().trim().toLowerCase();
       
@@ -1071,7 +1000,7 @@ function renderNcertBooksViewer() {
       <div class="card" style="margin-bottom:0; padding:15px; text-align:center; background:${hasLink ? '#f0fdf4' : '#fff'}; border-color:${hasLink ? '#bbf7d0' : 'var(--border)'};">
         <div style="font-size:2rem; margin-bottom:8px;">📖</div>
         <h4 style="margin:0 0 6px 0; color:var(--primary);">${sub}</h4>
-        <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px 0;">[${stream.toUpperCase()}] வகுப்பு ${std} புத்தகம்</p>
+        <p style="font-size:0.85rem; color:#64748b; margin:0 0 12px 0;">[${getStreamLabel(stream)}] வகுப்பு ${std} புத்தகம்</p>
         ${hasLink ? `
           <a href="${record.url}" target="_blank" class="btn btn-success" style="width:100%; font-size:0.85rem; padding:8px; text-decoration:none;">
             📂 டிரைவ் கோப்பகத்தைத் திற (Open Drive)
@@ -1280,7 +1209,7 @@ async function startQuiz() {
   const countEl = document.getElementById("playCountInput");
   const timerEl = document.getElementById("playTimerSelect");
 
-  const chosenStream = streamEl ? streamEl.value : "ncert";
+  const chosenStream = normalizeStream(streamEl ? streamEl.value : "ncert");
   const chosenType = typeEl ? typeEl.value : "all";
   const std = stdEl ? stdEl.value : "5";
   const sub = subEl && subEl.value ? normalizeText(subEl.value).toLowerCase() : "science";
@@ -1295,7 +1224,7 @@ async function startQuiz() {
   perQuestionTime = timerEl ? Number(timerEl.value) : 20;
 
   let matched = masterQuestions.filter(q => {
-    const mStream = (!q.stream || q.stream.toLowerCase() === chosenStream.toLowerCase());
+    const mStream = normalizeStream(q.stream) === chosenStream;
     const mType = (chosenType === "all" || (q.type || "mcq").toLowerCase() === chosenType);
 
     if (keyword && (isAspirant || isPrincipal)) {
@@ -1327,14 +1256,12 @@ async function startQuiz() {
   currentQIndex = 0;
   userScore = 0;
 
-  // Button loading animation state
   const startBtn = document.querySelector("#quizSetupCard button.btn-primary");
   if (startBtn) {
     startBtn.disabled = true;
     startBtn.innerHTML = "⏳ வினாக்கள் தயாராகின்றன (Preparing Assessment)...";
   }
 
-  // Smooth transition delay before starting the quiz
   setTimeout(() => {
     if (startBtn) {
       startBtn.disabled = false;
@@ -1624,7 +1551,7 @@ function showExplanationBox() {
   boxArea.innerHTML = `
     <div class="explanation-card" style="margin-top:15px; background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <strong style="color:#166534;">💡 ஆசிரியர் விளக்கம் (${(q.stream || 'ncert').toUpperCase()})</strong>
+        <strong style="color:#166534;">💡 ஆசிரியர் விளக்கம் (${getStreamLabel(q.stream)})</strong>
         <button class="btn btn-outline-dark" style="font-size:0.75rem; padding:4px 8px;" onclick="fetchAiDoubtClarification('${safeQ}', '${safeExp}')">🤖 Ask AI for Detailed Doubt Clarification</button>
       </div>
       <div id="aiDoubtContent">${q.explanation || 'சரிபார்க்கப்பட்டது.'}</div>
@@ -1954,7 +1881,9 @@ async function finishQuiz() {
 
   document.getElementById("resultFeedback").innerText = msg;
 
-  const streamVal = document.getElementById("playStreamSelect") ? document.getElementById("playStreamSelect").value : "ncert";
+  const streamEl = document.getElementById("playStreamSelect");
+  const streamVal = normalizeStream(streamEl ? streamEl.value : "ncert");
+
   const payload = {
     action: "saveScore", 
     userId: currentUser ? currentUser.id : "GUEST", 
@@ -1994,13 +1923,13 @@ function downloadCertificate() {
   const studentName = (currentUser && currentUser.name) ? currentUser.name : "மதிப்புமிகு மாணவர்";
   const std = document.getElementById("playStdSelect") ? document.getElementById("playStdSelect").value : "5";
   const sub = document.getElementById("playSubSelect") ? document.getElementById("playSubSelect").value : "பொது மதிப்பீடு";
-  const streamVal = document.getElementById("playStreamSelect") ? document.getElementById("playStreamSelect").value.toUpperCase() : "NCERT";
+  const streamVal = normalizeStream(document.getElementById("playStreamSelect") ? document.getElementById("playStreamSelect").value : "ncert");
   const dateStr = new Date().toLocaleDateString('ta-IN');
 
   container.innerHTML = `
     <div id="certCaptureElement" style="width: 900px; padding: 40px; border: 10px solid #003366; background: #ffffff; text-align: center; font-family: 'Segoe UI', Arial, sans-serif; box-sizing: border-box; color: #000000; margin: 0 auto;">
       <div style="border: 2px solid #e65100; padding: 25px;">
-        <h1 style="color: #003366; font-size: 30px; margin: 0 0 8px 0; font-weight: bold;"> HariMani School (${streamVal} Stream) </h1>
+        <h1 style="color: #003366; font-size: 30px; margin: 0 0 8px 0; font-weight: bold;"> HariMani School (${getStreamLabel(streamVal)}) </h1>
         <h3 style="color: #e65100; font-size: 18px; margin: 0 0 20px 0; text-transform: uppercase;">Certificate of Achievement</h3>
         <p style="font-size: 16px; color: #475569; margin: 15px 0;">இச்சான்றிதழ் பெருமையுடன் வழங்கப்படுகிறது</p>
         <h2 style="font-size: 28px; color: #0f172a; margin: 10px 0 20px 0; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; display: inline-block;">
@@ -2067,7 +1996,7 @@ function renderLeaderboardTable(list) {
       <tr>
         <td style="font-weight:bold; text-align:center;">${rankDisplay}</td>
         <td><strong>${item.userName}</strong> <small style="color:#64748b;">(${item.userId})</small></td>
-        <td><span class="tag-pill">${(item.stream || 'ncert').toUpperCase()}</span> வகுப்பு ${item.standard}</td>
+        <td><span class="tag-pill">${getStreamLabel(item.stream)}</span> வகுப்பு ${item.standard}</td>
         <td>${item.testsCount} தேர்வுகள்</td>
         <td><strong>${item.totalScore} / ${item.totalPossible}</strong></td>
         <td><span class="badge badge-success">${item.percentage}%</span></td>
@@ -2095,7 +2024,7 @@ function toggleExamReview() {
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
         <div style="font-weight:bold; font-size:1rem; margin-bottom:6px; flex:1;">
-          ${idx + 1}. [${(q.type || 'mcq').toUpperCase()}] (${(q.stream || 'ncert').toUpperCase()}) ${q.question}
+          ${idx + 1}. [${(q.type || 'mcq').toUpperCase()}] (${getStreamLabel(q.stream)}) ${q.question}
         </div>
         <button class="btn btn-outline-dark voice-btn" onclick="speakText('${q.question.replace(/'/g, "\\'")}')" title="கேள்வியை வாசி">🔊</button>
       </div>
@@ -2155,7 +2084,7 @@ function toggleManualTypeInputs(type) {
 async function publishManualQuestion() {
   if (!currentUser) return alert("Please sign in as Teacher or Principal.");
 
-  const stream = document.getElementById("authorStreamSelect").value;
+  const stream = normalizeStream(document.getElementById("authorStreamSelect").value);
   const type = document.getElementById("manualQType").value;
   const std = document.getElementById("authorStdSelect").value;
   const sub = document.getElementById("authorSubSelect").value;
@@ -2258,7 +2187,7 @@ async function generateViaAI() {
   extractedAiBatch = [];
 
   const context = {
-    stream: document.getElementById("authorStreamSelect").value,
+    stream: normalizeStream(document.getElementById("authorStreamSelect").value),
     standard: document.getElementById("authorStdSelect").value,
     subject: document.getElementById("authorSubSelect").value,
     chapter: document.getElementById("authorChapterInput").value.trim() || "Unit 1",
@@ -2335,7 +2264,7 @@ function renderAiPreview(questions) {
 }
 
 async function publishAiBatch() {
-  const streamVal = document.getElementById("authorStreamSelect").value;
+  const streamVal = normalizeStream(document.getElementById("authorStreamSelect").value);
   const payload = {
     action: "saveBatchQuestions", 
     userId: currentUser.id, 
@@ -2363,7 +2292,8 @@ function renderManageTable() {
   tbody.innerHTML = "";
 
   const search = document.getElementById("manageSearchInput") ? document.getElementById("manageSearchInput").value.toLowerCase().trim() : "";
-  const streamFilter = document.getElementById("manageStreamFilter") ? document.getElementById("manageStreamFilter").value : "";
+  const rawStreamFilter = document.getElementById("manageStreamFilter") ? document.getElementById("manageStreamFilter").value : "";
+  const streamFilter = rawStreamFilter ? normalizeStream(rawStreamFilter) : "";
   const std = document.getElementById("manageStdFilter") ? document.getElementById("manageStdFilter").value : "";
   const sub = document.getElementById("manageSubFilter") ? document.getElementById("manageSubFilter").value.toLowerCase() : "";
 
@@ -2374,7 +2304,7 @@ function renderManageTable() {
     const isOwner = (q.creatorId && q.creatorId.toLowerCase() === myId);
     if (!isPrincipal && !isOwner) return false;
 
-    const mStream = !streamFilter || (q.stream || 'ncert') === streamFilter;
+    const mStream = !streamFilter || normalizeStream(q.stream) === streamFilter;
     const fullTextSearch = `${q.question || ""} ${q.optA || ""} ${q.optB || ""} ${q.optC || ""} ${q.optD || ""} ${q.explanation || ""}`.toLowerCase();
     const mSearch = !search || fullTextSearch.includes(search);
     const mStd = !std || q.standard === std;
@@ -2398,7 +2328,7 @@ function renderManageTable() {
   paginatedList.forEach(q => {
     htmlContent += `
       <tr>
-        <td><span class="tag-pill">${(q.stream || 'ncert').toUpperCase()}</span><br><strong>Class ${q.standard || '5'}</strong></td>
+        <td><span class="tag-pill">${getStreamLabel(q.stream)}</span><br><strong>Class ${q.standard || '5'}</strong></td>
         <td><span class="badge" style="background:#003366; color:#fff;">${(q.type || 'mcq').toUpperCase()}</span></td>
         <td>${q.subject || 'General'}</td>
         <td><small><strong>${q.chapter || 'General'}</strong><br>${q.topic || 'All'}</small></td>
@@ -2467,10 +2397,10 @@ async function saveEditedQuestion() {
 function generatePrintablePaper(count) {
   const std = document.getElementById("manageStdFilter").value || "All Classes";
   const sub = document.getElementById("manageSubFilter").value || "General Assessment";
-  const streamFilter = document.getElementById("manageStreamFilter").value || "ncert";
+  const streamFilter = normalizeStream(document.getElementById("manageStreamFilter").value || "ncert");
 
   let pool = [...masterQuestions];
-  pool = pool.filter(q => (q.stream || 'ncert') === streamFilter);
+  pool = pool.filter(q => normalizeStream(q.stream) === streamFilter);
   if (std !== "All Classes") pool = pool.filter(q => q.standard === std);
   if (sub !== "General Assessment") pool = pool.filter(q => q.subject.toLowerCase() === sub.toLowerCase());
 
@@ -2482,10 +2412,10 @@ function generatePrintablePaper(count) {
   const printArea = document.getElementById("printContainer");
   printArea.innerHTML = `
     <div class="print-header">
-      <h2>HARI MANDIR HIGHER SECONDARY SCHOOL (${streamFilter.toUpperCase()} Stream)</h2>
+      <h2>HARI MANDIR HIGHER SECONDARY SCHOOL (${getStreamLabel(streamFilter)})</h2>
       <h3>Official Examination Assessment Question Paper</h3>
       <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold; font-size:0.95rem;">
-        <span>Stream: ${streamFilter.toUpperCase()}</span>
+        <span>Stream: ${getStreamLabel(streamFilter)}</span>
         <span>Class: ${std}</span>
         <span>Subject: ${sub}</span>
         <span>Max Marks: ${selected.length}</span>
@@ -2665,7 +2595,7 @@ function filterUserReports() {
     tbody.innerHTML += `
       <tr>
         <td>${s.date}</td>
-        <td><span class="tag-pill">${(s.stream || 'ncert').toUpperCase()}</span></td>
+        <td><span class="tag-pill">${getStreamLabel(s.stream)}</span></td>
         <td>Class ${s.standard}</td>
         <td>${s.subject}</td>
         <td>${s.score} / ${s.total}</td>
@@ -2721,7 +2651,7 @@ function filterTeacherStudentScores() {
       <tr>
         <td><strong>${s.userId}</strong></td>
         <td>${s.userName}</td>
-        <td><span class="tag-pill">${(s.stream || 'ncert').toUpperCase()}</span></td>
+        <td><span class="tag-pill">${getStreamLabel(s.stream)}</span></td>
         <td>Class ${s.standard}</td>
         <td>${s.subject}</td>
         <td><strong>${s.score} / ${s.total} (${pct}%)</strong></td>
@@ -2754,7 +2684,7 @@ async function deleteStudent(studentId) {
 async function principalCreateTeacher() {
   const id = document.getElementById("newTeacherId").value.trim();
   const name = document.getElementById("newTeacherName").value.trim();
-  const stream = document.getElementById("newTeacherStream").value;
+  const stream = normalizeStream(document.getElementById("newTeacherStream").value);
   const pass = document.getElementById("newTeacherPass").value.trim();
 
   if (!id || !name || !pass) return alert("Enter Teacher ID, Name, and Password.");
@@ -2839,7 +2769,7 @@ function renderPrincipalTeacherTable() {
       <tr>
         <td><code>${t.id}</code></td>
         <td><strong>${t.name}</strong></td>
-        <td><span class="tag-pill" style="background:#fef3c7; color:#b45309;">${(t.studentStream || 'ncert').toUpperCase()}</span></td>
+        <td><span class="tag-pill" style="background:#fef3c7; color:#b45309;">${getStreamLabel(t.studentStream)}</span></td>
         <td>${stdTags}</td>
         <td>${subTags}</td>
         <td style="text-align:right;">
@@ -2858,7 +2788,7 @@ function openEditTeacherModal(teacherId) {
   document.getElementById("editTeacherTargetId").value = teacherId;
   document.getElementById("editTeacherModalTitle").innerText = `Configure Access: ${teacher.name}`;
   document.getElementById("editTeacherModalSub").innerText = `Staff Code: ${teacher.id}`;
-  document.getElementById("editTeacherStream").value = teacher.studentStream || "ncert";
+  document.getElementById("editTeacherStream").value = normalizeStream(teacher.studentStream || "ncert");
 
   const stdContainer = document.getElementById("editTeacherStdContainer");
   stdContainer.innerHTML = GLOBAL_STANDARDS.map(std => {
@@ -2886,7 +2816,7 @@ async function confirmSaveTeacherPermissions() {
   const teacher = (principalDashboardData.teachers || []).find(t => t.id === teacherId);
   if (!teacher) return;
 
-  const streamVal = document.getElementById("editTeacherStream").value;
+  const streamVal = normalizeStream(document.getElementById("editTeacherStream").value);
   const selectedStds = Array.from(document.querySelectorAll("#editTeacherStdContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
   const selectedSubs = Array.from(document.querySelectorAll("#editTeacherSubContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
 
@@ -2941,7 +2871,7 @@ function renderPrincipalStudentTable() {
       <tr>
         <td><code>${s.id}</code></td>
         <td><strong>${s.name}</strong></td>
-        <td><span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">${(s.studentStream || 'ncert').toUpperCase()}</span></td>
+        <td><span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">${getStreamLabel(s.studentStream)}</span></td>
         <td><span class="badge" style="background:${s.role === 'aspirant' ? '#f59e0b' : '#0284c7'}; color:#fff;">${s.role.toUpperCase()}</span></td>
         <td>${stdTags}</td>
         <td style="text-align:right;">
@@ -2960,7 +2890,7 @@ function openEditStudentModal(studentId) {
   document.getElementById("editStudentTargetId").value = studentId;
   document.getElementById("editStudentModalTitle").innerText = `Enrollment: ${student.name}`;
   document.getElementById("editStudentModalSub").innerText = `Roll/ID: ${student.id} (${student.role.toUpperCase()})`;
-  document.getElementById("editStudentStream").value = student.studentStream || "ncert";
+  document.getElementById("editStudentStream").value = normalizeStream(student.studentStream || "ncert");
 
   const stdContainer = document.getElementById("editStudentStdContainer");
   stdContainer.innerHTML = GLOBAL_STANDARDS.map(std => {
@@ -2976,7 +2906,7 @@ async function confirmSaveStudentPermissions() {
   const student = (principalDashboardData.students || []).find(s => s.id === studentId);
   if (!student) return;
 
-  const streamVal = document.getElementById("editStudentStream").value;
+  const streamVal = normalizeStream(document.getElementById("editStudentStream").value);
   const selectedStds = Array.from(document.querySelectorAll("#editStudentStdContainer .chip-item.active")).map(c => c.getAttribute("data-val"));
   student.studentStream = streamVal;
   student.standards = selectedStds;
@@ -3016,7 +2946,7 @@ function filterPrincipalScores() {
     const userName = (s.userName || "").toString().toLowerCase();
     const mStudent = !search || userId.includes(search) || userName.includes(search);
 
-    const recordStream = (s.stream || "ncert").toString().toLowerCase().trim();
+    const recordStream = normalizeStream(s.stream);
     const mStream = !streamFilter || recordStream === streamFilter;
 
     const recordStd = (s.standard || "").toString().toLowerCase().replace(/class/gi, "").trim();
@@ -3039,7 +2969,7 @@ function filterPrincipalScores() {
     const totalVal = Number(s.total) || 1;
     const pct = Math.round((scoreVal / totalVal) * 100);
     const badgeColor = pct >= 80 ? 'badge-success' : pct >= 50 ? 'badge-pill' : 'badge-danger';
-    const streamBadge = (s.stream || 'ncert').toUpperCase();
+    const streamBadge = getStreamLabel(s.stream);
 
     tbody.innerHTML += `
       <tr>
@@ -3080,29 +3010,65 @@ function updateAiPromptPreview() {
   const promptBox = document.getElementById("aiStudioPromptTextarea");
   if (!promptBox) return;
 
-  const stream = streamSelect ? streamSelect.value : "ncert";
-  const std = stdSelect && stdSelect.value ? stdSelect.value : "5";
+  const stream = typeof normalizeStream === "function" 
+    ? normalizeStream(streamSelect ? streamSelect.value : "ncert") 
+    : (streamSelect ? streamSelect.value : "ncert");
+    
+  const streamLabel = typeof getStreamLabel === "function" 
+    ? getStreamLabel(stream) 
+    : (stream === "stateboard" ? "STATEBOARD (METRIC)" : "NCERT");
+
+  const std = stdSelect && stdSelect.value ? stdSelect.value : "10";
   const sub = subSelect && subSelect.value ? subSelect.value : "Science";
-  const chap = chapInput && chapInput.value.trim() ? chapInput.value.trim() : "[Chapter]";
+  const chap = chapInput && chapInput.value.trim() ? chapInput.value.trim() : "[Chapter Title]";
   const topic = topicInput && topicInput.value.trim() ? topicInput.value.trim() : "[Topic]";
 
-  promptBox.value = `You are an examination question author for HariMani School (${stream.toUpperCase()} Stream).
-Generate exactly 100 balanced assessment questions (50 Multiple Choice Questions, 10 True/False, 15 Fill in the Blanks, and 15 Match the Following) strictly based on the textbook content provided below.
+  promptBox.value = `You are an examination question author for HariMani School (${streamLabel}).
+Your task is to analyze the attached textbook content book-wide and generate exactly 100 balanced assessment questions for each chapter found in the text.
+Process every chapter sequentially from start to finish. For each chapter, generate the complete set of 100 questions strictly following the breakdown and formatting rules below.
+
+QUESTION BREAKDOWN (EXACTLY 100 PER CHAPTER):
+- 50 Multiple Choice Questions ("mcq")
+- 10 True/False Questions ("tf")
+- 15 Fill in the Blanks Questions ("fib")
+- 25 Match the Following Questions ("match")
 
 OUTPUT FORMAT REQUIREMENTS:
-- Pure raw CSV text only, no code blocks or markdown backticks.
-- Exactly 13 columns per row enclosed in double quotes ("...").
-- Every question must be on its OWN SEPARATE LINE.
-- For "match" questions: Column 6 (Question) MUST NEVER be simply "Match the following" or "Match". It MUST be an explicit, topic-specific instruction (e.g. "Match each cell organelle with its primary function:", "Match the scientists with their discovery:", "Match the biological macromolecule with its building block:").
+- Pure raw CSV text only. Do not include markdown formatting, code blocks, backticks, or any conversational preamble/closing text.
+- Output the CSV header row only once at the very beginning of the response.
+- Exactly 13 columns per row, with every field strictly enclosed in double quotes ("...").
+- Every single question must be on its own separate line. Do not include literal newlines/line breaks inside any quoted string.
+- High factual accuracy derived exclusively from the provided textbook content.
+- For chemical formulas, ions, equations, or scientific notation, write them in clean plain text (e.g., "H2SO4", "KMnO4", "Fe3+", "CuSO4.5H2O") to prevent CSV syntax corruption.
+
+COLUMN SPECIFICATIONS (13 COLUMNS):
+1. Type: "mcq", "tf", "fib", or "match"
+2. Standard: Grade / Class (e.g., "${std}")
+3. Subject: "${sub}"
+4. Chapter: Exact Chapter Number / Title (e.g., "${chap}")
+5. Topic: Specific section or sub-topic from that chapter (e.g., "${topic}")
+6. Question: The question prompt.
+   * STRICT INSTRUCTION FOR "match": Column 6 MUST NEVER be generic (never write "Match the following" or "Match"). It MUST be an explicit, topic-specific instruction (e.g., "Match each metal ore with its primary chemical formula:", "Match each term with its precise scientific definition:").
+7. OptA: Option A for "mcq"; Pair 1 [Item1:Match1] for "match"; empty "" for "tf" and "fib".
+8. OptB: Option B for "mcq"; Pair 2 [Item2:Match2] for "match"; empty "" for "tf" and "fib".
+9. OptC: Option C for "mcq"; Pair 3 [Item3:Match3] for "match"; empty "" for "tf" and "fib".
+10. OptD: Option D for "mcq"; Pair 4 [Item4:Match4] for "match"; empty "" for "tf" and "fib".
+11. CorrectOpt:
+    * For "mcq": Index digit (1, 2, 3, or 4) corresponding to OptA, OptB, OptC, or OptD.
+    * For "tf": "True" or "False".
+    * For "fib": The precise target word, term, or chemical formula filling the "_____" blank.
+    * For "match": "MATCH".
+12. Explanation: Clear, concise explanation citing the textbook rule, reaction, or definition.
+13. Stream: "${stream}"
 
 HEADER ROW:
 Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation,Stream
 
 DATA ROW TEMPLATES:
-"mcq",${std},"${sub}","${chap}","${topic}","[Question statement]","[Opt A]","[Opt B]","[Opt C]","[Opt D]",1,"[Explanation]","${stream}"
-"tf",${std},"${sub}","${chap}","${topic}","[Factual Statement]","","","","",True,"[Explanation]","${stream}"
-"fib",${std},"${sub}","${chap}","${topic}","[Statement with _____ blank]","","","","","[Word]","[Explanation]","${stream}"
-"match",${std},"${sub}","${chap}","${topic}","Match the [specific topic/attribute] with their corresponding [target]:","[Item1:Match1]","[Item2:Match2]","[Item3:Match3]","[Item4:Match4]","MATCH","[Explanation]","${stream}"
+"mcq","${std}","${sub}","${chap}","${topic}","[Question statement]","[Opt A]","[Opt B]","[Opt C]","[Opt D]","1","[Explanation]","${stream}"
+"tf","${std}","${sub}","${chap}","${topic}","[Factual Statement]","","","","","True","[Explanation]","${stream}"
+"fib","${std}","${sub}","${chap}","${topic}","[Statement with _____ blank]","","","","","[Word]","[Explanation]","${stream}"
+"match","${std}","${sub}","${chap}","${topic}","Match each [specific topic/attribute] with their corresponding [target]:","[Item1:Match1]","[Item2:Match2]","[Item3:Match3]","[Item4:Match4]","MATCH","[Explanation]","${stream}"
 
 TEXTBOOK CONTENT:
 """
@@ -3166,7 +3132,7 @@ function processParsedCsvRows(rows) {
   if (!rows || rows.length === 0) return alert("Empty CSV.");
   const fallbackStd = document.getElementById("authorStdSelect") ? document.getElementById("authorStdSelect").value : "5";
   const fallbackSub = document.getElementById("authorSubSelect") ? document.getElementById("authorSubSelect").value : "Science";
-  const fallbackStream = document.getElementById("authorStreamSelect") ? document.getElementById("authorStreamSelect").value : "ncert";
+  const fallbackStream = normalizeStream(document.getElementById("authorStreamSelect") ? document.getElementById("authorStreamSelect").value : "ncert");
   const fallbackChap = (document.getElementById("authorChapterInput")?.value || "").trim() || "General";
   const fallbackTopic = (document.getElementById("authorTopicInput")?.value || "").trim() || "All";
 
@@ -3204,7 +3170,7 @@ function processParsedCsvRows(rows) {
     let optD = (r[9] || "").toString().trim();
     let correctRaw = (r[10] !== undefined && r[10] !== null) ? r[10].toString().trim() : "";
     let explanation = (r[11] || "").toString().trim();
-    let streamVal = (r[12] || fallbackStream).toString().toLowerCase().trim();
+    let streamVal = normalizeStream(r[12] || fallbackStream);
 
     if (!qText) continue;
 
@@ -3280,7 +3246,7 @@ function processParsedCsvRows(rows) {
       <div style="padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1.5px solid ${borderColor}; background: ${cardBg}; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
         <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
           <span style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">
-            ${idx + 1}. [${q.stream.toUpperCase()}] [${q.type.toUpperCase()}] ${q.question}
+            ${idx + 1}. [${getStreamLabel(q.stream)}] [${q.type.toUpperCase()}] ${q.question}
           </span>
           <div style="text-align: right;">
             ${q.isDuplicate ? `<span class="badge" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; margin-bottom:4px;">⚠️ Warning: ${q.dupReason}</span><br>` : ''}

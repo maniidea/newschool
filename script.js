@@ -17,6 +17,7 @@ let autoNextTimeout = null;
 let isAnswered = false;
 let extractedAiBatch = [];
 let globalStandaloneCsvList = [];
+let globalPyqExtractedList = [];
 
 let examReviewRecord = [];
 let wrongQuestionsVault = [];
@@ -39,16 +40,36 @@ const GLOBAL_STANDARDS = [
 
 const GLOBAL_SUBJECTS = ["Science", "Maths", "Social Science", "English", "Hindi", "Tamil", "Botany", "Zoology", "Physics", "Chemistry"];
 
+const COMPETITIVE_EXAMS = [
+  "TNPSC-GROUP-1",
+  "TNPSC-GROUP-2",
+  "TNPSC-GROUP-3",
+  "TNPSC-GROUP-4",
+  "TNPSC-VAO",
+  "TNPSC",
+  "UPSC",
+  "BANK",
+  "SSC",
+  "TNCSC"
+];
+
+const PYQ_YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015"];
+
 function normalizeStream(stream) {
   if (!stream) return "ncert";
   const s = stream.toString().toLowerCase().trim();
+  if (s.includes("aspirant") || s.includes("competitive") || s.includes("tnpsc") || s.includes("upsc") || s.includes("bank") || s.includes("ssc") || s.includes("tncsc")) {
+    return "aspirant";
+  }
   if (s.includes("metric") || s.includes("state")) return "stateboard";
   return "ncert";
 }
 
 function getStreamLabel(stream) {
   const norm = normalizeStream(stream);
-  return norm === "stateboard" ? "STATEBOARD (METRIC)" : "NCERT";
+  if (norm === "aspirant") return "COMPETITIVE (TNPSC / UPSC / BANK)";
+  if (norm === "stateboard") return "STATEBOARD (METRIC)";
+  return "NCERT";
 }
 
 function initApp() {
@@ -141,20 +162,29 @@ function populateAllDropdowns() {
     signupStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}</option>`).join("");
   }
 
+  // Safe Standard selection that does not override competitive exams
+  const playStream = document.getElementById("playStreamSelect");
   const playStd = document.getElementById("playStdSelect");
+  
   if (playStd) {
-    let allowed = GLOBAL_STANDARDS;
-    if (currentUser) {
-      if (currentUser.role === "student") {
-        allowed = (currentUser.standards && currentUser.standards.length > 0) ? currentUser.standards : ["1"];
-      } else if (currentUser.role === "aspirant" || currentUser.role === "principal") {
-        allowed = GLOBAL_STANDARDS;
-      } else if (currentUser.role === "teacher") {
-        allowed = (currentUser.standards && currentUser.standards.length > 0) ? currentUser.standards : GLOBAL_STANDARDS;
+    const selectedStream = playStream ? normalizeStream(playStream.value) : "ncert";
+    
+    if (selectedStream === "aspirant") {
+      syncPlayStreamDropdowns();
+    } else {
+      let allowed = GLOBAL_STANDARDS;
+      if (currentUser) {
+        if (currentUser.role === "student") {
+          allowed = (currentUser.standards && currentUser.standards.length > 0) ? currentUser.standards : ["1"];
+        } else if (currentUser.role === "aspirant" || currentUser.role === "principal") {
+          allowed = GLOBAL_STANDARDS;
+        } else if (currentUser.role === "teacher") {
+          allowed = (currentUser.standards && currentUser.standards.length > 0) ? currentUser.standards : GLOBAL_STANDARDS;
+        }
       }
+      playStd.innerHTML = allowed.map(s => `<option value="${s}">${s}</option>`).join("");
+      syncPlaySubjects();
     }
-    playStd.innerHTML = allowed.map(s => `<option value="${s}">${s}</option>`).join("");
-    syncPlaySubjects();
   }
 
   const authStd = document.getElementById("authorStdSelect");
@@ -176,9 +206,16 @@ function populateAllDropdowns() {
   const ncertViewStd = document.getElementById("ncertViewStdSelect");
   if (ncertViewStd) ncertViewStd.innerHTML = GLOBAL_STANDARDS.map(s => `<option value="${s}">வகுப்பு ${s}</option>`).join("");
 
+  // Collect all available standards and exam titles for filters
+  const allAvailableStds = new Set(GLOBAL_STANDARDS);
+  (masterQuestions || []).forEach(q => {
+    if (q.standard && q.standard.trim()) allAvailableStds.add(q.standard.trim());
+  });
+  const combinedStdsList = Array.from(allAvailableStds);
+
   ["manageStdFilter", "repStdFilter", "tchRepStdFilter", "prFilterStd"].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = '<option value="">All Standards</option>' + GLOBAL_STANDARDS.map(s => `<option value="${s}">${s}</option>`).join("");
+    if (el) el.innerHTML = '<option value="">All Standards</option>' + combinedStdsList.map(s => `<option value="${s}">${s}</option>`).join("");
   });
 
   const lbFilter = document.getElementById("leaderboardStdFilter");
@@ -209,7 +246,6 @@ function setGlobalLoadingState(isLoading, title, subText, progressPct) {
     if (subText && subEl) subEl.innerText = subText;
     if (progressPct !== undefined && fillEl) fillEl.style.width = `${progressPct}%`;
 
-    // Fail-safe: Always hide after 5 seconds regardless of network latency
     clearTimeout(globalLoaderSafetyTimer);
     globalLoaderSafetyTimer = setTimeout(() => {
       overlay.classList.add("fade-out");
@@ -250,8 +286,7 @@ async function loadPortalData() {
     try { populateAllDropdowns(); } catch (e) { console.warn(e); }     
     try { renderNcertBooksViewer(); } catch (e) { console.warn(e); }     
     try { if (typeof updateAiPromptPreview === "function") updateAiPromptPreview(); } catch (e) { console.warn(e); }     
-
-    // Guarantees dismiss
+    try { if (typeof updatePyqPromptPreview === "function") updatePyqPromptPreview(); } catch (e) { console.warn(e); }     
     setGlobalLoadingState(false);
   }
 }
@@ -285,7 +320,7 @@ function updateAuthUI() {
       userBadge.classList.remove("hidden");
       let scope = `Class ${currentUser.standards.join(", ")} (${getStreamLabel(currentUser.studentStream)})`;
       if (currentUser.role === "principal") scope = "Master School Control";
-      else if (currentUser.role === "aspirant") scope = "Aspirant Mode (Classes 5-12)";
+      else if (currentUser.role === "aspirant") scope = "Aspirant Mode (Competitive & School)";
       else if (currentUser.role === "teacher") scope = `Classes: [${currentUser.standards.join(",")}], Subs: [${currentUser.subjects.join(",")}]`;
       userBadge.innerText = `${currentUser.name} (${currentUser.role.toUpperCase()}) | ${scope}`;
     }
@@ -294,7 +329,7 @@ function updateAuthUI() {
       if (currentUser.role === "student") {
         playScopeNotice.innerText = `Attending Class ${currentUser.standards.join(", ")} Assessments (${getStreamLabel(currentUser.studentStream)}).`;
       } else {
-        playScopeNotice.innerText = `Select Student Stream, Category, Standard, Subject, and Topic to begin.`;
+        playScopeNotice.innerText = `Select Student Stream, Category, Standard/Exam, Subject, and Topic to begin.`;
       }
     }
 
@@ -330,7 +365,7 @@ function updateAuthUI() {
     if (tabReplies) tabReplies.classList.add("hidden");
 
     if (playScopeNotice) {
-      playScopeNotice.innerText = `Select Student Stream, Category, Standard, Subject, and Topic to begin.`;
+      playScopeNotice.innerText = `Select Student Stream, Category, Standard/Exam, Subject, and Topic to begin.`;
     }
 
     document.querySelectorAll(".teacher-principal-only, .teacher-only, .principal-only").forEach(el => el.classList.add("hidden"));
@@ -358,6 +393,40 @@ function normalizeText(name) {
 }
 
 function syncPlayStreamDropdowns() {
+  const streamSelect = document.getElementById("playStreamSelect");
+  const stdSelect = document.getElementById("playStdSelect");
+  if (!streamSelect || !stdSelect) return;
+
+  const currentStream = normalizeStream(streamSelect.value);
+  const previousVal = stdSelect.value;
+
+  if (currentStream === "aspirant") {
+    const examStds = new Set();
+
+    (masterQuestions || []).forEach(q => {
+      if (normalizeStream(q.stream) === "aspirant" && q.standard && q.standard.trim()) {
+        examStds.add(q.standard.trim());
+      }
+    });
+
+    const stdList = Array.from(examStds);
+    const finalOptions = stdList.length > 0 
+      ? stdList 
+      : ["TNPSC-Group-1 2025", "TNPSC-Group-2 2024", "TNPSC-Group-4 2024", "TNPSC-VAO 2024", "UPSC 2024", "BANK 2024"];
+
+    stdSelect.innerHTML = finalOptions.map(s => `<option value="${s}">${s}</option>`).join("");
+    
+    if (previousVal && finalOptions.includes(previousVal)) {
+      stdSelect.value = previousVal;
+    }
+  } else {
+    let allowed = GLOBAL_STANDARDS;
+    if (currentUser && currentUser.role === "student") {
+      allowed = (currentUser.standards && currentUser.standards.length > 0) ? currentUser.standards : ["1"];
+    }
+    stdSelect.innerHTML = allowed.map(s => `<option value="${s}">${s}</option>`).join("");
+  }
+
   syncPlaySubjects();
 }
 
@@ -367,12 +436,16 @@ function syncPlaySubjects() {
   const streamSelect = document.getElementById("playStreamSelect");
   if (!playStd || !subSelect) return;
 
-  const std = playStd.value || "5";
+  const std = (playStd.value || "").trim().toLowerCase();
   const selectedStream = normalizeStream(streamSelect ? streamSelect.value : "ncert");
   const subMap = new Map();
 
-  masterQuestions
-    .filter(q => q.standard === std && normalizeStream(q.stream) === selectedStream)
+  (masterQuestions || [])
+    .filter(q => {
+      const mStream = normalizeStream(q.stream) === selectedStream;
+      const mStd = (q.standard || "").trim().toLowerCase() === std;
+      return mStream && mStd;
+    })
     .forEach(q => {
       if (q.subject) {
         const cleanName = normalizeText(q.subject);
@@ -384,8 +457,23 @@ function syncPlaySubjects() {
     });
 
   const available = Array.from(subMap.values());
-  const list = available.length > 0 ? available : GLOBAL_SUBJECTS;
-  subSelect.innerHTML = list.map(s => `<option value="${s}">${s}</option>`).join("");
+  
+  // Prepend "All Subjects" option at the top
+  let optionsHtml = '<option value="All">All Subjects (முழுத் தேர்வு)</option>';
+
+  if (available.length > 0) {
+    optionsHtml += available.map(s => `<option value="${s}">${s}</option>`).join("");
+  } else if (selectedStream === "aspirant") {
+    optionsHtml += `
+      <option value="General Studies">General Studies</option>
+      <option value="பொதுத் தமிழ் (General Tamil)">பொதுத் தமிழ் (General Tamil)</option>
+      <option value="Aptitude & Mental Ability">Aptitude & Mental Ability</option>
+    `;
+  } else {
+    optionsHtml += GLOBAL_SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join("");
+  }
+
+  subSelect.innerHTML = optionsHtml;
   syncPlayChapters();
 }
 
@@ -396,13 +484,18 @@ function syncPlayChapters() {
   const streamSelect = document.getElementById("playStreamSelect");
   if (!playStd || !subSelect || !chapSelect) return;
 
-  const std = playStd.value || "5";
-  const sub = normalizeText(subSelect.value || "Science").toLowerCase();
+  const std = (playStd.value || "5").trim().toLowerCase();
+  const sub = normalizeText(subSelect.value || "All").toLowerCase();
   const selectedStream = normalizeStream(streamSelect ? streamSelect.value : "ncert");
   const chapterMap = new Map();
 
-  masterQuestions
-    .filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && normalizeStream(q.stream) === selectedStream)
+  (masterQuestions || [])
+    .filter(q => {
+      const mStream = normalizeStream(q.stream) === selectedStream;
+      const mStd = (q.standard || "").trim().toLowerCase() === std;
+      const mSub = (sub === "all") || (normalizeText(q.subject).toLowerCase() === sub);
+      return mStream && mStd && mSub;
+    })
     .forEach(q => {
       if (q.chapter) {
         const cleanName = normalizeText(q.chapter);
@@ -414,7 +507,7 @@ function syncPlayChapters() {
     });
 
   const uniqueChapters = Array.from(chapterMap.values());
-  chapSelect.innerHTML = '<option value="All">All Units / Chapters</option>' + uniqueChapters.map(c => `<option value="${c}">${c}</option>`).join("");
+  chapSelect.innerHTML = '<option value="All">All Units / Chapters / Papers</option>' + uniqueChapters.map(c => `<option value="${c}">${c}</option>`).join("");
   syncPlayTopics();
 }
 
@@ -426,12 +519,18 @@ function syncPlayTopics() {
   const streamSelect = document.getElementById("playStreamSelect");
   if (!playStd || !subSelect || !chapSelect || !topicSelect) return;
 
-  const std = playStd.value || "5";
+  const std = (playStd.value || "5").trim().toLowerCase();
   const sub = normalizeText(subSelect.value || "Science").toLowerCase();
   const chap = chapSelect.value || "All";
   const selectedStream = normalizeStream(streamSelect ? streamSelect.value : "ncert");
 
-  let filtered = masterQuestions.filter(q => q.standard === std && normalizeText(q.subject).toLowerCase() === sub && normalizeStream(q.stream) === selectedStream);
+  let filtered = (masterQuestions || []).filter(q => {
+    const mStream = normalizeStream(q.stream) === selectedStream;
+    const mStd = (q.standard || "").trim().toLowerCase() === std;
+    const mSub = normalizeText(q.subject).toLowerCase() === sub;
+    return mStream && mStd && mSub;
+  });
+
   if (chap !== "All") {
     filtered = filtered.filter(q => normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
   }
@@ -528,7 +627,7 @@ async function handleSignUp() {
     userId: userId, 
     name: name, 
     password: pass, 
-    standard: (userType === "aspirant") ? "5,6,7,8,9,10,11,12" : std 
+    standard: (userType === "aspirant") ? "5,6,7,8,9,10,11,12,TNPSC,UPSC,BANK,SSC" : std 
   };
 
   try {
@@ -614,7 +713,8 @@ function switchTab(tab, eventTarget) {
   
   const allTabs = [
     "playTab", 
-    "dailyPuzzleTab", 
+    "dailyPuzzleTab",
+    "pyqArenaTab", 
     "createTab", 
     "manageTab", 
     "reportsTab", 
@@ -645,6 +745,15 @@ function switchTab(tab, eventTarget) {
   if (tab === "feedback") document.getElementById("feedbackTab").classList.remove("hidden"), loadFeedbackTab();
   if (tab === "ncertBooks") document.getElementById("ncertBooksTab").classList.remove("hidden"), initNcertBooksTab();
   if (tab === "myReplies") document.getElementById("myRepliesTab").classList.remove("hidden"), loadStudentReplies();
+  
+  if (tab === "pyqArena") {
+    const el = document.getElementById("pyqArenaTab");
+    if (el) {
+      el.classList.remove("hidden");
+      initPyqDropdowns();
+    }
+  }
+
   if (tab === "dailyPuzzle") {
     const el = document.getElementById("dailyPuzzleTab");
     if (el) el.classList.remove("hidden");
@@ -655,7 +764,234 @@ function switchTab(tab, eventTarget) {
 }
 
 // -------------------------------------------------------------
-// DAILY PUZZLE 30-QUESTION ENGINE (SUBJECT-ONLY, ANY CLASS)
+// COMPETITIVE EXAM (PYQ) HUB HANDLERS
+// -------------------------------------------------------------
+function initPyqDropdowns() {
+  const uploadYear = document.getElementById("pyqTargetYear");
+  if (uploadYear) {
+    uploadYear.innerHTML = PYQ_YEARS.map(y => `<option value="${y}">${y}</option>`).join("");
+  }
+  const selectYear = document.getElementById("pyqSelectYear");
+  if (selectYear) {
+    selectYear.innerHTML = '<option value="all">All Years</option>' + PYQ_YEARS.map(y => `<option value="${y}">${y}</option>`).join("");
+  }
+  syncPyqYearsAndSubjects();
+}
+
+function togglePyqUploadSection() {
+  const box = document.getElementById("pyqUploadBox");
+  if (box) box.classList.toggle("hidden");
+}
+
+function detectExamCadre(str) {
+  const s = (str || "").toUpperCase().replace(/\s+/g, "-");
+  for (const ex of COMPETITIVE_EXAMS) {
+    if (s.includes(ex)) return ex;
+  }
+  return null;
+}
+
+function syncPyqYearsAndSubjects() {
+  const examFilter = (document.getElementById("pyqSelectExam")?.value || "all").toUpperCase();
+  const subSelect = document.getElementById("pyqSelectSubject");
+  if (!subSelect) return;
+
+  const subjects = new Set();
+  (masterQuestions || []).forEach(q => {
+    const rawStd = (q.standard || "").toUpperCase();
+    const rawChap = (q.chapter || "").toUpperCase();
+    const detected = detectExamCadre(rawStd) || detectExamCadre(rawChap) || (q.stream === "aspirant" ? "ASPIRANT" : null);
+
+    if (detected) {
+      const matchesExam = (examFilter === "all") || detected === examFilter || (examFilter === "TNPSC" && detected.startsWith("TNPSC"));
+      if (matchesExam && q.subject) {
+        subjects.add(q.subject.trim());
+      }
+    }
+  });
+
+  const list = Array.from(subjects);
+  subSelect.innerHTML = '<option value="all">All Subjects</option>' + list.map(s => `<option value="${s}">${s}</option>`).join("");
+  filterAvailablePyqCards();
+}
+
+function filterAvailablePyqCards() {
+  const container = document.getElementById("pyqPapersContainer");
+  if (!container) return;
+
+  const examFilter = (document.getElementById("pyqSelectExam")?.value || "all").toUpperCase();
+  const yearFilter = document.getElementById("pyqSelectYear")?.value || "all";
+  const subFilter = (document.getElementById("pyqSelectSubject")?.value || "all").toLowerCase();
+
+  const groupedPapers = {};
+
+  (masterQuestions || []).forEach(q => {
+    const rawStd = (q.standard || "").toUpperCase();
+    const rawChap = (q.chapter || "").toUpperCase();
+    const rawSub = (q.subject || "General Studies").trim();
+
+    const detectedExam = detectExamCadre(rawStd) || detectExamCadre(rawChap) || (q.stream === "aspirant" ? "TNPSC-GROUP-4" : null);
+    if (!detectedExam) return;
+
+    if (examFilter !== "all") {
+      if (examFilter === "TNPSC") {
+        if (!detectedExam.startsWith("TNPSC")) return;
+      } else if (detectedExam !== examFilter) {
+        return;
+      }
+    }
+
+    const yearMatch = (rawStd + " " + rawChap + " " + (q.topic || "")).match(/\b(20\d{2})\b/);
+    const paperYear = yearMatch ? yearMatch[1] : "2024";
+
+    if (yearFilter !== "all" && paperYear !== yearFilter) return;
+    if (subFilter !== "all" && rawSub.toLowerCase() !== subFilter) return;
+
+    const paperKey = `${detectedExam}_${paperYear}_${rawSub}`;
+    if (!groupedPapers[paperKey]) {
+      groupedPapers[paperKey] = {
+        exam: detectedExam,
+        year: paperYear,
+        subject: rawSub,
+        questions: []
+      };
+    }
+    groupedPapers[paperKey].questions.push(q);
+  });
+
+  const papers = Object.values(groupedPapers);
+
+  if (papers.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b; background: #fff; border-radius: 12px; border: 1px dashed #cbd5e1;">
+        📭 No question papers found for the selected filter.<br>
+        Click <strong>✍️ Add / Upload PYQ Paper</strong> above to paste previous year questions.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = papers.map(p => {
+    let tagColor = "#003366";
+    if (p.exam.includes("GROUP-1")) tagColor = "#7c2d12";
+    else if (p.exam.includes("GROUP-2")) tagColor = "#065f46";
+    else if (p.exam.includes("VAO")) tagColor = "#831843";
+
+    return `
+      <div class="card" style="margin-bottom:0; padding:18px; border-radius:12px; border:1.5px solid var(--border); background:#ffffff; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="badge" style="background:${tagColor}; color:#fff; font-weight:700;">${p.exam}</span>
+          <span class="badge-pill" style="background:#fef3c7; color:#b45309; border-color:#fde68a; font-weight:700;">${p.year}</span>
+        </div>
+        <h4 style="margin:4px 0 6px 0; color:var(--primary); font-size:1.05rem;">${p.subject}</h4>
+        <p style="font-size:0.85rem; color:#64748b; margin:0 0 14px 0;">Questions Available: <strong>${p.questions.length}</strong></p>
+        <button class="btn btn-primary" style="width:100%; font-size:0.9rem;" onclick="attendPyqPaper('${p.exam}', '${p.year}', '${p.subject}')">
+          ✍️ Start Test
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+function attendPyqPaper(exam, year, subject) {
+  const filtered = (masterQuestions || []).filter(q => {
+    const rawStd = (q.standard || "").toUpperCase();
+    const rawChap = (q.chapter || "").toUpperCase();
+    const rawSub = (q.subject || "").trim().toLowerCase();
+
+    const matchesExam = rawStd.includes(exam) || rawChap.includes(exam);
+    const matchesYear = (rawStd + " " + rawChap + " " + (q.topic || "")).includes(year);
+    const matchesSub = rawSub === subject.toLowerCase();
+
+    return matchesExam && matchesYear && matchesSub;
+  });
+
+  if (filtered.length === 0) return alert("No questions available for this paper.");
+
+  activeQuizList = [...filtered].sort(() => Math.random() - 0.5);
+  currentQIndex = 0;
+  userScore = 0;
+  examReviewRecord = [];
+  wrongQuestionsVault = [];
+  perQuestionTime = 40;
+
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("pyqArenaTab").classList.add("hidden");
+  document.getElementById("playTab").classList.remove("hidden");
+  document.getElementById("quizSetupCard").classList.add("hidden");
+  document.getElementById("quizActiveCard").classList.remove("hidden");
+
+  renderCurrentQuestion();
+}
+
+async function submitPyqBulkQuestions() {
+  const exam = document.getElementById("pyqTargetExam").value;
+  const year = document.getElementById("pyqTargetYear").value;
+  const sub = document.getElementById("pyqTargetSub").value.trim() || "General Studies";
+  const rawCsv = document.getElementById("pyqCsvInput").value.trim();
+
+  if (!rawCsv) return alert("Please paste CSV data.");
+
+  const rows = parseCustomCsv(rawCsv);
+  if (rows.length === 0) return alert("Could not parse CSV.");
+
+  const formattedQuestions = [];
+  const isHeader = rows[0].join(" ").toLowerCase().includes("question");
+  const startIndex = isHeader ? 1 : 0;
+
+  for (let i = startIndex; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 6) continue;
+
+    formattedQuestions.push({
+      type: (r[0] || "mcq").toLowerCase().trim(),
+      standard: `${exam} ${year}`,
+      subject: r[2] || sub,
+      chapter: `${exam} ${year} Exam Paper`,
+      topic: r[4] || "PYQ",
+      question: r[5] || "",
+      optA: r[6] || "",
+      optB: r[7] || "",
+      optC: r[8] || "",
+      optD: r[9] || "",
+      correctOpt: (r[10] !== undefined && r[10] !== null) ? r[10].toString().trim() : "1",
+      explanation: r[11] || "Official Key Explanation",
+      stream: "aspirant"
+    });
+  }
+
+  if (formattedQuestions.length === 0) return alert("No valid questions parsed.");
+
+  const payload = {
+    action: "importCsvQuestions",
+    userId: currentUser ? currentUser.id : "ASPIRANT",
+    role: currentUser ? currentUser.role : "aspirant",
+    questions: formattedQuestions
+  };
+
+  const btn = document.querySelector("#pyqUploadBox button");
+  if (btn) { btn.disabled = true; btn.innerText = "⏳ Uploading to Google Sheet..."; }
+
+  try {
+    const res = await callAppsScript(payload);
+    if (res && res.success) {
+      alert(`✅ Uploaded ${res.count} ${exam} (${year}) questions successfully!`);
+      document.getElementById("pyqCsvInput").value = "";
+      togglePyqUploadSection();
+      await loadPortalData();
+      syncPyqYearsAndSubjects();
+    } else {
+      alert("Upload failed: " + (res ? res.error : "Unknown error"));
+    }
+  } catch (err) {
+    alert("Connection error: " + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerText = "🚀 Save PYQ Paper to Question Bank"; }
+  }
+}
+
+// -------------------------------------------------------------
+// DAILY PUZZLE 30-QUESTION ENGINE
 // -------------------------------------------------------------
 let dailyPuzzleList = [];
 let dailyPuzzleIndex = 0;
@@ -1212,7 +1548,7 @@ async function startQuiz() {
   const chosenStream = normalizeStream(streamEl ? streamEl.value : "ncert");
   const chosenType = typeEl ? typeEl.value : "all";
   const std = stdEl ? stdEl.value : "5";
-  const sub = subEl && subEl.value ? normalizeText(subEl.value).toLowerCase() : "science";
+  const rawSub = subEl && subEl.value ? normalizeText(subEl.value).toLowerCase() : "all";
   const keyword = keywordEl ? keywordEl.value.toLowerCase().trim() : "";
   const isAspirant = currentUser && currentUser.role === "aspirant";
   const isPrincipal = currentUser && currentUser.role === "principal";
@@ -1223,9 +1559,21 @@ async function startQuiz() {
   let count = countEl ? (parseInt(countEl.value, 10) || 5) : 5;
   perQuestionTime = timerEl ? Number(timerEl.value) : 20;
 
-  let matched = masterQuestions.filter(q => {
+  let matched = (masterQuestions || []).filter(q => {
     const mStream = normalizeStream(q.stream) === chosenStream;
     const mType = (chosenType === "all" || (q.type || "mcq").toLowerCase() === chosenType);
+
+    if (chosenStream === "aspirant") {
+      const mExamStd = (q.standard || "").trim().toLowerCase() === std.trim().toLowerCase();
+      const mSub = (rawSub === "all") || normalizeText(q.subject).toLowerCase() === rawSub;
+      const chap = chapEl ? chapEl.value : "All";
+      const mChap = (chap === "All" || normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
+      
+      const searchableText = `${q.question || ""} ${q.topic || ""} ${q.chapter || ""} ${q.subject || ""}`.toLowerCase();
+      const mKeyword = !keyword || searchableText.includes(keyword);
+
+      return mStream && mType && mExamStd && mSub && mChap && mKeyword;
+    }
 
     if (keyword && (isAspirant || isPrincipal)) {
       const searchableText = `${q.question || ""} ${q.topic || ""} ${q.chapter || ""} ${q.subject || ""} ${q.explanation || ""}`.toLowerCase();
@@ -1233,7 +1581,7 @@ async function startQuiz() {
     }
 
     const mStd = q.standard.toString().trim() === std.toString().trim();
-    const mSub = normalizeText(q.subject).toLowerCase() === sub;
+    const mSub = (rawSub === "all") || normalizeText(q.subject).toLowerCase() === rawSub;
     const chap = chapEl ? chapEl.value : "All";
     const mChap = (chap === "All" || normalizeText(q.chapter).toLowerCase() === chap.toLowerCase());
     
@@ -2300,14 +2648,14 @@ function renderManageTable() {
   const isPrincipal = currentUser && (currentUser.role === "principal");
   const myId = currentUser ? currentUser.id.toLowerCase() : "";
 
-  const filtered = masterQuestions.filter(q => {
+  const filtered = (masterQuestions || []).filter(q => {
     const isOwner = (q.creatorId && q.creatorId.toLowerCase() === myId);
     if (!isPrincipal && !isOwner) return false;
 
     const mStream = !streamFilter || normalizeStream(q.stream) === streamFilter;
     const fullTextSearch = `${q.question || ""} ${q.optA || ""} ${q.optB || ""} ${q.optC || ""} ${q.optD || ""} ${q.explanation || ""}`.toLowerCase();
     const mSearch = !search || fullTextSearch.includes(search);
-    const mStd = !std || q.standard === std;
+    const mStd = !std || (q.standard || "").toLowerCase() === std.toLowerCase();
     const mSub = !sub || (q.subject || "").toLowerCase() === sub;
     return mStream && mSearch && mStd && mSub;
   });
@@ -2401,7 +2749,7 @@ function generatePrintablePaper(count) {
 
   let pool = [...masterQuestions];
   pool = pool.filter(q => normalizeStream(q.stream) === streamFilter);
-  if (std !== "All Classes") pool = pool.filter(q => q.standard === std);
+  if (std !== "All Classes") pool = pool.filter(q => (q.standard || '').toLowerCase() === std.toLowerCase());
   if (sub !== "General Assessment") pool = pool.filter(q => q.subject.toLowerCase() === sub.toLowerCase());
 
   if (pool.length === 0) return alert("No questions available for this filter to generate a test paper.");
@@ -2416,7 +2764,7 @@ function generatePrintablePaper(count) {
       <h3>Official Examination Assessment Question Paper</h3>
       <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:bold; font-size:0.95rem;">
         <span>Stream: ${getStreamLabel(streamFilter)}</span>
-        <span>Class: ${std}</span>
+        <span>Class / Exam: ${std}</span>
         <span>Subject: ${sub}</span>
         <span>Max Marks: ${selected.length}</span>
       </div>
@@ -2565,14 +2913,14 @@ function filterUserReports() {
   const std = document.getElementById("repStdFilter").value;
   const sub = document.getElementById("repSubFilter").value.toLowerCase();
 
-  const filtered = masterUserScores.filter(s => {
+  const filtered = (masterUserScores || []).filter(s => {
     let sDate = s.date;
     if (s.date && s.date.includes("T")) sDate = s.date.split("T")[0];
 
     const mFrom = !from || sDate >= from;
     const mTo = !to || sDate <= to;
-    const mStd = !std || s.standard === std;
-    const mSub = !sub || s.subject.toLowerCase() === sub;
+    const mStd = !std || (s.standard || '').toLowerCase() === std.toLowerCase();
+    const mSub = !sub || (s.subject || '').toLowerCase() === sub;
     return mFrom && mTo && mStd && mSub;
   });
 
@@ -2635,8 +2983,8 @@ function filterTeacherStudentScores() {
 
   const filtered = (teacherStudentScores || []).filter(s => {
     const mStudent = !search || s.userId.toLowerCase().includes(search) || s.userName.toLowerCase().includes(search);
-    const mStd = !std || s.standard === std;
-    const mSub = !sub || s.subject.toLowerCase() === sub;
+    const mStd = !std || (s.standard || '').toLowerCase() === std.toLowerCase();
+    const mSub = !sub || (s.subject || '').toLowerCase() === sub;
     return mStudent && mStd && mSub;
   });
 
@@ -2989,16 +3337,217 @@ function switchCreateMethod(method) {
   const btnManual = document.getElementById("btnMethodManual");
   const btnAi = document.getElementById("btnMethodAi");
   const btnCsv = document.getElementById("btnMethodCsv");
+  const btnPyq = document.getElementById("btnMethodPyq");
 
   if (btnManual) btnManual.className = (method === 'manual') ? 'btn btn-primary flex-1' : 'btn btn-outline-dark flex-1';
   if (btnAi) btnAi.className = (method === 'ai') ? 'btn btn-secondary flex-1' : 'btn btn-outline-dark flex-1';
   if (btnCsv) btnCsv.className = (method === 'csv') ? 'btn btn-primary flex-1' : 'btn btn-outline-dark flex-1';
+  if (btnPyq) btnPyq.className = (method === 'pyq') ? 'btn btn-primary flex-1' : 'btn btn-outline-dark flex-1';
 
-  document.getElementById("sectionManualCreate").classList.toggle("hidden", method !== 'manual');
-  document.getElementById("sectionAiCreate").classList.toggle("hidden", method !== 'ai');
-  document.getElementById("sectionCsvCreate").classList.toggle("hidden", method !== 'csv');
+  const secManual = document.getElementById("sectionManualCreate");
+  const secAi = document.getElementById("sectionAiCreate");
+  const secCsv = document.getElementById("sectionCsvCreate");
+  const secPyq = document.getElementById("sectionPyqCreate");
+  const targetCard = document.getElementById("targetHierarchyCard");
+
+  if (secManual) secManual.classList.toggle("hidden", method !== 'manual');
+  if (secAi) secAi.classList.toggle("hidden", method !== 'ai');
+  if (secCsv) secCsv.classList.toggle("hidden", method !== 'csv');
+  if (secPyq) secPyq.classList.toggle("hidden", method !== 'pyq');
+
+  if (targetCard) targetCard.classList.toggle("hidden", method === 'pyq');
 
   if (method === 'csv' && typeof updateAiPromptPreview === "function") updateAiPromptPreview();
+  if (method === 'pyq' && typeof updatePyqPromptPreview === "function") updatePyqPromptPreview();
+}
+
+function updatePyqPromptPreview() {
+  const exam = document.getElementById("pyqPromptExamSelect")?.value || "TNPSC-Group-1";
+  const year = document.getElementById("pyqPromptYearInput")?.value.trim() || "2025";
+  const paper = document.getElementById("pyqPromptPaperInput")?.value.trim() || "CCSEI-IAP25";
+  const promptBox = document.getElementById("aiPyqStudioPromptTextarea");
+  if (!promptBox) return;
+
+  promptBox.value = `You are an expert examination question parser specializing in TNPSC (Tamil Nadu Public Service Commission) and competitive exam papers.
+Extract all questions from the attached document into the exact 13-column CSV format required by our database schema.
+
+### EXTRACTION RULES:
+1. Output ONLY raw, valid CSV text. Do not wrap output in markdown codeblocks (no \`\`\`csv or \`\`\`), and do not include any introductory or concluding remarks.
+2. The first line of your response must be the exact header row specified below.
+3. Every single row must strictly contain 13 columns, with every field enclosed in double quotation marks ("...").
+4. Never include literal newline breaks inside a quoted string; keep each complete question record on a single line.
+5. Language Handling:
+   - For Column 6 ("Question") and Options (Cols 7–10), provide the English text. If an English version is missing, use the Tamil version.
+   - For bilingual display, format Column 6 as: "English Question / தமிழ் வினா".
+6. Ignore Option (E) ("Answer not known" / "விடை தெரியவில்லை") entirely as it is an OMR-filler. Focus only on options A, B, C, and D.
+7. Correct Answer Detection:
+   - Look for pen marks, checkmarks (✓), circles, or ticks on the options in the paper.
+   - Convert the marked option to its index: "1" for (A), "2" for (B), "3" for (C), or "4" for (D).
+   - If no pen mark is present on a question, determine and output the standard verified factual answer index (1, 2, 3, or 4).
+8. Question Types (Column 1):
+   - Use "mcq" for standard Multiple Choice Questions, Assertion & Reason, and Chronology questions.
+   - Use "match" for table-based "Match the following" questions:
+     * When type is "match", enter Column 6 as an explicit instruction (e.g., "Match the hormone with the disorder caused:").
+     * For Columns 7 to 10 (OptA to OptD), record the paired items in format "LeftItem:RightItem" (e.g., "Insulin:Diabetes Mellitus").
+     * Set Column 11 ("CorrectOpt") to "MATCH".
+
+### EXACT 13 COLUMNS SCHEMA:
+1. Type: "mcq" or "match"
+2. Standard: "${exam} ${year}"
+3. Subject: Subject domain (e.g., "General Studies", "Indian Polity", "History & Culture of India", "Aptitude & Mental Ability", "General Science")
+4. Chapter: "${year} Paper (${paper})"
+5. Topic: Sub-topic (e.g., "Organic Chemistry", "Constitutional Framework", "Endocrine System")
+6. Question: Question statement without option letters.
+7. OptA: Option A text, or Pair 1 [LeftItem:RightItem] if type is "match".
+8. OptB: Option B text, or Pair 2 [LeftItem:RightItem] if type is "match".
+9. OptC: Option C text, or Pair 3 [LeftItem:RightItem] if type is "match".
+10. OptD: Option D text, or Pair 4 [LeftItem:RightItem] if type is "match".
+11. CorrectOpt: "1", "2", "3", "4", or "MATCH"
+12. Explanation: Concise explanation citing the factual reason, article, or formula.
+13. Stream: "aspirant"
+
+### CSV HEADER:
+Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation,Stream`;
+}
+
+function copyPyqAiStudioPrompt() {
+  const promptBox = document.getElementById("aiPyqStudioPromptTextarea");
+  if (!promptBox) return;
+  navigator.clipboard.writeText(promptBox.value).then(() => {
+    const btn = document.getElementById("btnCopyPyqPrompt");
+    if (btn) {
+      btn.innerText = "✅ Copied!";
+      setTimeout(() => { btn.innerText = "📋 Copy PYQ Prompt"; }, 2000);
+    }
+  });
+}
+
+function handleDirectPyqCsvPaste() {
+  const rawText = document.getElementById("rawPyqCsvTextInput")?.value.trim();
+  if (!rawText) return alert("Please paste CSV text.");
+
+  const rows = parseCustomCsv(rawText);
+  if (!rows || rows.length === 0) return alert("Could not parse CSV.");
+
+  const firstRowStr = rows[0].join(" ").toLowerCase();
+  const isHeader = firstRowStr.includes("question") || firstRowStr.includes("type");
+  const startIndex = isHeader ? 1 : 0;
+
+  const existingQuestionsSet = new Set();
+  (masterQuestions || []).forEach(q => {
+    if (q && q.question) {
+      const cleanKey = q.question.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (cleanKey) existingQuestionsSet.add(cleanKey);
+    }
+  });
+
+  const seenInBatch = new Set();
+  let duplicateCount = 0;
+  globalPyqExtractedList = [];
+
+  for (let i = startIndex; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 6) continue;
+
+    const qText = (r[5] || "").toString().trim();
+    if (!qText) continue;
+
+    const matchKey = qText.toLowerCase().replace(/[^a-z0-9]/g, "");
+    let isDuplicate = false;
+    let dupReason = "";
+
+    if (existingQuestionsSet.has(matchKey)) {
+      isDuplicate = true;
+      dupReason = "Already in Google Sheet";
+      duplicateCount++;
+    } else if (seenInBatch.has(matchKey)) {
+      isDuplicate = true;
+      dupReason = "Duplicate in pasted CSV";
+      duplicateCount++;
+    } else {
+      seenInBatch.add(matchKey);
+    }
+
+    globalPyqExtractedList.push({
+      type: (r[0] || "mcq").toLowerCase().trim(),
+      standard: (r[1] || "TNPSC-Group-1 2025").toString().trim(),
+      subject: (r[2] || "General Studies").toString().trim(),
+      chapter: (r[3] || "2025 Paper").toString().trim(),
+      topic: (r[4] || "PYQ").toString().trim(),
+      question: qText,
+      optA: (r[6] || "").toString().trim(),
+      optB: (r[7] || "").toString().trim(),
+      optC: (r[8] || "").toString().trim(),
+      optD: (r[9] || "").toString().trim(),
+      correctOpt: (r[10] !== undefined && r[10] !== null) ? r[10].toString().trim() : "1",
+      explanation: (r[11] || "").toString().trim(),
+      stream: "aspirant",
+      isDuplicate,
+      dupReason
+    });
+  }
+
+  const countBadge = document.getElementById("standalonePyqCount");
+  if (countBadge) countBadge.innerText = globalPyqExtractedList.length;
+
+  const dupBadge = document.getElementById("pyqDuplicateCountBadge");
+  if (dupBadge) {
+    dupBadge.innerText = `${duplicateCount} Potential Duplicates`;
+    dupBadge.style.background = duplicateCount > 0 ? "#fee2e2" : "#dcfce7";
+    dupBadge.style.color = duplicateCount > 0 ? "#991b1b" : "#166534";
+  }
+
+  const previewBox = document.getElementById("standalonePyqList");
+  previewBox.innerHTML = globalPyqExtractedList.map((q, idx) => `
+    <div style="padding:10px; margin-bottom:8px; border-radius:6px; border:1px solid ${q.isDuplicate ? '#f59e0b' : '#cbd5e1'}; background:${q.isDuplicate ? '#fffbeb' : '#fff'};">
+      <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600;">
+        <span>${idx + 1}. [${q.type.toUpperCase()}] ${q.question}</span>
+        <span class="tag-pill">${q.standard}</span>
+      </div>
+      ${q.type === 'mcq' ? `<div style="font-size:0.8rem; color:#475569; margin:4px 0;">A) ${q.optA} | B) ${q.optB} | C) ${q.optC} | D) ${q.optD}</div>` : ''}
+      <div style="font-size:0.8rem; color:#15803d; font-weight:bold;">Correct: ${q.correctOpt}</div>
+      ${q.explanation ? `<div style="font-size:0.75rem; color:#64748b;">${q.explanation}</div>` : ''}
+    </div>
+  `).join("");
+
+  document.getElementById("standalonePyqPreviewArea").classList.remove("hidden");
+}
+
+async function submitStandalonePyqToSheet() {
+  if (!globalPyqExtractedList || globalPyqExtractedList.length === 0) return alert("No questions to upload.");
+
+  const payload = {
+    action: "importCsvQuestions",
+    userId: currentUser ? currentUser.id : "PRINCIPAL",
+    role: currentUser ? currentUser.role : "principal",
+    questions: globalPyqExtractedList
+  };
+
+  const btn = document.getElementById("btnUploadStandalonePyq");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "⏳ Uploading to Google Sheet...";
+  }
+
+  try {
+    const data = await callAppsScript(payload);
+    if (data && data.success) {
+      alert(`✅ Uploaded ${data.count} questions successfully to Google Sheet!`);
+      document.getElementById("standalonePyqPreviewArea").classList.add("hidden");
+      document.getElementById("rawPyqCsvTextInput").value = "";
+      globalPyqExtractedList = [];
+      await loadPortalData();
+    } else {
+      alert("Error uploading: " + (data ? data.error : "Unknown error"));
+    }
+  } catch (err) {
+    alert("Connection error: " + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "🚀 Upload All to Google Sheet";
+    }
+  }
 }
 
 function updateAiPromptPreview() {
@@ -3039,7 +3588,6 @@ OUTPUT FORMAT REQUIREMENTS:
 - Exactly 13 columns per row, with every field strictly enclosed in double quotes ("...").
 - Every single question must be on its own separate line. Do not include literal newlines/line breaks inside any quoted string.
 - High factual accuracy derived exclusively from the provided textbook content.
-- For chemical formulas, ions, equations, or scientific notation, write them in clean plain text (e.g., "H2SO4", "KMnO4", "Fe3+", "CuSO4.5H2O") to prevent CSV syntax corruption.
 
 COLUMN SPECIFICATIONS (13 COLUMNS):
 1. Type: "mcq", "tf", "fib", or "match"
@@ -3048,32 +3596,16 @@ COLUMN SPECIFICATIONS (13 COLUMNS):
 4. Chapter: Exact Chapter Number / Title (e.g., "${chap}")
 5. Topic: Specific section or sub-topic from that chapter (e.g., "${topic}")
 6. Question: The question prompt.
-   * STRICT INSTRUCTION FOR "match": Column 6 MUST NEVER be generic (never write "Match the following" or "Match"). It MUST be an explicit, topic-specific instruction (e.g., "Match each metal ore with its primary chemical formula:", "Match each term with its precise scientific definition:").
 7. OptA: Option A for "mcq"; Pair 1 [Item1:Match1] for "match"; empty "" for "tf" and "fib".
 8. OptB: Option B for "mcq"; Pair 2 [Item2:Match2] for "match"; empty "" for "tf" and "fib".
 9. OptC: Option C for "mcq"; Pair 3 [Item3:Match3] for "match"; empty "" for "tf" and "fib".
 10. OptD: Option D for "mcq"; Pair 4 [Item4:Match4] for "match"; empty "" for "tf" and "fib".
-11. CorrectOpt:
-    * For "mcq": Index digit (1, 2, 3, or 4) corresponding to OptA, OptB, OptC, or OptD.
-    * For "tf": "True" or "False".
-    * For "fib": The precise target word, term, or chemical formula filling the "_____" blank.
-    * For "match": "MATCH".
+11. CorrectOpt: "1", "2", "3", "4", "True", "False", word, or "MATCH".
 12. Explanation: Clear, concise explanation citing the textbook rule, reaction, or definition.
 13. Stream: "${stream}"
 
 HEADER ROW:
-Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation,Stream
-
-DATA ROW TEMPLATES:
-"mcq","${std}","${sub}","${chap}","${topic}","[Question statement]","[Opt A]","[Opt B]","[Opt C]","[Opt D]","1","[Explanation]","${stream}"
-"tf","${std}","${sub}","${chap}","${topic}","[Factual Statement]","","","","","True","[Explanation]","${stream}"
-"fib","${std}","${sub}","${chap}","${topic}","[Statement with _____ blank]","","","","","[Word]","[Explanation]","${stream}"
-"match","${std}","${sub}","${chap}","${topic}","Match each [specific topic/attribute] with their corresponding [target]:","[Item1:Match1]","[Item2:Match2]","[Item3:Match3]","[Item4:Match4]","MATCH","[Explanation]","${stream}"
-
-TEXTBOOK CONTENT:
-"""
-[PASTE TEXTBOOK CONTENT HERE]
-"""`;
+Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation,Stream`;
 }
 
 function copyAiStudioPrompt() {

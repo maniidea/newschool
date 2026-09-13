@@ -30,6 +30,7 @@
   <!-- NAVIGATION TABS -->
   <div class="tabs no-print professional-tabs">
     <button class="tab-btn active" onclick="switchTab('play', this)">📝 Attend Test</button>
+    <button class="tab-btn" onclick="switchTab('pyqArena', this)">🏛️ TNPSC / UPSC / BANK Hub</button>
     <button class="tab-btn" onclick="switchTab('challenge30', this)">🔥 30 Days Challenge</button>
     <button class="tab-btn hidden" id="tabMyScores" onclick="switchTab('reports', this)">📊 My Scores & Badges</button>
     <button class="tab-btn" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</button>
@@ -61,7 +62,6 @@
 
   <!-- TAB: DAILY PUZZLE ARENA -->
   <div id="dailyPuzzleTab" class="hidden no-print">
-    <!-- DAILY PUZZLE WINNERS BANNER (ONLY INSIDE DAILY PUZZLE TAB) -->
     <div id="dailyWinnersBanner" class="card no-print" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 18px 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
@@ -70,7 +70,6 @@
         </div>
         <button class="btn btn-outline" style="font-size:0.8rem; padding:6px 12px; border-radius:8px;" onclick="loadDailyWinners()">🔄 Refresh</button>
       </div>
-      
       <div id="dailyWinnersContainer" style="display:flex; gap:15px; margin-top:15px; flex-wrap:wrap;">
         <div style="font-size:0.9rem; color:#94a3b8;">வெற்றியாளர்கள் பட்டியல் ஏற்றப்படுகிறது...</div>
       </div>
@@ -100,6 +99,49 @@
     </div>
   </div>
 
+  <!-- TAB: COMPETITIVE EXAM PYQ ARENA (CLEAN STUDENT/PRACTICE VIEW) -->
+  <div id="pyqArenaTab" class="hidden no-print">
+    <div class="card professional-card">
+      <div>
+        <h3 style="margin:0; color:var(--accent);">🏛️ TNPSC, UPSC & Banking PYQ Portal</h3>
+        <p class="notice" style="margin-top:4px;">Year-wise Previous Year Question Papers for TNPSC (Group 1 to 4 & VAO), UPSC, Bank, and SSC.</p>
+      </div>
+
+      <!-- FILTER & ATTEND ARENA -->
+      <div class="grid-3 margin-top" style="background:#f1f5f9; padding:15px; border-radius:10px;">
+        <div class="form-group" style="margin:0;">
+          <label>Exam / Cadre:</label>
+          <select id="pyqSelectExam" onchange="syncPyqYearsAndSubjects()">
+            <option value="all">All Examinations</option>
+            <optgroup label="TNPSC Examinations">
+              <option value="TNPSC-Group-1">TNPSC Group 1</option>
+              <option value="TNPSC-Group-2">TNPSC Group 2 / 2A</option>
+              <option value="TNPSC-Group-3">TNPSC Group 3</option>
+              <option value="TNPSC-Group-4">TNPSC Group 4</option>
+              <option value="TNPSC-VAO">TNPSC VAO</option>
+            </optgroup>
+            <optgroup label="Other Boards">
+              <option value="UPSC">UPSC</option>
+              <option value="BANK">Banking</option>
+              <option value="SSC">SSC</option>
+              <option value="TNCSC">TNCSC</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Select Year:</label>
+          <select id="pyqSelectYear" onchange="filterAvailablePyqCards()"></select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Select Subject / Paper:</label>
+          <select id="pyqSelectSubject" onchange="filterAvailablePyqCards()"></select>
+        </div>
+      </div>
+
+      <div id="pyqPapersContainer" class="grid-3 margin-top" style="margin-top:20px;"></div>
+    </div>
+  </div>
+
   <!-- TAB: BOOKS REPOSITORY -->
   <div id="ncertBooksTab" class="hidden no-print">
     <div class="card professional-card">
@@ -108,7 +150,6 @@
       </div>
       <p class="notice">மாணவப் பிரிவு (Student Stream) மற்றும் வகுப்பு வாரியாக பாடப்புத்தகங்கள் மற்றும் குறிப்புகள் அடங்கிய கோப்புறைகள்.</p>
       
-      <!-- Principal / Teacher Link Manager -->
       <div id="ncertManagerSection" class="teacher-principal-only hidden" style="background:#f8fafc; padding:20px; border-radius:10px; border:1px solid #e2e8f0; margin-bottom:25px;">
         <h4 style="margin-top:0; color:var(--primary);">👑 முதல்வர் / ஆசிரியர் கட்டுப்பாட்டுப் பலகம்: டிரைவ் இணைப்பு சேமிக்க</h4>
         <div class="grid-3">
@@ -135,7 +176,6 @@
         <button class="btn btn-primary w-100" onclick="saveNcertDriveLink()">💾 டிரைவ் இணைப்பைச் சேமி (Save Link)</button>
       </div>
 
-      <!-- Student & User View Filter & Book Cards -->
       <div class="grid-3 margin-top">
         <div class="form-group">
           <label>மாணவப் பிரிவு (Stream):</label>
@@ -197,7 +237,7 @@
     </div>
   </div>
 
-  <!-- PRIVACY POLICY MODAL -->
+  <!-- MODALS -->
   <div id="privacyModal" class="modal-overlay hidden no-print">
     <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
       <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
@@ -206,7 +246,6 @@
     </div>
   </div>
 
-  <!-- CONTACT US MODAL -->
   <div id="contactModal" class="modal-overlay hidden no-print">
     <div class="modal-content" style="max-width: 500px;">
       <button class="modal-close" onclick="closeModal('contactModal')">&times;</button>
@@ -215,7 +254,6 @@
     </div>
   </div>
 
-  <!-- ABOUT US MODAL -->
   <div id="aboutModal" class="modal-overlay hidden no-print">
     <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
       <button class="modal-close" onclick="closeModal('aboutModal')">&times;</button>
@@ -226,7 +264,6 @@
     </div>
   </div>
 
-  <!-- TERMS & CONDITIONS MODAL -->
   <div id="termsModal" class="modal-overlay hidden no-print">
     <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
       <button class="modal-close" onclick="closeModal('termsModal')">&times;</button>
@@ -248,7 +285,7 @@
     <div id="quizSetupCard" class="card professional-card">
       <div class="card-header-title">
         <h3>🎯 Assessment Arena</h3>
-        <span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">NCERT / StateBoard & Metric</span>
+        <span class="tag-pill" style="background:#e0f2fe; color:#0369a1;">NCERT / StateBoard & Metric / Aspirants</span>
       </div>
       <p class="notice" id="playScopeNotice">Select Student Stream, Category, Class, Subject, and Chapter to begin.</p>
       
@@ -258,6 +295,7 @@
           <select id="playStreamSelect" onchange="syncPlayStreamDropdowns()">
             <option value="ncert">NCERT Student</option>
             <option value="stateboard">StateBoard Student (including Metric)</option>
+            <option value="aspirant">🏛️ TNPSC / UPSC / BANK / SSC (Aspirants)</option>
           </select>
         </div>
         <div class="form-group">
@@ -271,7 +309,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Class / Standard:</label>
+          <label>Class / Exam Standard:</label>
           <select id="playStdSelect" onchange="syncPlaySubjects()"></select>
         </div>
       </div>
@@ -282,7 +320,7 @@
           <select id="playSubSelect" onchange="syncPlayChapters()"></select>
         </div>
         <div class="form-group">
-          <label>Unit / Chapter:</label>
+          <label>Unit / Chapter / Paper:</label>
           <select id="playChapterSelect" onchange="syncPlayTopics()"></select>
         </div>
       </div>
@@ -306,7 +344,7 @@
 
       <div class="form-group" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px dashed #cbd5e1; margin-top:10px;">
         <label style="color:var(--primary); font-weight:600; display:block; margin-bottom:6px;">🔍 Keyword / Topic Search Assessment (Optional):</label>
-        <input type="text" id="playKeywordInput" placeholder="Enter keyword (e.g., Photosynthesis, Geometry, Verka)..." style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
+        <input type="text" id="playKeywordInput" placeholder="Enter keyword (e.g., Photosynthesis, Polity, Modern India)..." style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
         <small style="color:#64748b; display:block; margin-top:4px;">If a keyword is provided, questions matching this keyword will be pulled automatically.</small>
       </div>
 
@@ -398,6 +436,7 @@
             <option value="all">அனைத்து பிரிவுகளும் (All Streams)</option>
             <option value="ncert">NCERT Student</option>
             <option value="stateboard">StateBoard Student (including Metric)</option>
+            <option value="aspirant">Competitive Aspirants</option>
           </select>
           <select id="leaderboardStdFilter" onchange="loadLeaderboard()" style="width:auto; padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px;"></select>
         </div>
@@ -426,6 +465,7 @@
       <button id="btnMethodManual" class="btn btn-primary flex-1" onclick="switchCreateMethod('manual')">✍️ Manual Creation</button>
       <button id="btnMethodAi" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('ai')">📷 AI Book Parser</button>
       <button id="btnMethodCsv" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('csv')">📁 CSV Bulk Import</button>
+      <button id="btnMethodPyq" class="btn btn-outline-dark flex-1" onclick="switchCreateMethod('pyq')">🏛️ TNPSC / UPSC PYQ Extractor</button>
     </div>
 
     <div class="card professional-card" id="targetHierarchyCard">
@@ -436,10 +476,11 @@
           <select id="authorStreamSelect">
             <option value="ncert">NCERT Student</option>
             <option value="stateboard">StateBoard Student (including Metric)</option>
+            <option value="aspirant">Competitive Aspirants</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Standard / Class:</label>
+          <label>Standard / Class / Exam:</label>
           <select id="authorStdSelect" onchange="syncAuthorSubjects(); updateAiPromptPreview();"></select>
         </div>
         <div class="form-group">
@@ -602,6 +643,69 @@
         </button>
       </div>
     </div>
+
+    <!-- SECTION 2D: TNPSC / UPSC / COMPETITIVE EXAM PYQ EXTRACTOR -->
+    <div id="sectionPyqCreate" class="card professional-card hidden">
+      <div style="background:#eff6ff; border:1.5px solid #bfdbfe; padding:18px; border-radius:10px; margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+          <div>
+            <h4 style="margin:0; color:#1d4ed8; font-size:1.1rem;">🏛️ Step 1: AI Prompt for Official PYQ Booklets (Bilingual TNPSC / UPSC)</h4>
+            <p class="notice" style="margin:2px 0 0 0; color:#3b82f6;">Configured for English/Tamil bilingual exam booklets with A, B, C, D choices.</p>
+          </div>
+          <a href="https://aistudio.google.com/prompts/new_chat" target="_blank" class="btn btn-outline" style="font-size:0.85rem; padding:6px 14px; text-decoration:none; background:#1d4ed8; border:none; color:#fff; font-weight:600;">🚀 Open Google AI Studio</a>
+        </div>
+
+        <div class="grid-3" style="margin-bottom:12px; background:#fff; padding:12px; border-radius:8px; border:1px solid #dbeafe;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-weight:600;">Exam / Cadre:</label>
+            <select id="pyqPromptExamSelect" onchange="updatePyqPromptPreview()">
+              <option value="TNPSC-Group-1">TNPSC Group 1</option>
+              <option value="TNPSC-Group-2">TNPSC Group 2 / 2A</option>
+              <option value="TNPSC-Group-3">TNPSC Group 3</option>
+              <option value="TNPSC-Group-4">TNPSC Group 4</option>
+              <option value="TNPSC-VAO">TNPSC VAO</option>
+              <option value="UPSC">UPSC Civil Services</option>
+              <option value="BANK">Bank Exam (IBPS / SBI)</option>
+              <option value="SSC">SSC (CGL / CHSL)</option>
+              <option value="TNCSC">TNCSC Recruitment</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-weight:600;">Exam Year:</label>
+            <input type="text" id="pyqPromptYearInput" value="2025" oninput="updatePyqPromptPreview()" placeholder="e.g. 2025">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-weight:600;">Paper / Code:</label>
+            <input type="text" id="pyqPromptPaperInput" value="CCSEI-IAP25" oninput="updatePyqPromptPreview()" placeholder="e.g. CCSEI-IAP25">
+          </div>
+        </div>
+
+        <div style="position:relative;">
+          <textarea id="aiPyqStudioPromptTextarea" rows="10" readonly style="width:100%; font-family:monospace; font-size:0.82rem; background:#ffffff; border:1.5px solid #93c5fd; border-radius:8px; padding:12px; color:#0f172a; resize:vertical; line-height:1.4;"></textarea>
+          <button id="btnCopyPyqPrompt" onclick="copyPyqAiStudioPrompt()" class="btn btn-primary" style="position:absolute; top:10px; right:10px; font-size:0.8rem; padding:6px 12px;">📋 Copy PYQ Prompt</button>
+        </div>
+      </div>
+
+      <h4>📥 Step 2: Paste Extracted PYQ CSV</h4>
+      <p class="notice">Paste the CSV output returned by Google AI Studio below:</p>
+
+      <div class="form-group">
+        <textarea id="rawPyqCsvTextInput" rows="6" placeholder='Type,Standard,Subject,Chapter,Topic,Question,OptA,OptB,OptC,OptD,CorrectOpt,Explanation,Stream
+"mcq","TNPSC-Group-1 2025","General Studies","2025 Paper (CCSEI-IAP25)","General Science","Which of statements are True?...","(i) and (iv)","(i) and (ii)","(ii) and (iii)","(i), (ii), (iii) and (iv)","3","Alkenes have higher octane rating.","aspirant"' style="width:100%; font-family:monospace; font-size:0.82rem; padding:10px; border:1.5px solid #cbd5e1; border-radius:8px;"></textarea>
+        <button class="btn btn-primary w-100" onclick="handleDirectPyqCsvPaste()" style="margin-top:10px; padding:12px;">🔍 Parse & Validate PYQ Questions</button>
+      </div>
+
+      <div id="standalonePyqPreviewArea" class="hidden margin-top">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 style="margin:0;">Validated Questions (<span id="standalonePyqCount" style="color:var(--primary); font-weight:bold;">0</span> Records)</h4>
+          <span id="pyqDuplicateCountBadge" class="badge" style="background:#fee2e2; color:#991b1b;">0 Potential Duplicates</span>
+        </div>
+        <div id="standalonePyqList" class="preview-box" style="max-height:300px; overflow-y:auto; background:#fff; padding:12px; border:1px solid #e2e8f0; border-radius:8px;"></div>
+        <button class="btn btn-primary w-100 margin-top" id="btnUploadStandalonePyq" onclick="submitStandalonePyqToSheet()" style="padding:12px; font-size:1rem;">
+          🚀 Upload All to Google Sheet
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- TAB 3: QUESTION BANK & PRINT PAPER -->
@@ -623,9 +727,10 @@
             <option value="">All Streams</option>
             <option value="ncert">NCERT Student</option>
             <option value="stateboard">StateBoard Student (including Metric)</option>
+            <option value="aspirant">Competitive Aspirants</option>
           </select>
         </div>
-        <div class="form-group" style="margin:0;"><label>Filter Standard:</label><select id="manageStdFilter" onchange="renderManageTable()"></select></div>
+        <div class="form-group" style="margin:0;"><label>Filter Standard / Exam:</label><select id="manageStdFilter" onchange="renderManageTable()"></select></div>
         <div class="form-group" style="margin:0;"><label>Filter Subject:</label><select id="manageSubFilter" onchange="renderManageTable()"></select></div>
       </div>
 
@@ -715,7 +820,7 @@
           <tr>
             <th>Date</th>
             <th>Stream</th>
-            <th>Class</th>
+            <th>Class / Exam</th>
             <th>Subject</th>
             <th>Score</th>
             <th>Percentage</th>
@@ -875,6 +980,7 @@
             <option value="">All Streams</option>
             <option value="ncert">NCERT Student</option>
             <option value="stateboard">StateBoard Student (including Metric)</option>
+            <option value="aspirant">Competitive Aspirant</option>
           </select>
         </div>
         <div class="form-group" style="margin:0;">
@@ -924,6 +1030,7 @@
       <select id="newTeacherStream">
         <option value="ncert">NCERT Student</option>
         <option value="stateboard">StateBoard Student (including Metric)</option>
+        <option value="aspirant">Competitive Aspirant</option>
       </select>
     </div>
     <div class="form-group">
@@ -948,10 +1055,11 @@
       <select id="editTeacherStream">
         <option value="ncert">NCERT Student</option>
         <option value="stateboard">StateBoard Student (including Metric)</option>
+        <option value="aspirant">Competitive Aspirant</option>
       </select>
     </div>
 
-    <label style="font-weight:600; display:block; margin-top:15px; margin-bottom:6px;">Assigned Classes:</label>
+    <label style="font-weight:600; display:block; margin-top:15px; margin-bottom:6px;">Assigned Classes / Exams:</label>
     <div id="editTeacherStdContainer" class="chip-container"></div>
 
     <label style="font-weight:600; display:block; margin-top:18px; margin-bottom:6px;">Assigned Subjects:</label>
@@ -977,10 +1085,11 @@
       <select id="editStudentStream">
         <option value="ncert">NCERT Student</option>
         <option value="stateboard">StateBoard Student (including Metric)</option>
+        <option value="aspirant">Competitive Aspirant</option>
       </select>
     </div>
 
-    <label style="font-weight:600; display:block; margin-top:15px; margin-bottom:6px;">Allowed Standards:</label>
+    <label style="font-weight:600; display:block; margin-top:15px; margin-bottom:6px;">Allowed Standards / Exams:</label>
     <div id="editStudentStdContainer" class="chip-container"></div>
 
     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:25px;">
@@ -1024,13 +1133,14 @@
       <select id="signupStudentStream">
         <option value="ncert">NCERT Student (NCERT Curriculum & Books)</option>
         <option value="stateboard">StateBoard Student (including Metric Curriculum & Books)</option>
+        <option value="aspirant">Competitive Aspirant (TNPSC, UPSC, Bank, SSC)</option>
       </select>
     </div>
     <div class="form-group">
       <label>Account Type:</label>
       <select id="signupUserType" onchange="toggleSignupCategory(this.value)">
         <option value="student">School Student (Enrolled in Assigned Class)</option>
-        <option value="aspirant">Competitive Aspirant (All Classes 5 to 12)</option>
+        <option value="aspirant">Competitive Aspirant (All Classes & Exams)</option>
       </select>
     </div>
     <div class="form-group">
@@ -1057,7 +1167,7 @@
 
 </body>
 <footer class="no-print" style="text-align: center; padding: 25px 20px; margin-top: 50px; border-top: 1px solid #e2e8f0; background: #ffffff; color: #64748b; font-size: 0.85rem;">
-  <p style="margin: 0 0 10px 0; font-weight: 500;">🏫 HariMani School - Enterprise LMS & Assessment Portal (NCERT & State Board / Metric)</p>
+  <p style="margin: 0 0 10px 0; font-weight: 500;">🏫 HariMani School - Enterprise LMS & Assessment Portal (NCERT & State Board / Metric / Competitive)</p>
   <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
     <a href="#" onclick="openModal('aboutModal'); return false;" style="color: var(--primary); text-decoration: none;">About Us</a>
     <span>•</span>

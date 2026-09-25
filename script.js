@@ -350,8 +350,8 @@ function updateAuthUI() {
   } else {
     if (guestBanner) guestBanner.classList.remove("hidden");
     if (playCountInput) {
-      playCountInput.value = Math.min(parseInt(playCountInput.value, 10) || 5, 10);
-      playCountInput.max = 10;
+      playCountInput.value = Math.min(parseInt(playCountInput.value, 10) || 5, 40);
+      playCountInput.max = 40;
     }
     if (playAllCheckbox) {
       playAllCheckbox.checked = false;
